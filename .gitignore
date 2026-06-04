@@ -1,0 +1,5 @@
+# Lokale Tool-/Editor-Konfiguration – nicht ins Repo
+.claude/
+.DS_Store
+Thumbs.db
+*.log
