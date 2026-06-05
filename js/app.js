@@ -841,8 +841,7 @@ $('#manual-form').addEventListener('submit', (e) => {
 
 // ---------- Mein Profil ----------
 function loadSettings() {
-  const s = getSettings();
-  $('#lastfm-key').value = s.lastfmKey || '';
+  /* keine clientseitigen API-Einstellungen mehr (Discogs läuft über den Proxy) */
 }
 
 function setSetting(patch) {
@@ -1123,15 +1122,6 @@ $('#avatar-file').addEventListener('change', async (e) => {
 });
 $('#btn-fav-close').addEventListener('click', () => $('#fav-dialog').close());
 
-$('#btn-save-settings').addEventListener('click', () => {
-  saveSettings({
-    ...getSettings(),
-    lastfmKey: $('#lastfm-key').value.trim(),
-  });
-  trendingCache = null; // neuer Key -> Trending neu laden
-  toast('Einstellungen gespeichert');
-});
-
 $('#btn-export').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(exportAll(), null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -1192,7 +1182,7 @@ function renderPlaylists() {
   const pls = getPlaylists();
   const c = $('#playlists-container');
   if (!pls.length) {
-    c.innerHTML = '<p class="pl-none">Noch keine Playlists. Lege oben eine an (z. B. „2026" oder „MGK") und füge Alben über „+ Playlist" auf der Albumseite hinzu.</p>';
+    c.innerHTML = '<p class="pl-none">Noch keine Playlists. Lege oben eine an und füge Alben über „+ Playlist" auf der Albumseite hinzu.</p>';
     return;
   }
   const coll = getList('collection');

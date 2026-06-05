@@ -150,24 +150,17 @@
         </div>
 
         <details class="profile-settings">
-          <summary>Einstellungen &amp; Backup</summary>
+          <summary>Backup</summary>
           <div class="form">
-            <label>Last.fm API-Key
-              <input type="text" id="lastfm-key" placeholder="optional – für Trending" />
-            </label>
-            <p class="hint">Kostenlos unter last.fm/api. Nur für Trending-Vorschläge.</p>
-            <button id="btn-save-settings" class="btn primary">Einstellungen speichern</button>
-            <hr />
-            <h3>Backup</h3>
             <button id="btn-export" class="btn">Daten exportieren (JSON)</button>
             <label class="btn import-label">Daten importieren
               <input type="file" id="import-file" accept="application/json" hidden />
             </label>
-            <p class="hint">Daten liegen nur lokal in diesem Browser. Mach regelmäßig ein Backup.</p>
+            <p class="hint">Sichere deine Sammlung als JSON-Datei (z. B. zum Übertragen).</p>
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Stackd · Build 77</p>
+        <p class="hint profile-version">Stackd · Build 78</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -418,7 +411,7 @@
         <button type="button" id="btn-create-pl-close" class="dialog-close" aria-label="Schließen">×</button>
       </div>
       <div class="pl-create">
-        <input type="text" id="new-playlist-name" placeholder="Name (z. B. 2026, MGK)" />
+        <input type="text" id="new-playlist-name" placeholder="" />
         <button id="btn-create-playlist" class="btn primary">Anlegen</button>
       </div>
     </div>
