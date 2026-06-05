@@ -167,7 +167,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Stackd · Build 74</p>
+        <p class="hint profile-version">Stackd · Build 75</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -345,21 +345,19 @@
       <p class="profile-bio-display up-center" id="up-bio"></p>
       <button id="up-follow" class="btn primary up-follow">Folgen</button>
       <div class="profile-section">
-        <span class="dp-label">Statistiken</span>
-        <ul class="stat-rows" id="up-stats"></ul>
-      </div>
-      <div class="profile-section">
         <span class="dp-label">Favoriten</span>
         <div id="up-favorites" class="fav-slots"></div>
       </div>
       <div class="profile-section">
-        <span class="dp-label">Sammlung</span>
-        <div id="up-collection" class="cat-covers"></div>
+        <span class="dp-label">Statistiken</span>
+        <ul class="stat-rows" id="up-stats"></ul>
       </div>
-      <div class="profile-section">
-        <span class="dp-label">Wishlist</span>
-        <div id="up-wishlist" class="cat-covers"></div>
+      <div class="profile-tabs up-tabs">
+        <button class="ptab" data-uptab="collection">Sammlung</button>
+        <button class="ptab" data-uptab="wishlist">Wishlist</button>
       </div>
+      <div id="up-collection" class="cat-covers uptab-panel hidden"></div>
+      <div id="up-wishlist" class="cat-covers uptab-panel hidden"></div>
     </div>
   </section>
 

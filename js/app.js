@@ -1438,10 +1438,14 @@ async function openUserProfile(user) {
       if (currentView === 'home') renderFriendsRow();
     };
   }
-  $('#up-collection').innerHTML = '<span class="hint" style="grid-column:1/-1">Lade…</span>';
+  $('#up-collection').innerHTML = '';
   $('#up-wishlist').innerHTML = '';
   $('#up-stats').innerHTML = '';
   $('#up-favorites').innerHTML = '';
+  // Reiter zurücksetzen: Sammlung/Wishlist starten eingeklappt
+  $('#up-collection').classList.add('hidden');
+  $('#up-wishlist').classList.add('hidden');
+  document.querySelectorAll('.up-tabs .ptab').forEach((t) => t.classList.remove('active'));
   $('#user-page').classList.remove('hidden');
   $('#user-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
@@ -1494,6 +1498,12 @@ switchView('home');
 $('#btn-find-friends').addEventListener('click', openFriendsDialog);
 $('#btn-friends-close').addEventListener('click', () => $('#friends-dialog').close());
 $('#user-back').addEventListener('click', closeUserProfile);
+document.querySelectorAll('.up-tabs .ptab').forEach((t) => t.addEventListener('click', () => {
+  const which = t.dataset.uptab;
+  document.querySelectorAll('.up-tabs .ptab').forEach((x) => x.classList.toggle('active', x === t));
+  $('#up-collection').classList.toggle('hidden', which !== 'collection');
+  $('#up-wishlist').classList.toggle('hidden', which !== 'wishlist');
+}));
 $('#friends-search').addEventListener('input', (e) => {
   clearTimeout(friendsSearchTimer);
   const q = e.target.value;

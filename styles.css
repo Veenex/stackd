@@ -880,6 +880,8 @@ body.logged-in .logout-btn { display: block; }
 .up-handle { text-align: center; color: var(--muted); margin: 2px 0 0; font-size: 13px; }
 .up-center { text-align: center; }
 .up-follow { display: block; width: auto; margin: 16px auto 4px; padding: 10px 28px; }
+.up-tabs { margin: 18px 0 0; }
+.uptab-panel { margin-top: 12px; }
 
 /* Sammlungswert-Diagramm (min–max) */
 .vr-bar { height: 14px; border-radius: 999px; background: var(--surface-2); overflow: hidden; position: relative; }
