@@ -1442,10 +1442,9 @@ async function openUserProfile(user) {
   $('#up-wishlist').innerHTML = '';
   $('#up-stats').innerHTML = '';
   $('#up-favorites').innerHTML = '';
-  // Reiter zurücksetzen: Sammlung/Wishlist starten eingeklappt
+  // Sammlung/Wishlist starten eingeklappt
   $('#up-collection').classList.add('hidden');
   $('#up-wishlist').classList.add('hidden');
-  document.querySelectorAll('.up-tabs .ptab').forEach((t) => t.classList.remove('active'));
   $('#user-page').classList.remove('hidden');
   $('#user-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
@@ -1456,13 +1455,16 @@ async function openUserProfile(user) {
   // Statistiken
   const rated = coll.filter((i) => Number(i.rating) > 0);
   const avg = rated.length ? (rated.reduce((s, i) => s + Number(i.rating), 0) / rated.length) : 0;
-  const stats = [
-    { label: 'Alben', val: coll.length },
-    { label: 'Wishlist', val: wish.length },
-    { label: 'Bewertet', val: rated.length },
-    { label: 'Ø Bewertung', val: avg ? avg.toFixed(1) + ' ♪' : '–' },
-  ];
-  $('#up-stats').innerHTML = stats.map((r) => `<li><span>${r.label}</span><span class="stat-num">${r.val}</span></li>`).join('');
+  $('#up-stats').innerHTML =
+    `<li class="stat-toggle" data-panel="up-collection"><span>Sammlung</span><span class="stat-num">${coll.length}<span class="stat-chev">›</span></span></li>` +
+    `<li class="stat-toggle" data-panel="up-wishlist"><span>Wishlist</span><span class="stat-num">${wish.length}<span class="stat-chev">›</span></span></li>` +
+    `<li><span>Bewertet</span><span class="stat-num">${rated.length}</span></li>` +
+    `<li><span>Ø Bewertung</span><span class="stat-num">${avg ? avg.toFixed(1) + ' ♪' : '–'}</span></li>`;
+  $('#up-stats').querySelectorAll('.stat-toggle').forEach((li) => li.addEventListener('click', () => {
+    const panel = document.getElementById(li.dataset.panel);
+    const nowHidden = panel.classList.toggle('hidden');
+    li.classList.toggle('open', !nowHidden);
+  }));
   // Favoriten (aus dem Profil; verweisen auf Sammlungs-IDs)
   const favItems = ((u.favorites || []).map((id) => coll.find((x) => x.id === id)).filter(Boolean));
   let favHtml = '';
@@ -1498,12 +1500,6 @@ switchView('home');
 $('#btn-find-friends').addEventListener('click', openFriendsDialog);
 $('#btn-friends-close').addEventListener('click', () => $('#friends-dialog').close());
 $('#user-back').addEventListener('click', closeUserProfile);
-document.querySelectorAll('.up-tabs .ptab').forEach((t) => t.addEventListener('click', () => {
-  const which = t.dataset.uptab;
-  document.querySelectorAll('.up-tabs .ptab').forEach((x) => x.classList.toggle('active', x === t));
-  $('#up-collection').classList.toggle('hidden', which !== 'collection');
-  $('#up-wishlist').classList.toggle('hidden', which !== 'wishlist');
-}));
 $('#friends-search').addEventListener('input', (e) => {
   clearTimeout(friendsSearchTimer);
   const q = e.target.value;
