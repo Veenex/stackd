@@ -1206,7 +1206,7 @@ function buildBrowseRows(container, prefix) {
 function greetingText() {
   const h = new Date().getHours();
   if (h >= 5 && h < 12) return 'Guten Morgen';
-  if (h >= 12 && h < 18) return 'Guten Mittag';
+  if (h >= 12 && h < 18) return 'Hallo';
   return 'Guten Abend';
 }
 
