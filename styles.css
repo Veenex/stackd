@@ -892,3 +892,16 @@ body.logged-in .logout-btn { display: block; }
 .vr-dash { color: var(--muted); font-weight: 400; font-size: 13px; }
 .vr-note { color: var(--muted); font-size: 12px; margin: 6px 0 0; line-height: 1.4; }
 .vr-loading { color: var(--petrol); }
+
+/* ---------- Desktop: zentrierte Spalte (Handy <720px bleibt unverändert) ---------- */
+@media (min-width: 720px) {
+  .app-header { width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; }
+  .view { max-width: 700px; margin-left: auto; margin-right: auto; }
+  .tabbar { width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; }
+  /* Vollbild-Overlays (Album-Detail, Freundesprofil) als zentrierte Spalte */
+  .detail-page {
+    inset: 0 auto 0 auto; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 700px;
+    border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+  }
+}
