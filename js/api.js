@@ -3,10 +3,26 @@
 // Vinyl-Details (Pressung, Farbe, Cover), benötigt aber einen Token.
 
 import { getSettings } from './store.js';
+import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
 
 const MB_BASE = 'https://musicbrainz.org/ws/2';
 const CAA_BASE = 'https://coverartarchive.org';
 const DISCOGS_BASE = 'https://api.discogs.com';
+
+// Discogs läuft über unseren Supabase-Edge-Function-Proxy: der Token liegt
+// serverseitig (Secret), niemand braucht mehr einen eigenen – auch Gäste nicht.
+const DISCOGS_FN = `${SUPABASE_URL}/functions/v1/discogs`;
+async function discogsProxy(action, params = {}) {
+  const usp = new URLSearchParams({ action });
+  for (const [k, v] of Object.entries(params)) {
+    if (v != null && v !== '') usp.set(k, String(v));
+  }
+  const res = await fetch(`${DISCOGS_FN}?${usp.toString()}`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Accept: 'application/json' },
+  });
+  if (!res.ok) throw new Error('Discogs-Proxy HTTP ' + res.status);
+  return res.json();
+}
 
 // Normalisiertes Ergebnisobjekt
 function normalize(partial) {
@@ -24,19 +40,9 @@ function normalize(partial) {
   };
 }
 
-// ---------- Discogs ----------
-async function lookupDiscogs(barcode, token) {
-  const base = `${DISCOGS_BASE}/database/search?type=release&barcode=${encodeURIComponent(barcode)}`;
-  let res = await fetch(token ? `${base}&token=${encodeURIComponent(token)}` : base, {
-    headers: { Accept: 'application/json' },
-  });
-  // Ungültiger/abgelaufener Token? Discogs antwortet dann mit 401.
-  // Die Barcode-Suche funktioniert aber auch anonym -> ohne Token erneut.
-  if (!res.ok && token) {
-    res = await fetch(base, { headers: { Accept: 'application/json' } });
-  }
-  if (!res.ok) throw new Error('Discogs HTTP ' + res.status);
-  const data = await res.json();
+// ---------- Discogs (über Proxy) ----------
+async function lookupDiscogs(barcode) {
+  const data = await discogsProxy('search', { barcode });
   const hit = (data.results || [])[0];
   if (!hit) return null;
 
@@ -119,15 +125,13 @@ function barcodeVariants(barcode) {
 export async function lookupBarcode(barcode) {
   const variants = barcodeVariants(barcode);
   if (!variants.length) return null;
-  const { discogsToken } = getSettings();
-  const token = (discogsToken || '').trim();
   let lastError = null;
 
   // 1. Discogs zuerst – beste Vinyl-Abdeckung. Mit Token (höheres Limit)
   //    und auch ohne Token (anonyme Barcode-Suche).
   for (const code of variants) {
     try {
-      const result = await lookupDiscogs(code, token);
+      const result = await lookupDiscogs(code);
       if (result) {
         if (!result.coverUrl) {
           const mb = await safe(() => lookupMusicBrainzAny(variants));
@@ -186,17 +190,11 @@ function normalizeDiscogsHit(hit) {
 
 // Flexible Discogs-Suche (q / artist / genre / style / year). Normalisierte Treffer.
 export async function discogsSearch(params = {}) {
-  const token = (getSettings().discogsToken || '').trim();
-  const usp = new URLSearchParams({ type: 'release', per_page: String(params.per_page || 30) });
+  const proxyParams = { per_page: params.per_page || 30 };
   ['q', 'artist', 'genre', 'style', 'year', 'sort', 'sort_order'].forEach((k) => {
-    if (params[k]) usp.set(k, params[k]);
+    if (params[k]) proxyParams[k] = params[k];
   });
-  const base = `${DISCOGS_BASE}/database/search?${usp.toString()}`;
-  let res = await fetch(token ? `${base}&token=${encodeURIComponent(token)}` : base,
-    { headers: { Accept: 'application/json' } });
-  if (!res.ok && token) res = await fetch(base, { headers: { Accept: 'application/json' } });
-  if (!res.ok) throw new Error('Discogs HTTP ' + res.status);
-  const data = await res.json();
+  const data = await discogsProxy('search', proxyParams);
   return (data.results || []).map(normalizeDiscogsHit);
 }
 
@@ -231,15 +229,9 @@ export async function fetchCoverCandidates(item) {
 
   // 1. Discogs: Bilder genau dieser Pressung (oft hochwertige Scans)
   if (item.source === 'discogs' && item.sourceId) {
-    const token = (getSettings().discogsToken || '').trim();
     try {
-      const base = `${DISCOGS_BASE}/releases/${encodeURIComponent(item.sourceId)}`;
-      const res = await fetch(token ? `${base}?token=${encodeURIComponent(token)}` : base,
-        { headers: { Accept: 'application/json' } });
-      if (res.ok) {
-        const d = await res.json();
-        (d.images || []).forEach((img) => add(img.uri || img.resource_url));
-      }
+      const d = await discogsProxy('release', { id: item.sourceId });
+      (d.images || []).forEach((img) => add(img.uri || img.resource_url));
     } catch { /* ignorieren */ }
   }
 
@@ -358,22 +350,15 @@ function parseVinylColor(text) {
 // vorne. Anonym (ohne Token) gibt Discogs keine farbigen Details her -> [].
 export async function fetchVinylColors(item) {
   if (!item || item.source !== 'discogs' || !item.masterId) return [];
-  const token = (getSettings().discogsToken || '').trim();
-  if (!token) return [];
-  const auth = (u) => `${u}${u.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
 
-  // 1) Vinyl-Pressungen des Masters holen
+  // 1) Vinyl-Pressungen des Masters holen (über Proxy)
   let ids = [];
   try {
-    const base = `${DISCOGS_BASE}/masters/${encodeURIComponent(item.masterId)}/versions?per_page=100`;
-    const res = await fetch(auth(base), { headers: { Accept: 'application/json' } });
-    if (res.ok) {
-      const d = await res.json();
-      ids = (d.versions || [])
-        .filter((v) => (v.major_formats || []).some((f) => /vinyl/i.test(f)))
-        .map((v) => String(v.id))
-        .filter(Boolean);
-    }
+    const d = await discogsProxy('versions', { id: item.masterId, per_page: 100 });
+    ids = (d.versions || [])
+      .filter((v) => (v.major_formats || []).some((f) => /vinyl/i.test(f)))
+      .map((v) => String(v.id))
+      .filter(Boolean);
   } catch { /* ignorieren */ }
 
   // Geöffnete Pressung zuerst, danach die übrigen (max. 14 Anfragen)
@@ -384,9 +369,7 @@ export async function fetchVinylColors(item) {
   const byId = {};
   await Promise.all(ids.map(async (id) => {
     try {
-      const r = await fetch(auth(`${DISCOGS_BASE}/releases/${id}`), { headers: { Accept: 'application/json' } });
-      if (!r.ok) return;
-      const rd = await r.json();
+      const rd = await discogsProxy('release', { id });
       for (const f of (rd.formats || [])) {
         if (f.name && !/vinyl/i.test(f.name)) continue; // nur Vinyl
         const c = parseVinylColor(f.text || '');
@@ -404,23 +387,38 @@ export async function fetchVinylColors(item) {
   return [...found.values()].slice(0, 8);
 }
 
+// Marktwert-Bereich (min–max) eines Discogs-Releases.
+// Quelle 1: Preisvorschläge pro Zustand (Poor … Mint). Quelle 2 (Fallback):
+// aktueller niedrigster Marktpreis (lowest_price) mit grober Spanne.
+export async function fetchPriceRange(item) {
+  if (!item || item.source !== 'discogs' || !item.sourceId) return null;
+  try {
+    const d = await discogsProxy('price', { id: item.sourceId });
+    const entries = Object.values(d || {}).filter((x) => x && typeof x.value === 'number' && x.value > 0);
+    if (entries.length) {
+      const vals = entries.map((x) => x.value);
+      return { min: Math.min(...vals), max: Math.max(...vals), currency: entries[0].currency || 'EUR', source: 'suggestions' };
+    }
+  } catch { /* ignorieren */ }
+  try {
+    const r = await discogsProxy('release', { id: item.sourceId });
+    if (r && typeof r.lowest_price === 'number' && r.lowest_price > 0) {
+      return { min: r.lowest_price, max: Math.round(r.lowest_price * 1.6), currency: 'EUR', source: 'lowest' };
+    }
+  } catch { /* ignorieren */ }
+  return null;
+}
+
 export async function fetchTracklist(item) {
   if (!item || !item.sourceId) return null;
 
   if (item.source === 'discogs') {
-    const token = (getSettings().discogsToken || '').trim();
-    const base = `${DISCOGS_BASE}/releases/${encodeURIComponent(item.sourceId)}`;
     try {
-      let res = await fetch(token ? `${base}?token=${encodeURIComponent(token)}` : base,
-        { headers: { Accept: 'application/json' } });
-      if (!res.ok && token) res = await fetch(base, { headers: { Accept: 'application/json' } });
-      if (res.ok) {
-        const d = await res.json();
-        const list = (d.tracklist || [])
-          .filter((t) => !t.type_ || t.type_ === 'track')
-          .map((t) => ({ position: t.position || '', title: t.title || '', duration: t.duration || '' }));
-        if (list.length) return list;
-      }
+      const d = await discogsProxy('release', { id: item.sourceId });
+      const list = (d.tracklist || [])
+        .filter((t) => !t.type_ || t.type_ === 'track')
+        .map((t) => ({ position: t.position || '', title: t.title || '', duration: t.duration || '' }));
+      if (list.length) return list;
     } catch { /* ignorieren */ }
   }
 

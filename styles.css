@@ -813,3 +813,78 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
   transition: opacity .25s, transform .25s;
 }
 .toast.hidden { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(8px); }
+
+/* ---------- Auth (Login/Registrierung/Reset) ---------- */
+.auth-page {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(20, 24, 28, .92); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; overflow-y: auto;
+}
+.auth-page.hidden { display: none; }
+.auth-card {
+  position: relative; width: 100%; max-width: 360px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 18px; padding: 24px 22px 18px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.5);
+}
+.auth-close {
+  position: absolute; top: 10px; right: 12px;
+  background: none; border: none; color: var(--muted);
+  font-size: 26px; line-height: 1; cursor: pointer; padding: 4px;
+}
+.auth-logo { display: block; width: 64px; height: 64px; border-radius: 14px; margin: 4px auto 10px; }
+.auth-title { text-align: center; font-size: 20px; margin: 0 0 16px; }
+.auth-tabs { display: flex; gap: 6px; background: var(--surface-2); border-radius: 999px; padding: 4px; margin-bottom: 16px; }
+.auth-tab {
+  flex: 1; background: none; border: none; color: var(--muted);
+  padding: 9px 0; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.auth-tab.active { background: var(--accent); color: #fff; }
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-field { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); }
+.auth-field input {
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+  color: var(--text); padding: 12px; font-size: 16px; font-family: inherit;
+}
+.auth-field input:focus { border-color: var(--accent); outline: none; }
+.auth-submit { width: 100%; margin-top: 4px; }
+.auth-forgot, .auth-guest { display: block; margin: 4px auto 0; text-align: center; }
+.auth-guest { margin-top: 14px; color: var(--muted); }
+.auth-msg { margin: 0; font-size: 13px; min-height: 0; line-height: 1.4; }
+.auth-msg.error { color: var(--danger); }
+.auth-msg.ok { color: var(--accent); }
+
+/* Logout-Button nur sichtbar, wenn eingeloggt */
+.logout-btn { display: none; width: 100%; margin: 8px 0 6px; }
+body.logged-in .logout-btn { display: block; }
+
+/* ---------- Freunde ---------- */
+.find-friends-btn { width: 100%; margin: 2px 0 16px; }
+#friends-dialog { width: min(94vw, 460px); }
+.friends-pick { padding: 16px; }
+.friends-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 12px; }
+#friends-search { width: 100%; margin-bottom: 12px; }
+.friends-results { display: flex; flex-direction: column; gap: 8px; max-height: 62vh; overflow-y: auto; }
+.friend-row { display: flex; align-items: center; gap: 10px; }
+.friend-av { width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border); background-size: cover; background-position: center; }
+.friend-name { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 14px; line-height: 1.25; }
+.friend-name small { color: var(--muted); font-size: 12px; }
+.friend-follow { width: auto; padding: 8px 14px; font-size: 13px; flex-shrink: 0; }
+.friend-by { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.friend-row { width: 100%; background: none; border: none; cursor: pointer; text-align: left; }
+.friend-go { margin-left: auto; color: var(--muted); font-size: 20px; }
+
+/* Profilseite eines anderen Nutzers */
+.up-name { text-align: center; font-size: 21px; font-weight: 700; margin: 10px 0 0; }
+.up-handle { text-align: center; color: var(--muted); margin: 2px 0 0; font-size: 13px; }
+.up-center { text-align: center; }
+.up-follow { display: block; width: auto; margin: 16px auto 4px; padding: 10px 28px; }
+
+/* Sammlungswert-Diagramm (min–max) */
+.vr-bar { height: 14px; border-radius: 999px; background: var(--surface-2); overflow: hidden; position: relative; }
+.vr-fill { position: absolute; inset: 0; background: linear-gradient(90deg, var(--petrol), var(--indigo), var(--rose)); }
+.vr-labels { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-weight: 700; font-size: 18px; }
+.vr-dash { color: var(--muted); font-weight: 400; font-size: 13px; }
+.vr-note { color: var(--muted); font-size: 12px; margin: 6px 0 0; line-height: 1.4; }
+.vr-loading { color: var(--petrol); }

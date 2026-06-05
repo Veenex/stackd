@@ -126,6 +126,8 @@
         <p class="profile-meta-line" id="profile-meta-line"></p>
         <p class="profile-bio-display" id="profile-bio-display"></p>
 
+        <button id="btn-find-friends" class="btn ghost find-friends-btn">Freunde finden</button>
+
         <div class="profile-section">
           <span class="dp-label">Favoriten</span>
           <div id="profile-favorites" class="fav-slots"></div>
@@ -142,18 +144,14 @@
 
         <ul class="stat-rows" id="stat-rows"></ul>
 
-        <details class="profile-pricelist">
-          <summary>Preisliste der Sammlung</summary>
-          <ul id="price-list" class="price-list"></ul>
-        </details>
+        <div class="profile-section">
+          <span class="dp-label">Sammlungswert (Marktschätzung)</span>
+          <div id="value-range" class="value-range"></div>
+        </div>
 
         <details class="profile-settings">
           <summary>Einstellungen &amp; Backup</summary>
           <div class="form">
-            <label>Discogs API-Token
-              <input type="text" id="discogs-token" placeholder="optional – für Vinyl-Details" />
-            </label>
-            <p class="hint">Token kostenlos unter discogs.com → Einstellungen → Developers. Ohne Token nur MusicBrainz.</p>
             <label>Last.fm API-Key
               <input type="text" id="lastfm-key" placeholder="optional – für Trending" />
             </label>
@@ -168,7 +166,8 @@
             <p class="hint">Daten liegen nur lokal in diesem Browser. Mach regelmäßig ein Backup.</p>
           </div>
         </details>
-        <p class="hint profile-version">Stackd · Build 64</p>
+        <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
+        <p class="hint profile-version">Stackd · Build 73</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -203,6 +202,34 @@
       </div>
     </section>
   </main>
+
+  <!-- Login / Registrierung / Passwort-Reset (Vollbild-Overlay) -->
+  <section id="auth-page" class="auth-page hidden">
+    <div class="auth-card">
+      <button id="auth-close" class="auth-close" aria-label="Schließen">×</button>
+      <img class="auth-logo" src="icons/icon.svg?v=63" alt="Stackd" />
+      <h2 id="auth-title" class="auth-title">Willkommen zurück</h2>
+      <div id="auth-tabs" class="auth-tabs">
+        <button type="button" class="auth-tab active" data-mode="login">Anmelden</button>
+        <button type="button" class="auth-tab" data-mode="register">Registrieren</button>
+      </div>
+      <form id="auth-form" class="auth-form" novalidate>
+        <p id="auth-msg" class="auth-msg"></p>
+        <label id="auth-username-field" class="auth-field">Username
+          <input id="auth-username" type="text" autocomplete="username" placeholder="z. B. vinyljonas" />
+        </label>
+        <label id="auth-email-field" class="auth-field">E-Mail
+          <input id="auth-email" type="email" autocomplete="email" placeholder="du@beispiel.de" />
+        </label>
+        <label id="auth-password-field" class="auth-field">Passwort
+          <input id="auth-password" type="password" autocomplete="current-password" placeholder="mindestens 6 Zeichen" />
+        </label>
+        <button type="submit" id="auth-submit" class="btn primary auth-submit">Anmelden</button>
+        <button type="button" id="auth-forgot" class="link-btn auth-forgot">Passwort vergessen?</button>
+      </form>
+      <button type="button" id="auth-guest" class="link-btn auth-guest">Als Gast weiterstöbern</button>
+    </div>
+  </section>
 
   <!-- Album-Detailseite (Vollbild) -->
   <section id="detail-page" class="detail-page hidden">
@@ -301,6 +328,37 @@
         <button type="button" id="btn-result-collection" class="btn primary">Zur Collection</button>
       </div>
       <button type="button" id="btn-result-close" class="dialog-close" aria-label="Schließen">×</button>
+    </div>
+  </dialog>
+
+  <!-- Profil eines anderen Nutzers -->
+  <section id="user-page" class="detail-page hidden">
+    <header class="detail-bar">
+      <button id="user-back" class="icon-btn" aria-label="Zurück">‹</button>
+    </header>
+    <div class="detail-scroll" id="user-scroll">
+      <div class="profile-banner" id="up-banner"></div>
+      <div class="profile-avatar-wrap"><div class="profile-avatar" id="up-avatar"></div></div>
+      <h2 class="up-name" id="up-name"></h2>
+      <p class="up-handle" id="up-handle"></p>
+      <p class="profile-meta-line up-center" id="up-meta"></p>
+      <p class="profile-bio-display up-center" id="up-bio"></p>
+      <button id="up-follow" class="btn primary up-follow">Folgen</button>
+      <div class="profile-section">
+        <span class="dp-label">Sammlung</span>
+        <div id="up-collection" class="cat-covers"></div>
+      </div>
+    </div>
+  </section>
+
+  <dialog id="friends-dialog" class="dialog">
+    <div class="friends-pick">
+      <div class="friends-head">
+        <span>Freunde finden</span>
+        <button id="btn-friends-close" class="dialog-close" aria-label="Schließen">×</button>
+      </div>
+      <input type="search" id="friends-search" class="search" placeholder="Username suchen…" autocomplete="off" />
+      <div id="friends-results" class="friends-results"></div>
     </div>
   </dialog>
 

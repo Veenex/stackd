@@ -5,9 +5,19 @@ import {
   getSettings, saveSettings, exportAll, importAll,
   sortItems, filterItems,
   getPlaylists, createPlaylist, deletePlaylist, togglePlaylistItem,
+  syncAll, clearUserCache,
+  searchUsers, getFollowing, follow, unfollow, fetchFriendsFeed,
+  fetchUserProfile, fetchUserItems,
 } from './store.js';
-import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors } from './api.js';
+import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange } from './api.js';
+import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
+
+// Anzeigename aus dem Supabase-Profil (display_name, sonst username).
+function profileName() {
+  const p = getProfile() || {};
+  return (p.display_name || p.username || '').trim();
+}
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
@@ -30,7 +40,7 @@ function switchView(view) {
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + view));
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === view));
   if (view === 'settings') {
-    $('#view-title').textContent = (getSettings().profileName || '').trim() || 'Mein Profil';
+    $('#view-title').textContent = profileName() || 'Mein Profil';
   } else {
     $('#view-title').textContent = VIEW_TITLES[view] || '';
   }
@@ -61,6 +71,9 @@ $$('.tab').forEach((tab) => {
     const view = tab.dataset.view;
     const detailWasOpen = !detailPage.classList.contains('hidden');
     if (detailWasOpen) closeDetail();
+    if (!document.getElementById('user-page').classList.contains('hidden')) closeUserProfile();
+    // Gast-Modus: Sammeln/Scannen/Profil nur für angemeldete Nutzer
+    if (['add', 'collection', 'settings'].includes(view) && !getUser()) { openAuth('login'); return; }
     if (view === currentView && !detailWasOpen) {
       // erneutes Antippen des aktiven Tabs: nach oben scrollen
       if (view === 'settings') setProfileTab('profile');
@@ -117,6 +130,7 @@ function createRatingInput(container, initial, onChange) {
     });
   };
   container.onclick = (e) => {
+    if (!requireAuth()) return; // Gäste: erst anmelden
     const slot = e.target.closest('.note-slot');
     if (!slot) return;
     const pos = +slot.dataset.pos;
@@ -336,6 +350,7 @@ function openPreview(result) {
 }
 
 async function addPreviewTo(list) {
+  if (!requireAuth()) return;
   if (!previewResult) return;
   const item = { ...previewResult };
   if (!item.coverUrl) {
@@ -380,6 +395,7 @@ async function loadTracklist(item) {
 $('#detail-back').addEventListener('click', closeDetail);
 $('#dp-rating-clear').addEventListener('click', () => detailRating && detailRating.setValue(0));
 $('#dp-like').addEventListener('click', () => {
+  if (!requireAuth()) return; // Gäste: erst anmelden
   dpLiked = !dpLiked;
   $('#dp-like').classList.toggle('liked', dpLiked);
 });
@@ -578,6 +594,8 @@ $('#btn-result-close').addEventListener('click', () => resultDialog.close());
 let searchResults = [];
 let trendingCache = null;
 let popularCache = null;
+let friendsFeedCache = [];
+let friendsFollowing = new Set();
 
 const SUGG_GENRES = ['Rock', 'Electronic', 'Jazz', 'Hip Hop', 'Funk / Soul', 'Pop', 'Reggae', 'Classical', 'Blues'];
 const SUGG_DECADES = [['60er', '1960-1969'], ['70er', '1970-1979'], ['80er', '1980-1989'], ['90er', '1990-1999'], ['2000er', '2000-2009'], ['2010er', '2010-2019']];
@@ -714,7 +732,7 @@ async function browseCovers(params, title, backFn) {
   const withCover = browseResults.filter((r) => r.coverUrl);
   const list = withCover.length ? withCover : browseResults;
   if (!list.length) {
-    c.innerHTML = head('<p class="hint">Nichts gefunden – für Cover ist ein Discogs-Token nötig.</p>');
+    c.innerHTML = head('<p class="hint">Nichts gefunden.</p>');
     wireBack();
     return;
   }
@@ -824,7 +842,6 @@ $('#manual-form').addEventListener('submit', (e) => {
 // ---------- Mein Profil ----------
 function loadSettings() {
   const s = getSettings();
-  $('#discogs-token').value = s.discogsToken || '';
   $('#lastfm-key').value = s.lastfmKey || '';
 }
 
@@ -837,18 +854,18 @@ function fmtEuro(n) {
 }
 
 function renderProfile() {
-  const s = getSettings();
-  $('#profile-banner').style.backgroundImage = s.profileBanner ? `url("${s.profileBanner}")` : '';
+  const p = getProfile() || {};
+  $('#profile-banner').style.backgroundImage = p.banner_url ? `url("${p.banner_url}")` : '';
   const av = $('#profile-avatar-display');
-  if (s.profileAvatar) {
-    av.style.backgroundImage = `url("${s.profileAvatar}")`;
+  if (p.avatar_url) {
+    av.style.backgroundImage = `url("${p.avatar_url}")`;
     av.innerHTML = '';
   } else {
     av.style.backgroundImage = '';
     av.innerHTML = '<svg class="avatar-ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
   }
-  const loc = (s.profileLocation || '').trim();
-  const web = (s.profileWebsite || '').trim();
+  const loc = (p.location || '').trim();
+  const web = (p.website || '').trim();
   const parts = [];
   if (loc) parts.push(`📍 ${escapeHtml(loc)}`);
   if (web) {
@@ -856,12 +873,12 @@ function renderProfile() {
     parts.push(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener">🔗 ${escapeHtml(web.replace(/^https?:\/\//, ''))}</a>`);
   }
   $('#profile-meta-line').innerHTML = parts.join('  ·  ');
-  $('#profile-bio-display').textContent = s.profileBio || '';
+  $('#profile-bio-display').textContent = p.bio || '';
   renderFavoritesDisplay();
   renderRecent();
   renderHisto();
   renderStatRows();
-  renderPriceList();
+  renderValueRange();
 }
 
 function renderRecent() {
@@ -920,11 +937,57 @@ function renderStatRows() {
   ul.querySelectorAll('li[data-i]').forEach((li) => li.addEventListener('click', () => rows[+li.dataset.i].go()));
 }
 
-function renderPriceList() {
-  const priced = getList('collection').filter((i) => Number(i.price) > 0).sort((a, b) => Number(b.price) - Number(a.price));
-  $('#price-list').innerHTML = priced.length
-    ? priced.map((i) => `<li><span class="pl-name">${escapeHtml(i.artist)} – ${escapeHtml(i.title)}</span><span class="pl-price">${fmtEuro(i.price)}</span></li>`).join('')
-    : '<li style="border:none;color:var(--muted)">Noch keine Preise erfasst.</li>';
+// ---------- Sammlungswert (Marktschätzung, min–max) ----------
+const PRICE_CACHE_KEY = 'vinyl.pricecache';
+const PRICE_TTL = 7 * 24 * 3600 * 1000; // 7 Tage
+let valueRangeReq = 0;
+function readPriceCache() { try { return JSON.parse(localStorage.getItem(PRICE_CACHE_KEY)) || {}; } catch { return {}; } }
+function writePriceCache(c) { try { localStorage.setItem(PRICE_CACHE_KEY, JSON.stringify(c)); } catch { /* voll */ } }
+
+function valueRangeBar(min, max, valued, total, loading) {
+  if (!valued && !loading) {
+    return '<p class="hint">Noch keine Marktdaten. Tipp: eigene Preise im Album unter „Details bearbeiten" eintragen.</p>';
+  }
+  const note = `Marktwert ca. · automatisch von Discogs · ${valued}/${total} Alben` + (loading ? ' <span class="vr-loading">· aktualisiere…</span>' : '');
+  return `<div class="vr-bar"><span class="vr-fill"></span></div>
+    <div class="vr-labels"><span>${fmtEuro(min)}</span><span class="vr-dash">bis</span><span>${fmtEuro(max)}</span></div>
+    <p class="vr-note">${note}</p>`;
+}
+
+async function renderValueRange() {
+  const el = $('#value-range'); if (!el) return;
+  const coll = getList('collection');
+  if (!coll.length) { el.innerHTML = '<p class="hint">Noch keine Alben in der Sammlung.</p>'; return; }
+  const cache = readPriceCache();
+  const now = Date.now();
+  let min = 0, max = 0, valued = 0;
+  const toFetch = [];
+  for (const it of coll) {
+    if (Number(it.price) > 0) { min += Number(it.price); max += Number(it.price); valued++; continue; } // manuelle Übersteuerung
+    if (it.source === 'discogs' && it.sourceId) {
+      const c = cache[it.sourceId];
+      if (c && (now - c.at) < PRICE_TTL) { if (c.min != null) { min += c.min; max += c.max; valued++; } }
+      else toFetch.push(it);
+    }
+  }
+  el.innerHTML = valueRangeBar(min, max, valued, coll.length, toFetch.length > 0);
+  if (!toFetch.length) return;
+  const reqId = ++valueRangeReq;
+  const cap = toFetch.slice(0, 40); // pro Durchgang begrenzen (Rate-Limit)
+  let idx = 0;
+  const worker = async () => {
+    while (idx < cap.length) {
+      if (reqId !== valueRangeReq) return;
+      const it = cap[idx++];
+      let r = null;
+      try { r = await fetchPriceRange(it); } catch { /* ignorieren */ }
+      const cur = readPriceCache();
+      cur[it.sourceId] = r ? { min: r.min, max: r.max, at: Date.now() } : { min: null, max: null, at: Date.now() };
+      writePriceCache(cur);
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  if (reqId === valueRangeReq && currentView === 'settings') renderValueRange();
 }
 
 function favSlotInner(item) {
@@ -935,7 +998,7 @@ function favSlotInner(item) {
 
 // Anzeige auf der Profilseite (klickbar -> Albumseite)
 function renderFavoritesDisplay() {
-  const favIds = getSettings().profileFavorites || [];
+  const favIds = (getProfile() || {}).favorites || [];
   const coll = getList('collection');
   const el = $('#profile-favorites');
   if (!el) return;
@@ -950,7 +1013,7 @@ function renderFavoritesDisplay() {
 
 // Bearbeitbare Slots im Profil-Popup
 function renderFavoritesEdit() {
-  const favIds = getSettings().profileFavorites || [];
+  const favIds = (getProfile() || {}).favorites || [];
   const coll = getList('collection');
   const el = $('#ps-favorites');
   if (!el) return;
@@ -975,9 +1038,9 @@ function refreshFavorites() {
 }
 
 function removeFavorite(slot) {
-  const fav = (getSettings().profileFavorites || []).slice();
+  const fav = ((getProfile() || {}).favorites || []).slice();
   fav[slot] = null;
-  setSetting({ profileFavorites: fav });
+  updateProfile({ favorites: fav });
   refreshFavorites();
 }
 
@@ -988,10 +1051,10 @@ function openFavPicker(slot) {
   grid.innerHTML = coll.map((i) => `<button data-id="${i.id}">${favSlotInner(i)}</button>`).join('');
   $('#fav-dialog').showModal();
   grid.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
-    const fav = (getSettings().profileFavorites || []).slice();
+    const fav = ((getProfile() || {}).favorites || []).slice();
     while (fav.length < 4) fav.push(null);
     fav[slot] = b.dataset.id;
-    setSetting({ profileFavorites: fav });
+    updateProfile({ favorites: fav });
     $('#fav-dialog').close();
     refreshFavorites();
   }));
@@ -1017,12 +1080,13 @@ function downscaleImage(file, maxW, quality) {
 }
 
 function openProfileSettings() {
-  const s = getSettings();
-  $('#ps-name').value = s.profileName || '';
-  $('#ps-email').value = s.profileEmail || '';
-  $('#ps-location').value = s.profileLocation || '';
-  $('#ps-website').value = s.profileWebsite || '';
-  $('#ps-bio').value = s.profileBio || '';
+  const p = getProfile() || {};
+  $('#ps-name').value = p.display_name || p.username || '';
+  $('#ps-email').value = (getUser() && getUser().email) || '';
+  $('#ps-email').readOnly = true;
+  $('#ps-location').value = p.location || '';
+  $('#ps-website').value = p.website || '';
+  $('#ps-bio').value = p.bio || '';
   renderFavoritesEdit();
   $('#profile-settings-dialog').showModal();
 }
@@ -1030,14 +1094,13 @@ $('#header-settings').addEventListener('click', openProfileSettings);
 $('#btn-psettings-close').addEventListener('click', () => $('#profile-settings-dialog').close());
 $('#ps-save').addEventListener('click', () => {
   const name = $('#ps-name').value.trim();
-  setSetting({
-    profileName: name,
-    profileEmail: $('#ps-email').value.trim(),
-    profileLocation: $('#ps-location').value.trim(),
-    profileWebsite: $('#ps-website').value.trim(),
-    profileBio: $('#ps-bio').value.trim(),
+  updateProfile({
+    display_name: name,
+    location: $('#ps-location').value.trim(),
+    website: $('#ps-website').value.trim(),
+    bio: $('#ps-bio').value.trim(),
   });
-  if (currentView === 'settings') $('#view-title').textContent = name || 'Mein Profil';
+  if (currentView === 'settings') $('#view-title').textContent = profileName() || 'Mein Profil';
   $('#profile-settings-dialog').close();
   renderProfile();
   toast('Profil gespeichert');
@@ -1048,14 +1111,14 @@ $('#banner-file').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const dataUrl = await downscaleImage(file, 1280, 0.82);
-  if (dataUrl) { setSetting({ profileBanner: dataUrl }); renderProfile(); }
+  if (dataUrl) { updateProfile({ banner_url: dataUrl }); renderProfile(); }
   e.target.value = '';
 });
 $('#avatar-file').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const dataUrl = await downscaleImage(file, 400, 0.85);
-  if (dataUrl) { setSetting({ profileAvatar: dataUrl }); renderProfile(); }
+  if (dataUrl) { updateProfile({ avatar_url: dataUrl }); renderProfile(); }
   e.target.value = '';
 });
 $('#btn-fav-close').addEventListener('click', () => $('#fav-dialog').close());
@@ -1063,7 +1126,6 @@ $('#btn-fav-close').addEventListener('click', () => $('#fav-dialog').close());
 $('#btn-save-settings').addEventListener('click', () => {
   saveSettings({
     ...getSettings(),
-    discogsToken: $('#discogs-token').value.trim(),
     lastfmKey: $('#lastfm-key').value.trim(),
   });
   trendingCache = null; // neuer Key -> Trending neu laden
@@ -1224,12 +1286,12 @@ function renderHome() {
     '<div class="home-section"><span class="dp-label">New from friends</span><div id="home-friends" class="home-friends"></div></div>';
 
   // Begrüßung je nach Tageszeit + Profilbild im Dusty-Rose-Rahmen
-  const s = getSettings();
-  const name = (s.profileName || '').trim();
+  const p = getProfile() || {};
+  const name = profileName();
   $('#home-greet-hello').textContent = greetingText() + (name ? ', ' + name : '');
   const gav = $('#home-greet-av');
-  if (s.profileAvatar) {
-    gav.style.backgroundImage = `url("${s.profileAvatar}")`;
+  if (p.avatar_url) {
+    gav.style.backgroundImage = `url("${p.avatar_url}")`;
     gav.classList.remove('placeholder');
     gav.innerHTML = '';
   } else {
@@ -1250,11 +1312,6 @@ function renderHome() {
 async function loadPopularThisWeek() {
   const ol = document.getElementById('home-pop-list');
   if (!ol) return;
-  const token = (getSettings().discogsToken || '').trim();
-  if (!token) {
-    ol.innerHTML = '<li class="hint">Für „Popular this week" wird ein Discogs-Token benötigt (Profil → Einstellungen).</li>';
-    return;
-  }
   let res = popularCache;
   if (!res) {
     try { res = dedupeAlbums(await discogsSearch({ sort: 'have', sort_order: 'desc', per_page: 40 })); }
@@ -1279,11 +1336,124 @@ async function loadPopularThisWeek() {
     li.addEventListener('click', () => openPreview(popularCache[+li.dataset.idx])));
 }
 
-// „New from friends" – noch ohne Backend/Freunde; Platzhalter bis die App online ist.
-function renderFriendsRow() {
+// „New from friends" – Neuzugänge von gefolgten Nutzern.
+async function renderFriendsRow() {
   const el = document.getElementById('home-friends');
   if (!el) return;
-  el.innerHTML = '<div class="home-empty-card">Sobald Stackd online ist und du Freunden folgst, erscheinen hier Alben, die sie hinzufügen, bewerten oder liken.</div>';
+  if (!getUser()) {
+    el.innerHTML = '<div class="home-empty-card">Melde dich an, um Freunden zu folgen und ihre Neuzugänge zu sehen. <button id="friends-cta" class="link-btn">Anmelden</button></div>';
+    const b = el.querySelector('#friends-cta'); if (b) b.onclick = () => openAuth('login');
+    return;
+  }
+  el.innerHTML = '<div class="home-empty-card">Lade…</div>';
+  let feed = [];
+  try { feed = await fetchFriendsFeed(20); } catch { /* ignorieren */ }
+  if (!feed.length) {
+    el.innerHTML = '<div class="home-empty-card">Noch nichts von Freunden. <button id="friends-cta" class="link-btn">Freunde finden</button></div>';
+    const b = el.querySelector('#friends-cta'); if (b) b.onclick = openFriendsDialog;
+    return;
+  }
+  friendsFeedCache = feed;
+  el.innerHTML = feed.map((r, i) => {
+    const cov = r.coverUrl ? `<img src="${escapeHtml(r.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : '';
+    const who = r.by ? (r.by.display_name || r.by.username || '') : '';
+    return `<button class="chart-item friend-item" data-idx="${i}">
+        <div class="chart-cover${r.coverUrl ? '' : ' placeholder'}">${cov}</div>
+        <div class="chart-meta"><span class="chart-title">${escapeHtml(r.title || '')}</span><span class="chart-artist">${escapeHtml(r.artist || '')}</span><span class="friend-by">von ${escapeHtml(who)}</span></div>
+      </button>`;
+  }).join('');
+  el.querySelectorAll('.friend-item').forEach((b) =>
+    b.addEventListener('click', () => openPreview(friendsFeedCache[+b.dataset.idx])));
+}
+
+// ---------- Freunde finden (Suche + Folgen) ----------
+let friendsSearchTimer = null;
+async function openFriendsDialog() {
+  if (!requireAuth()) return;
+  try { friendsFollowing = new Set(await getFollowing()); } catch { /* ignorieren */ }
+  $('#friends-search').value = '';
+  $('#friends-results').innerHTML = '<p class="hint">Tippe einen Username, um Leute zu finden.</p>';
+  $('#friends-dialog').showModal();
+  setTimeout(() => $('#friends-search').focus(), 50);
+}
+
+async function runFriendsSearch(q) {
+  const box = $('#friends-results');
+  if (!q.trim()) { box.innerHTML = '<p class="hint">Tippe einen Username, um Leute zu finden.</p>'; return; }
+  box.innerHTML = '<p class="hint">Suche…</p>';
+  let users = [];
+  try { users = await searchUsers(q); } catch { /* ignorieren */ }
+  if (!users.length) { box.innerHTML = '<p class="hint">Niemand gefunden.</p>'; return; }
+  box.innerHTML = users.map((u) => {
+    const av = u.avatar_url ? `style="background-image:url('${escapeHtml(u.avatar_url)}')"` : '';
+    return `<button class="friend-row" data-id="${u.id}">
+        <span class="friend-av${u.avatar_url ? '' : ' placeholder'}" ${av}></span>
+        <span class="friend-name">${escapeHtml(u.display_name || u.username)}<small>@${escapeHtml(u.username)}</small></span>
+        <span class="friend-go">›</span>
+      </button>`;
+  }).join('');
+  box.querySelectorAll('.friend-row').forEach((row) => row.addEventListener('click', () => {
+    const u = users.find((x) => x.id === row.dataset.id);
+    $('#friends-dialog').close();
+    openUserProfile(u);
+  }));
+}
+
+// ---------- Profil eines anderen Nutzers (mit Folgen/Entfolgen) ----------
+let upCollectionCache = [];
+function setFollowBtn(btn, following) {
+  btn.textContent = following ? 'Entfolgen' : 'Folgen';
+  btn.classList.toggle('ghost', following);
+  btn.classList.toggle('primary', !following);
+}
+async function openUserProfile(user) {
+  if (!user) return;
+  const u = (await fetchUserProfile(user.id)) || user;
+  friendsFollowing = new Set(await getFollowing().catch(() => []));
+  $('#up-name').textContent = u.display_name || u.username || '';
+  $('#up-handle').textContent = '@' + (u.username || '');
+  $('#up-banner').style.backgroundImage = u.banner_url ? `url("${u.banner_url}")` : '';
+  const av = $('#up-avatar');
+  if (u.avatar_url) { av.style.backgroundImage = `url("${u.avatar_url}")`; av.innerHTML = ''; }
+  else { av.style.backgroundImage = ''; av.innerHTML = '<svg class="avatar-ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>'; }
+  const parts = [];
+  if (u.location) parts.push(`📍 ${escapeHtml(u.location)}`);
+  if (u.website) {
+    const href = /^https?:\/\//.test(u.website) ? u.website : 'https://' + u.website;
+    parts.push(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener">🔗 ${escapeHtml(u.website.replace(/^https?:\/\//, ''))}</a>`);
+  }
+  $('#up-meta').innerHTML = parts.join('  ·  ');
+  $('#up-bio').textContent = u.bio || '';
+  const fbtn = $('#up-follow');
+  const isMe = getUser() && getUser().id === u.id;
+  if (isMe) { fbtn.style.display = 'none'; }
+  else {
+    fbtn.style.display = '';
+    setFollowBtn(fbtn, friendsFollowing.has(u.id));
+    fbtn.onclick = async () => {
+      if (!requireAuth()) return;
+      if (friendsFollowing.has(u.id)) { friendsFollowing.delete(u.id); await unfollow(u.id); }
+      else { friendsFollowing.add(u.id); await follow(u.id); }
+      setFollowBtn(fbtn, friendsFollowing.has(u.id));
+      if (currentView === 'home') renderFriendsRow();
+    };
+  }
+  const grid = $('#up-collection');
+  grid.innerHTML = '<span class="hint" style="grid-column:1/-1">Lade…</span>';
+  let items = [];
+  try { items = await fetchUserItems(u.id, 'collection'); } catch { /* ignorieren */ }
+  upCollectionCache = items;
+  grid.innerHTML = items.length
+    ? items.map((it, i) => `<button class="cat-cover${it.coverUrl ? '' : ' placeholder'}" data-idx="${i}">${it.coverUrl ? `<img src="${escapeHtml(it.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : ''}</button>`).join('')
+    : '<span class="hint" style="grid-column:1/-1">Sammlung ist leer.</span>';
+  grid.querySelectorAll('.cat-cover[data-idx]').forEach((b) => b.addEventListener('click', () => openPreview(upCollectionCache[+b.dataset.idx])));
+  $('#user-page').classList.remove('hidden');
+  $('#user-scroll').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+}
+function closeUserProfile() {
+  $('#user-page').classList.add('hidden');
+  document.body.style.overflow = '';
 }
 
 // ---------- Start ----------
@@ -1291,3 +1461,31 @@ manualRating = createRatingInput($('#manual-rating'), 0);
 $('#manual-rating-clear').addEventListener('click', () => manualRating && manualRating.setValue(0));
 loadSettings();
 switchView('home');
+
+// Freunde finden
+$('#btn-find-friends').addEventListener('click', openFriendsDialog);
+$('#btn-friends-close').addEventListener('click', () => $('#friends-dialog').close());
+$('#user-back').addEventListener('click', closeUserProfile);
+$('#friends-search').addEventListener('input', (e) => {
+  clearTimeout(friendsSearchTimer);
+  const q = e.target.value;
+  friendsSearchTimer = setTimeout(() => runFriendsSearch(q), 300);
+});
+
+// Auth initialisieren (Login/Registrierung/Gast)
+const logoutBtn = document.getElementById('btn-logout');
+if (logoutBtn) logoutBtn.addEventListener('click', async () => {
+  await signOut();
+  toast('Abgemeldet');
+  switchView('home');
+});
+initAuth({
+  onChange: async (user) => {
+    if (user) { try { await syncAll(); } catch (e) { console.warn('Sync:', e); } }
+    else { clearUserCache(); }
+    // sichtbare Ansicht mit (ggf. neu geladenen) Daten aktualisieren
+    if (currentView === 'home') renderHome();
+    else if (currentView === 'collection') { renderList('collection'); renderCounts(); }
+    else if (currentView === 'settings') { renderProfile(); renderPlaylists(); renderList('wishlist'); }
+  },
+});

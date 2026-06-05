@@ -1,54 +1,92 @@
-// store.js – lokale Datenhaltung (localStorage). Nichts verlässt das Gerät.
+// store.js – Datenhaltung. Cloud-fähig:
+//  - Synchroner Lese-Cache (localStorage, PRO NUTZER) für schnelles, unverändertes UI.
+//  - Schreibvorgänge gehen in den Cache (sofort) UND asynchron zu Supabase.
+//  - Beim Login: Pull aus Supabase in den Cache (+ einmalige Migration der
+//    alten, rein-lokalen Daten ins Konto).
+// Einstellungen (Discogs-Token etc.) bleiben vorerst global lokal.
+
+import { getSupabase } from './supabase.js';
+import { getUser } from './auth.js';
 
 const KEYS = {
-  collection: 'vinyl.collection',
-  wishlist: 'vinyl.wishlist',
   settings: 'vinyl.settings',
-  playlists: 'vinyl.playlists',
+  // Legacy (rein-lokale Ära, vor dem Online-Umbau):
+  legacyCollection: 'vinyl.collection',
+  legacyWishlist: 'vinyl.wishlist',
+  legacyPlaylists: 'vinyl.playlists',
 };
 
 function read(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key)) || [];
-  } catch {
-    return [];
-  }
+  try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
+}
+function write(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+
+function uid() { const u = getUser(); return u ? u.id : null; }
+function userKey(list) { const u = uid(); return u ? `vinyl.u.${u}.${list}` : null; }
+
+async function cloud() { try { return await getSupabase(); } catch { return null; } }
+
+// ---------- Mapping Cache <-> Cloud ----------
+function toRow(item, list, u) {
+  return {
+    id: item.id,
+    user_id: u,
+    list,
+    artist: item.artist || null,
+    title: item.title || null,
+    year: item.year ? String(item.year) : null,
+    label: item.label || null,
+    format: item.format || null,
+    barcode: item.barcode || null,
+    cover_url: item.coverUrl || null,
+    note: item.note || null,
+    rating: Number(item.rating) || 0,
+    liked: !!item.liked,
+    price: Number(item.price) || 0,
+    source: item.source || null,
+    source_id: item.sourceId || null,
+    master_id: item.masterId || null,
+    added_at: new Date(item.addedAt || Date.now()).toISOString(),
+  };
+}
+function fromRow(r) {
+  return {
+    id: r.id,
+    addedAt: r.added_at ? new Date(r.added_at).getTime() : Date.now(),
+    artist: r.artist || '', title: r.title || '', year: r.year || '',
+    label: r.label || '', format: r.format || '', barcode: r.barcode || '',
+    coverUrl: r.cover_url || '', note: r.note || '',
+    rating: Number(r.rating) || 0, liked: !!r.liked, price: Number(r.price) || 0,
+    source: r.source || '', sourceId: r.source_id || '', masterId: r.master_id || 0,
+  };
 }
 
-function write(key, value) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
-
+// ---------- Listen (Collection/Wishlist) ----------
 export function getList(list) {
-  return read(KEYS[list]);
+  const k = userKey(list);
+  return k ? read(k) : [];
 }
-
 export function saveList(list, items) {
-  write(KEYS[list], items);
+  const k = userKey(list);
+  if (k) write(k, items);
 }
 
 export function addItem(list, item) {
-  const items = getList(list);
   const record = {
-    id: crypto.randomUUID(),
-    addedAt: Date.now(),
-    artist: '',
-    title: '',
-    year: '',
-    label: '',
-    format: '',
-    barcode: '',
-    coverUrl: '',
-    note: '',
-    rating: 0,
-    liked: false,
-    price: 0,
-    source: 'manual',
-    sourceId: '',
+    id: crypto.randomUUID(), addedAt: Date.now(),
+    artist: '', title: '', year: '', label: '', format: '', barcode: '',
+    coverUrl: '', note: '', rating: 0, liked: false, price: 0,
+    source: 'manual', sourceId: '',
     ...item,
   };
-  items.push(record);
-  saveList(list, items);
+  const u = uid();
+  if (!u) return record; // Gäste können nicht sammeln (UI gesperrt)
+  const items = getList(list); items.push(record); saveList(list, items);
+  (async () => {
+    const sb = await cloud(); if (!sb) return;
+    const { error } = await sb.from('items').insert(toRow(record, list, u));
+    if (error) console.warn('items insert:', error.message);
+  })();
   return record;
 }
 
@@ -58,11 +96,23 @@ export function updateItem(list, id, patch) {
   if (idx === -1) return null;
   items[idx] = { ...items[idx], ...patch };
   saveList(list, items);
+  const u = uid();
+  if (u) (async () => {
+    const sb = await cloud(); if (!sb) return;
+    const { error } = await sb.from('items').update(toRow(items[idx], list, u)).eq('id', id).eq('user_id', u);
+    if (error) console.warn('items update:', error.message);
+  })();
   return items[idx];
 }
 
 export function deleteItem(list, id) {
   saveList(list, getList(list).filter((i) => i.id !== id));
+  const u = uid();
+  if (u) (async () => {
+    const sb = await cloud(); if (!sb) return;
+    const { error } = await sb.from('items').delete().eq('id', id).eq('user_id', u);
+    if (error) console.warn('items delete:', error.message);
+  })();
 }
 
 export function moveItem(fromList, toList, id) {
@@ -70,94 +120,257 @@ export function moveItem(fromList, toList, id) {
   const item = items.find((i) => i.id === id);
   if (!item) return;
   saveList(fromList, items.filter((i) => i.id !== id));
-  const target = getList(toList);
   item.addedAt = Date.now();
-  target.push(item);
-  saveList(toList, target);
+  const target = getList(toList); target.push(item); saveList(toList, target);
+  const u = uid();
+  if (u) (async () => {
+    const sb = await cloud(); if (!sb) return;
+    const { error } = await sb.from('items')
+      .update({ list: toList, added_at: new Date(item.addedAt).toISOString() })
+      .eq('id', id).eq('user_id', u);
+    if (error) console.warn('items move:', error.message);
+  })();
 }
 
 // ---------- Playlists ----------
 export function getPlaylists() {
-  return read(KEYS.playlists);
+  const k = userKey('playlists');
+  return k ? read(k) : [];
 }
 export function savePlaylists(pls) {
-  write(KEYS.playlists, pls);
+  const k = userKey('playlists');
+  if (k) write(k, pls);
 }
 export function createPlaylist(name) {
-  const pls = getPlaylists();
-  const p = { id: crypto.randomUUID(), name: name.trim() || 'Neue Playlist', itemIds: [], createdAt: Date.now() };
-  pls.push(p);
-  savePlaylists(pls);
+  const p = { id: crypto.randomUUID(), name: (name || '').trim() || 'Neue Playlist', itemIds: [], createdAt: Date.now() };
+  const u = uid();
+  if (!u) return p;
+  const pls = getPlaylists(); pls.push(p); savePlaylists(pls);
+  (async () => {
+    const sb = await cloud(); if (!sb) return;
+    const { error } = await sb.from('playlists').insert({ id: p.id, user_id: u, name: p.name, created_at: new Date(p.createdAt).toISOString() });
+    if (error) console.warn('playlist insert:', error.message);
+  })();
   return p;
 }
 export function deletePlaylist(id) {
   savePlaylists(getPlaylists().filter((p) => p.id !== id));
+  const u = uid();
+  if (u) (async () => {
+    const sb = await cloud(); if (!sb) return;
+    const { error } = await sb.from('playlists').delete().eq('id', id).eq('user_id', u);
+    if (error) console.warn('playlist delete:', error.message);
+  })();
 }
 export function renamePlaylist(id, name) {
   const pls = getPlaylists();
   const p = pls.find((x) => x.id === id);
-  if (p) { p.name = name.trim() || p.name; savePlaylists(pls); }
+  if (!p) return;
+  p.name = (name || '').trim() || p.name; savePlaylists(pls);
+  const u = uid();
+  if (u) (async () => {
+    const sb = await cloud(); if (!sb) return;
+    const { error } = await sb.from('playlists').update({ name: p.name }).eq('id', id).eq('user_id', u);
+    if (error) console.warn('playlist rename:', error.message);
+  })();
 }
 export function togglePlaylistItem(playlistId, itemId) {
   const pls = getPlaylists();
   const p = pls.find((x) => x.id === playlistId);
   if (!p) return;
   const idx = p.itemIds.indexOf(itemId);
-  if (idx >= 0) p.itemIds.splice(idx, 1);
-  else p.itemIds.push(itemId);
+  const nowAdded = idx < 0;
+  if (idx >= 0) p.itemIds.splice(idx, 1); else p.itemIds.push(itemId);
   savePlaylists(pls);
+  if (uid()) (async () => {
+    const sb = await cloud(); if (!sb) return;
+    let error;
+    if (nowAdded) ({ error } = await sb.from('playlist_items').insert({ playlist_id: playlistId, item_id: itemId }));
+    else ({ error } = await sb.from('playlist_items').delete().eq('playlist_id', playlistId).eq('item_id', itemId));
+    if (error) console.warn('playlist item:', error.message);
+  })();
 }
 
-// Einstellungen (Discogs-Token o. Ä.)
-export function getSettings() {
-  try {
-    return JSON.parse(localStorage.getItem(KEYS.settings)) || {};
-  } catch {
-    return {};
+// ---------- Sync: Login (Pull + einmalige Migration) / Logout ----------
+function assemblePlaylists(pls, plItems) {
+  return (pls || []).map((p) => ({
+    id: p.id, name: p.name,
+    createdAt: p.created_at ? new Date(p.created_at).getTime() : Date.now(),
+    itemIds: (plItems || []).filter((pi) => pi.playlist_id === p.id).map((pi) => pi.item_id),
+  }));
+}
+
+async function uploadItems(sb, items, list, u) {
+  if (!items || !items.length) return;
+  const rows = items.map((i) => toRow(i, list, u));
+  const { error } = await sb.from('items').upsert(rows);
+  if (error) console.warn('migrate items:', error.message);
+}
+async function uploadPlaylists(sb, pls, u) {
+  for (const p of (pls || [])) {
+    await sb.from('playlists').upsert({ id: p.id, user_id: u, name: p.name, created_at: new Date(p.createdAt || Date.now()).toISOString() });
+    if (p.itemIds && p.itemIds.length) {
+      await sb.from('playlist_items').upsert(p.itemIds.map((it) => ({ playlist_id: p.id, item_id: it })));
+    }
   }
 }
 
-export function saveSettings(settings) {
-  write(KEYS.settings, settings);
+// Beim Login aufrufen: zieht Cloud-Daten in den Cache; migriert beim 1. Mal
+// die alten rein-lokalen Daten ins (leere) Konto.
+export async function syncAll() {
+  const u = uid(); if (!u) return;
+  const sb = await cloud(); if (!sb) return;
+
+  const [{ data: rows }, { data: pls }, { data: plItems }] = await Promise.all([
+    sb.from('items').select('*').eq('user_id', u),
+    sb.from('playlists').select('*').eq('user_id', u),
+    sb.from('playlist_items').select('*'),
+  ]);
+  const cloudEmpty = !(rows && rows.length) && !(pls && pls.length);
+
+  const legacyColl = read(KEYS.legacyCollection);
+  const legacyWish = read(KEYS.legacyWishlist);
+  const legacyPls = read(KEYS.legacyPlaylists);
+  const legacyConsumed = localStorage.getItem('vinyl.legacyConsumed') === '1';
+  const haveLegacy = legacyColl.length || legacyWish.length || legacyPls.length;
+
+  if (cloudEmpty && haveLegacy && !legacyConsumed) {
+    // Migration: lokale Daten ins Konto hochladen
+    await uploadItems(sb, legacyColl, 'collection', u);
+    await uploadItems(sb, legacyWish, 'wishlist', u);
+    await uploadPlaylists(sb, legacyPls, u);
+    saveList('collection', legacyColl);
+    saveList('wishlist', legacyWish);
+    savePlaylists(legacyPls);
+    localStorage.setItem('vinyl.legacyConsumed', '1'); // nur einmal, egal welches Konto
+  } else {
+    // Cloud ist die Wahrheit -> in den Cache spiegeln
+    saveList('collection', (rows || []).filter((r) => r.list === 'collection').map(fromRow));
+    saveList('wishlist', (rows || []).filter((r) => r.list === 'wishlist').map(fromRow));
+    savePlaylists(assemblePlaylists(pls, plItems));
+  }
 }
 
-// Backup
+// Beim Logout: alle nutzerbezogenen Caches entfernen.
+export function clearUserCache() {
+  Object.keys(localStorage)
+    .filter((k) => k.startsWith('vinyl.u.'))
+    .forEach((k) => localStorage.removeItem(k));
+}
+
+// ---------- Freunde / Follows ----------
+function ilikeEsc(s) { return String(s).replace(/[%_\\]/g, (m) => '\\' + m); }
+
+export async function searchUsers(query) {
+  const sb = await cloud(); const u = uid();
+  const q = (query || '').trim();
+  if (!sb || !q) return [];
+  const { data } = await sb.from('profiles')
+    .select('id,username,display_name,avatar_url')
+    .ilike('username', '%' + ilikeEsc(q) + '%').limit(20);
+  return (data || []).filter((p) => p.id !== u); // sich selbst ausblenden
+}
+
+export async function getFollowing() {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return [];
+  const { data } = await sb.from('follows').select('followee_id').eq('follower_id', u);
+  return (data || []).map((r) => r.followee_id);
+}
+
+export async function follow(userId) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return;
+  const { error } = await sb.from('follows').insert({ follower_id: u, followee_id: userId });
+  if (error) console.warn('follow:', error.message);
+}
+
+export async function unfollow(userId) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return;
+  const { error } = await sb.from('follows').delete().eq('follower_id', u).eq('followee_id', userId);
+  if (error) console.warn('unfollow:', error.message);
+}
+
+// Vollständiges Profil eines anderen Nutzers (öffentlich lesbar).
+export async function fetchUserProfile(userId) {
+  const sb = await cloud(); if (!sb || !userId) return null;
+  const { data } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+  return data || null;
+}
+
+// Sammlung/Wishlist eines anderen Nutzers.
+export async function fetchUserItems(userId, list = 'collection') {
+  const sb = await cloud(); if (!sb || !userId) return [];
+  const { data } = await sb.from('items').select('*')
+    .eq('user_id', userId).eq('list', list).order('added_at', { ascending: false });
+  return (data || []).map(fromRow);
+}
+
+// Neuzugänge von gefolgten Nutzern (für „New from friends").
+export async function fetchFriendsFeed(limit = 20) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return [];
+  const { data: f } = await sb.from('follows').select('followee_id').eq('follower_id', u);
+  const ids = (f || []).map((r) => r.followee_id);
+  if (!ids.length) return [];
+  const { data: items } = await sb.from('items')
+    .select('*').in('user_id', ids).order('added_at', { ascending: false }).limit(limit);
+  if (!items || !items.length) return [];
+  const userIds = [...new Set(items.map((i) => i.user_id))];
+  const { data: profs } = await sb.from('profiles')
+    .select('id,username,display_name,avatar_url').in('id', userIds);
+  const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
+  return items.map((it) => ({ ...fromRow(it), by: pmap[it.user_id] || null }));
+}
+
+// ---------- Einstellungen (vorerst global lokal) ----------
+export function getSettings() {
+  try { return JSON.parse(localStorage.getItem(KEYS.settings)) || {}; } catch { return {}; }
+}
+export function saveSettings(settings) { write(KEYS.settings, settings); }
+
+// ---------- Backup ----------
 export function exportAll() {
   return {
-    exportedAt: new Date().toISOString(),
-    version: 2,
+    exportedAt: new Date().toISOString(), version: 2,
     collection: getList('collection'),
     wishlist: getList('wishlist'),
     playlists: getPlaylists(),
     settings: getSettings(),
   };
 }
-
 export function importAll(data) {
   if (!data || typeof data !== 'object') throw new Error('Ungültige Datei');
-  if (Array.isArray(data.collection)) saveList('collection', data.collection);
-  if (Array.isArray(data.wishlist)) saveList('wishlist', data.wishlist);
-  if (Array.isArray(data.playlists)) savePlaylists(data.playlists);
+  const coll = Array.isArray(data.collection) ? data.collection : null;
+  const wish = Array.isArray(data.wishlist) ? data.wishlist : null;
+  const pls = Array.isArray(data.playlists) ? data.playlists : null;
+  if (coll) saveList('collection', coll);
+  if (wish) saveList('wishlist', wish);
+  if (pls) savePlaylists(pls);
   if (data.settings && typeof data.settings === 'object') saveSettings(data.settings);
+  // in die Cloud spiegeln, falls eingeloggt
+  const u = uid();
+  if (u) (async () => {
+    const sb = await cloud(); if (!sb) return;
+    if (coll) await uploadItems(sb, coll, 'collection', u);
+    if (wish) await uploadItems(sb, wish, 'wishlist', u);
+    if (pls) await uploadPlaylists(sb, pls, u);
+  })();
 }
 
-// Sortierung
+// ---------- Helfer ----------
 export function sortItems(items, mode) {
   const by = (sel) => (a, b) =>
     String(sel(a) || '').localeCompare(String(sel(b) || ''), 'de', { sensitivity: 'base' });
   const copy = [...items];
   switch (mode) {
-    case 'title':
-      return copy.sort(by((i) => i.title));
-    case 'rating':
-      return copy.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    case 'year':
-      return copy.sort((a, b) => String(a.year || '').localeCompare(String(b.year || '')));
-    case 'added':
-      return copy.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+    case 'title': return copy.sort(by((i) => i.title));
+    case 'rating': return copy.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    case 'year': return copy.sort((a, b) => String(a.year || '').localeCompare(String(b.year || '')));
+    case 'added': return copy.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
     case 'artist':
-    default:
-      return copy.sort(by((i) => i.artist));
+    default: return copy.sort(by((i) => i.artist));
   }
 }
 
@@ -166,6 +379,5 @@ export function filterItems(items, query) {
   if (!q) return items;
   return items.filter((i) =>
     [i.artist, i.title, i.note, i.label, i.year, i.barcode]
-      .some((f) => String(f || '').toLowerCase().includes(q))
-  );
+      .some((f) => String(f || '').toLowerCase().includes(q)));
 }

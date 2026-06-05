@@ -1,7 +1,7 @@
 // service-worker.js – einfacher App-Shell-Cache, damit die App offline startet.
 // Daten (Sammlung/Wishlist) liegen in localStorage und sind ohnehin offline.
 
-const CACHE = 'platten-v64';
+const CACHE = 'platten-v73';
 const ASSETS = [
   './',
   './index.html',
@@ -11,6 +11,8 @@ const ASSETS = [
   './js/store.js',
   './js/api.js',
   './js/scanner.js',
+  './js/supabase.js',
+  './js/auth.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
