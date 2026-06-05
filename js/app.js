@@ -1438,18 +1438,46 @@ async function openUserProfile(user) {
       if (currentView === 'home') renderFriendsRow();
     };
   }
-  const grid = $('#up-collection');
-  grid.innerHTML = '<span class="hint" style="grid-column:1/-1">Lade…</span>';
-  let items = [];
-  try { items = await fetchUserItems(u.id, 'collection'); } catch { /* ignorieren */ }
-  upCollectionCache = items;
-  grid.innerHTML = items.length
-    ? items.map((it, i) => `<button class="cat-cover${it.coverUrl ? '' : ' placeholder'}" data-idx="${i}">${it.coverUrl ? `<img src="${escapeHtml(it.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : ''}</button>`).join('')
-    : '<span class="hint" style="grid-column:1/-1">Sammlung ist leer.</span>';
-  grid.querySelectorAll('.cat-cover[data-idx]').forEach((b) => b.addEventListener('click', () => openPreview(upCollectionCache[+b.dataset.idx])));
+  $('#up-collection').innerHTML = '<span class="hint" style="grid-column:1/-1">Lade…</span>';
+  $('#up-wishlist').innerHTML = '';
+  $('#up-stats').innerHTML = '';
+  $('#up-favorites').innerHTML = '';
   $('#user-page').classList.remove('hidden');
   $('#user-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
+  // Sammlung + Wishlist parallel laden
+  let coll = [], wish = [];
+  try { [coll, wish] = await Promise.all([fetchUserItems(u.id, 'collection'), fetchUserItems(u.id, 'wishlist')]); }
+  catch { /* ignorieren */ }
+  // Statistiken
+  const rated = coll.filter((i) => Number(i.rating) > 0);
+  const avg = rated.length ? (rated.reduce((s, i) => s + Number(i.rating), 0) / rated.length) : 0;
+  const stats = [
+    { label: 'Alben', val: coll.length },
+    { label: 'Wishlist', val: wish.length },
+    { label: 'Bewertet', val: rated.length },
+    { label: 'Ø Bewertung', val: avg ? avg.toFixed(1) + ' ♪' : '–' },
+  ];
+  $('#up-stats').innerHTML = stats.map((r) => `<li><span>${r.label}</span><span class="stat-num">${r.val}</span></li>`).join('');
+  // Favoriten (aus dem Profil; verweisen auf Sammlungs-IDs)
+  const favItems = ((u.favorites || []).map((id) => coll.find((x) => x.id === id)).filter(Boolean));
+  let favHtml = '';
+  for (let i = 0; i < 4; i++) {
+    const it = favItems[i];
+    favHtml += it ? `<button class="fav-slot filled" data-fav="${i}">${favSlotInner(it)}</button>` : '<div class="fav-slot empty"></div>';
+  }
+  $('#up-favorites').innerHTML = favHtml;
+  $('#up-favorites').querySelectorAll('.fav-slot.filled').forEach((b) => b.addEventListener('click', () => openPreview(favItems[+b.dataset.fav])));
+  // Sammlung + Wishlist Cover-Grids
+  fillCoverGrid($('#up-collection'), coll);
+  fillCoverGrid($('#up-wishlist'), wish);
+}
+// Cover-Grid mit Klick -> Album-Vorschau (Items im Closure)
+function fillCoverGrid(el, items) {
+  el.innerHTML = items.length
+    ? items.map((it, i) => `<button class="cat-cover${it.coverUrl ? '' : ' placeholder'}" data-idx="${i}">${it.coverUrl ? `<img src="${escapeHtml(it.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : ''}</button>`).join('')
+    : '<span class="hint" style="grid-column:1/-1">Leer.</span>';
+  el.querySelectorAll('.cat-cover[data-idx]').forEach((b) => b.addEventListener('click', () => openPreview(items[+b.dataset.idx])));
 }
 function closeUserProfile() {
   $('#user-page').classList.add('hidden');
