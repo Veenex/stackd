@@ -438,7 +438,7 @@ $('#dp-play-add').addEventListener('click', async () => {
 async function openWrapped() {
   if (!requireAuth()) return;
   const year = new Date().getFullYear();
-  $('#wrapped-title').textContent = 'Stackd Wrapped ' + year;
+  $('#wrapped-title').textContent = 'Discend Wrapped ' + year;
   $('#wrapped-body').innerHTML = '<p class="hint">Lade…</p>';
   $('#wrapped-dialog').showModal();
   const coll = getList('collection');

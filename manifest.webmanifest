@@ -1,6 +1,6 @@
 {
-  "name": "Stackd",
-  "short_name": "Stackd",
+  "name": "Discend",
+  "short_name": "Discend",
   "description": "Persönlicher Katalog für meine Schallplatten – scannen, verwalten, Wishlist.",
   "start_url": "./index.html",
   "scope": "./",

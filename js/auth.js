@@ -132,7 +132,7 @@ async function onSubmit(e) {
       if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return setMsg('Username: 3–20 Zeichen, nur Buchstaben, Zahlen, _', 'error');
       if (password.length < 6) return setMsg('Passwort: mindestens 6 Zeichen.', 'error');
       if (await usernameTaken(username)) return setMsg('Dieser Username ist schon vergeben.', 'error');
-      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username, display_name: username } } });
+      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username, display_name: username }, emailRedirectTo: location.origin + location.pathname } });
       if (error) return setMsg(/already|registered|exists/i.test(error.message) ? 'Diese E-Mail ist schon registriert.' : error.message, 'error');
       if (data.session) { closeAuth(); }
       else { setMsg('Fast geschafft! Bestätige den Link in deiner E-Mail, dann anmelden.', 'ok'); mode = 'login'; applyMode(); }
