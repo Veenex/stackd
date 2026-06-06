@@ -1360,7 +1360,8 @@ function renderHome() {
       '</button>' +
     '</div>' +
     '<div class="home-section"><span class="dp-label">Popular this week</span><ol id="home-pop-list" class="chart-list"><li class="hint">Lade…</li></ol></div>' +
-    '<div class="home-section"><span class="dp-label">New from friends</span><div id="home-friends" class="home-friends"></div></div>';
+    '<div class="home-section"><span class="dp-label">New from friends</span><div id="home-friends" class="home-friends"></div></div>' +
+    `<div class="home-section"><span class="dp-label">Neu erschienen ${new Date().getFullYear()}</span><ol id="home-new-list" class="chart-list"><li class="hint">Lade…</li></ol></div>`;
 
   // Begrüßung je nach Tageszeit + Profilbild im Dusty-Rose-Rahmen
   const p = getProfile() || {};
@@ -1381,6 +1382,30 @@ function renderHome() {
 
   loadPopularThisWeek();
   renderFriendsRow();
+  loadNewReleases();
+}
+
+// „Neu erschienen" – beliebte Releases des aktuellen Jahres (über Discogs).
+let newReleasesCache = null;
+async function loadNewReleases() {
+  const ol = document.getElementById('home-new-list');
+  if (!ol) return;
+  let res = newReleasesCache;
+  if (!res) {
+    const year = new Date().getFullYear();
+    try { res = dedupeAlbums(await discogsSearch({ year: String(year), sort: 'have', sort_order: 'desc', per_page: 40 })); }
+    catch { res = []; }
+    newReleasesCache = res;
+  }
+  const withCover = res.filter((r) => r.coverUrl);
+  const list = (withCover.length >= 10 ? withCover : res).slice(0, 12);
+  if (!list.length) { ol.innerHTML = '<li class="hint">Keine Daten verfügbar.</li>'; return; }
+  ol.innerHTML = list.map((r) => {
+    const idx = res.indexOf(r);
+    const cov = r.coverUrl ? `<img src="${escapeHtml(r.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : '';
+    return `<li class="chart-item" data-idx="${idx}"><div class="chart-cover${r.coverUrl ? '' : ' placeholder'}">${cov}</div><div class="chart-meta"><span class="chart-title">${escapeHtml(r.title || '')}</span><span class="chart-artist">${escapeHtml(r.artist || '')}</span></div></li>`;
+  }).join('');
+  ol.querySelectorAll('.chart-item').forEach((li) => li.addEventListener('click', () => openPreview(newReleasesCache[+li.dataset.idx])));
 }
 
 // „Popular this week" – Top 10. Echte Streaming-Abspielzahlen (Spotify/Apple/
