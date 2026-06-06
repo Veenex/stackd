@@ -9,6 +9,7 @@ import {
   searchUsers, getFollowing, follow, unfollow, fetchFriendsFeed,
   fetchUserProfile, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
+  addPlay, fetchPlays, deletePlay,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
@@ -321,6 +322,9 @@ function openDetail(list, id) {
 
   $('#dp-move').textContent = list === 'collection' ? 'In Wishlist' : 'In Collection';
 
+  $('#dp-play-date').value = new Date().toISOString().slice(0, 10);
+  $('#dp-play-note').value = '';
+  renderDiaryPlays(item.id);
   renderDiscs(item);
   loadTracklist(item);
 
@@ -406,6 +410,29 @@ async function loadTracklist(item) {
     .map((t) => `<li><span class="trk-pos">${escapeHtml(t.position)}</span><span class="trk-title">${escapeHtml(t.title)}</span><span class="trk-dur">${escapeHtml(t.duration)}</span></li>`)
     .join('');
 }
+
+// Tagebuch-Einträge eines Albums anzeigen
+async function renderDiaryPlays(itemId) {
+  const ul = $('#dp-plays'); ul.innerHTML = '';
+  let plays = [];
+  try { plays = await fetchPlays(itemId); } catch { /* ignorieren */ }
+  if (!plays.length) { ul.innerHTML = '<li class="hint" style="border:none">Noch keine Einträge.</li>'; return; }
+  ul.innerHTML = plays.map((p) => {
+    const d = p.played_on ? new Date(p.played_on).toLocaleDateString('de-DE') : '';
+    const note = p.note ? ' – ' + escapeHtml(p.note) : '';
+    return `<li><span class="play-date">${d}</span><span class="play-note">${note}</span><button class="play-del" data-id="${p.id}">×</button></li>`;
+  }).join('');
+  ul.querySelectorAll('.play-del').forEach((b) => b.addEventListener('click', async () => { await deletePlay(b.dataset.id); renderDiaryPlays(itemId); }));
+}
+$('#dp-play-add').addEventListener('click', async () => {
+  if (!requireAuth()) return;
+  if (!editing) { toast('Album erst zur Collection hinzufügen'); return; }
+  const date = $('#dp-play-date').value || new Date().toISOString().slice(0, 10);
+  await addPlay(editing.id, date, $('#dp-play-note').value);
+  $('#dp-play-note').value = '';
+  renderDiaryPlays(editing.id);
+  toast('Eingetragen');
+});
 
 $('#detail-back').addEventListener('click', closeDetail);
 $('#dp-rating-clear').addEventListener('click', () => detailRating && detailRating.setValue(0));
@@ -1367,11 +1394,13 @@ async function renderFriendsRow() {
   el.innerHTML = feed.map((r, i) => {
     const cov = r.coverUrl ? `<img src="${escapeHtml(r.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : '';
     const who = r.by ? (r.by.display_name || r.by.username || '') : '';
-    const rev = (r.review || '').trim() ? '<span class="friend-rev">„' + escapeHtml(r.review.trim().slice(0, 50)) + (r.review.trim().length > 50 ? '…' : '') + '"</span>' : '';
+    const action = r.kind === 'play' ? 'gehört' : 'hinzugefügt';
+    const noteSrc = r.kind === 'play' ? (r.playNote || '') : (r.review || '');
+    const rev = noteSrc.trim() ? '<span class="friend-rev">„' + escapeHtml(noteSrc.trim().slice(0, 50)) + (noteSrc.trim().length > 50 ? '…' : '') + '"</span>' : '';
     const stars = Number(r.rating) > 0 ? `<span class="friend-rating">${ratingDisplayHtml(r.rating)}</span>` : '';
     return `<button class="chart-item friend-item" data-idx="${i}">
         <div class="chart-cover${r.coverUrl ? '' : ' placeholder'}">${cov}</div>
-        <div class="chart-meta"><span class="chart-title">${escapeHtml(r.title || '')}</span><span class="chart-artist">${escapeHtml(r.artist || '')}</span><span class="friend-by">von ${escapeHtml(who)}</span>${stars}${rev}</div>
+        <div class="chart-meta"><span class="chart-title">${escapeHtml(r.title || '')}</span><span class="chart-artist">${escapeHtml(r.artist || '')}</span><span class="friend-by">${escapeHtml(who)} · ${action}</span>${stars}${rev}</div>
       </button>`;
   }).join('');
   el.querySelectorAll('.friend-item').forEach((b) =>
@@ -1388,10 +1417,15 @@ async function openActivity(it) {
   cov.innerHTML = it.coverUrl ? `<img src="${escapeHtml(it.coverUrl)}" alt="" />` : '';
   $('#act-name').textContent = it.title || '';
   $('#act-artist').textContent = it.artist || '';
-  $('#act-by').textContent = 'von ' + (it.by ? (it.by.display_name || it.by.username || '') : '');
+  let byText = 'von ' + (it.by ? (it.by.display_name || it.by.username || '') : '');
+  if (it.kind === 'play' && it.playedOn) byText += ' · gehört am ' + new Date(it.playedOn).toLocaleDateString('de-DE');
+  $('#act-by').textContent = byText;
   $('#act-rating').innerHTML = Number(it.rating) > 0 ? ratingDisplayHtml(it.rating) : '<span class="hint">Keine Bewertung</span>';
-  $('#act-review').textContent = (it.review || '').trim() || '';
-  $('#act-review').style.display = (it.review || '').trim() ? '' : 'none';
+  const revParts = [];
+  if (it.kind === 'play' && (it.playNote || '').trim()) revParts.push('🎧 ' + it.playNote.trim());
+  if ((it.review || '').trim()) revParts.push(it.review.trim());
+  $('#act-review').textContent = revParts.join('\n');
+  $('#act-review').style.display = revParts.length ? '' : 'none';
   $('#act-like').classList.remove('liked');
   $('#act-like-count').textContent = '…';
   $('#act-comments').innerHTML = '<p class="hint">Lade…</p>';

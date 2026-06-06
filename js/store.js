@@ -336,6 +336,30 @@ export async function deleteComment(id) {
   await sb.from('comments').delete().eq('id', id).eq('user_id', u);
 }
 
+// ---------- Tagebuch / Hör-Log ----------
+export async function addPlay(itemId, playedOn, note) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return null;
+  const { data, error } = await sb.from('plays').insert({
+    user_id: u, item_id: itemId,
+    played_on: playedOn || new Date().toISOString().slice(0, 10),
+    note: (note || '').trim() || null,
+  }).select().maybeSingle();
+  if (error) { console.warn('play:', error.message); return null; }
+  return data;
+}
+export async function fetchPlays(itemId) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return [];
+  const { data } = await sb.from('plays').select('*').eq('item_id', itemId).eq('user_id', u).order('played_on', { ascending: false });
+  return data || [];
+}
+export async function deletePlay(id) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return;
+  await sb.from('plays').delete().eq('id', id).eq('user_id', u);
+}
+
 // Vollständiges Profil eines anderen Nutzers (öffentlich lesbar).
 export async function fetchUserProfile(userId) {
   const sb = await cloud(); if (!sb || !userId) return null;
@@ -375,14 +399,33 @@ export async function fetchFriendsFeed(limit = 20) {
   const { data: f } = await sb.from('follows').select('followee_id').eq('follower_id', u);
   const ids = (f || []).map((r) => r.followee_id);
   if (!ids.length) return [];
-  const { data: items } = await sb.from('items')
-    .select('*').in('user_id', ids).order('added_at', { ascending: false }).limit(limit);
-  if (!items || !items.length) return [];
-  const userIds = [...new Set(items.map((i) => i.user_id))];
-  const { data: profs } = await sb.from('profiles')
-    .select('id,username,display_name,avatar_url').in('id', userIds);
-  const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
-  return items.map((it) => ({ ...fromRow(it), by: pmap[it.user_id] || null }));
+  // Neuzugänge UND Hör-Einträge (Tagebuch) der Gefolgten parallel laden
+  const [{ data: items }, { data: plays }] = await Promise.all([
+    sb.from('items').select('*').in('user_id', ids).order('added_at', { ascending: false }).limit(limit),
+    sb.from('plays').select('*').in('user_id', ids).order('created_at', { ascending: false }).limit(limit),
+  ]);
+  const itemRows = items || [];
+  const playRows = plays || [];
+  // Album-Daten für Plays nachladen (Item-Referenzen)
+  const playItemIds = [...new Set(playRows.map((p) => p.item_id))];
+  const playItems = {};
+  if (playItemIds.length) {
+    const { data: pit } = await sb.from('items').select('*').in('id', playItemIds);
+    (pit || []).forEach((it) => { playItems[it.id] = it; });
+  }
+  // Profile aller Beteiligten
+  const userIds = [...new Set([...itemRows.map((i) => i.user_id), ...playRows.map((p) => p.user_id)])];
+  const pmap = {};
+  if (userIds.length) {
+    const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', userIds);
+    (profs || []).forEach((p) => { pmap[p.id] = p; });
+  }
+  const adds = itemRows.map((it) => ({ ...fromRow(it), by: pmap[it.user_id] || null, kind: 'add', ts: it.added_at ? new Date(it.added_at).getTime() : 0 }));
+  const plys = playRows.map((p) => {
+    const it = playItems[p.item_id]; if (!it) return null;
+    return { ...fromRow(it), by: pmap[p.user_id] || null, kind: 'play', playNote: p.note || '', playedOn: p.played_on, ts: p.created_at ? new Date(p.created_at).getTime() : 0 };
+  }).filter(Boolean);
+  return [...adds, ...plys].sort((a, b) => b.ts - a.ts).slice(0, limit);
 }
 
 // ---------- Einstellungen (vorerst global lokal) ----------

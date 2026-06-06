@@ -160,7 +160,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Stackd · Build 82</p>
+        <p class="hint profile-version">Stackd · Build 83</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -279,6 +279,16 @@
       <div class="dp-section dp-preview-actions" id="dp-preview-actions">
         <button type="button" id="dp-add-wishlist" class="btn ghost">Zur Wishlist</button>
         <button type="button" id="dp-add-collection" class="btn primary">Zur Collection</button>
+      </div>
+
+      <div class="dp-section" id="dp-diary-section">
+        <span class="dp-label">Tagebuch (gehört am)</span>
+        <div class="dp-diary-add">
+          <input type="date" id="dp-play-date" />
+          <input type="text" id="dp-play-note" placeholder="Notiz (optional)" />
+          <button type="button" id="dp-play-add" class="btn ghost">Eintragen</button>
+        </div>
+        <ul id="dp-plays" class="dp-plays"></ul>
       </div>
 
       <div class="dp-section">

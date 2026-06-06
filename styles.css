@@ -533,7 +533,19 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 #detail-page.preview #dp-delete,
 #detail-page.preview .dp-save-row,
 #detail-page.preview .dp-edit,
+#detail-page.preview #dp-diary-section,
 #detail-page.preview #dp-newcover { display: none; }
+
+/* Tagebuch / Hör-Log */
+.dp-diary-add { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.dp-diary-add input[type="date"] { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); padding: 9px 10px; font-family: inherit; font-size: 14px; }
+.dp-diary-add input[type="text"] { flex: 1; min-width: 120px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); padding: 9px 12px; font-family: inherit; font-size: 14px; }
+.dp-diary-add .btn { width: auto; padding: 9px 16px; }
+.dp-plays { list-style: none; margin: 0; padding: 0; }
+.dp-plays li { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--border); font-size: 14px; }
+.play-date { color: var(--text); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.play-note { flex: 1; min-width: 0; color: var(--muted); }
+.play-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; }
 
 /* Cover-Auswahl-Dialog */
 #cover-dialog { width: min(94vw, 520px); }
@@ -911,7 +923,7 @@ body.logged-in .logout-btn { display: block; }
 .activity-album { display: flex; gap: 12px; width: 100%; background: none; border: none; text-align: left; cursor: pointer; padding: 0; margin-bottom: 10px; align-items: center; }
 .activity-album .chart-cover { width: 64px; height: 64px; flex-shrink: 0; }
 .act-rating { margin: 2px 0 6px; }
-.act-review { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.45; margin: 6px 0 10px; }
+.act-review { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.45; margin: 6px 0 10px; white-space: pre-line; }
 .act-actions { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; }
 .act-like-count { color: var(--muted); font-size: 14px; }
 .act-comments-label { margin-top: 6px; }
