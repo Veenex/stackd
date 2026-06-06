@@ -40,6 +40,7 @@ function toRow(item, list, u) {
     barcode: item.barcode || null,
     cover_url: item.coverUrl || null,
     note: item.note || null,
+    review: item.review || null,
     rating: Number(item.rating) || 0,
     liked: !!item.liked,
     price: Number(item.price) || 0,
@@ -55,7 +56,7 @@ function fromRow(r) {
     addedAt: r.added_at ? new Date(r.added_at).getTime() : Date.now(),
     artist: r.artist || '', title: r.title || '', year: r.year || '',
     label: r.label || '', format: r.format || '', barcode: r.barcode || '',
-    coverUrl: r.cover_url || '', note: r.note || '',
+    coverUrl: r.cover_url || '', note: r.note || '', review: r.review || '',
     rating: Number(r.rating) || 0, liked: !!r.liked, price: Number(r.price) || 0,
     source: r.source || '', sourceId: r.source_id || '', masterId: r.master_id || 0,
   };
@@ -75,7 +76,7 @@ export function addItem(list, item) {
   const record = {
     id: crypto.randomUUID(), addedAt: Date.now(),
     artist: '', title: '', year: '', label: '', format: '', barcode: '',
-    coverUrl: '', note: '', rating: 0, liked: false, price: 0,
+    coverUrl: '', note: '', review: '', rating: 0, liked: false, price: 0,
     source: 'manual', sourceId: '',
     ...item,
   };
@@ -290,6 +291,45 @@ export async function unfollow(userId) {
   if (!sb || !u) return;
   const { error } = await sb.from('follows').delete().eq('follower_id', u).eq('followee_id', userId);
   if (error) console.warn('unfollow:', error.message);
+}
+
+// ---------- Likes & Kommentare auf Aktivitäten (Sammlungseinträge) ----------
+export async function toggleActivityLike(itemId) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return null;
+  const { data: ex } = await sb.from('activity_likes').select('item_id').eq('item_id', itemId).eq('user_id', u).maybeSingle();
+  if (ex) { await sb.from('activity_likes').delete().eq('item_id', itemId).eq('user_id', u); return false; }
+  await sb.from('activity_likes').insert({ item_id: itemId, user_id: u });
+  return true;
+}
+export async function fetchLikeInfo(itemId) {
+  const sb = await cloud(); const u = uid();
+  if (!sb) return { count: 0, liked: false };
+  const { data } = await sb.from('activity_likes').select('user_id').eq('item_id', itemId);
+  const arr = data || [];
+  return { count: arr.length, liked: u ? arr.some((r) => r.user_id === u) : false };
+}
+export async function fetchComments(itemId) {
+  const sb = await cloud(); if (!sb) return [];
+  const { data } = await sb.from('comments').select('*').eq('item_id', itemId).order('created_at', { ascending: true });
+  const rows = data || [];
+  if (!rows.length) return [];
+  const ids = [...new Set(rows.map((r) => r.user_id))];
+  const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
+  const pm = {}; (profs || []).forEach((p) => { pm[p.id] = p; });
+  return rows.map((r) => ({ id: r.id, userId: r.user_id, text: r.text, createdAt: r.created_at, by: pm[r.user_id] || null }));
+}
+export async function addComment(itemId, text) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u || !text.trim()) return null;
+  const { data, error } = await sb.from('comments').insert({ item_id: itemId, user_id: u, text: text.trim() }).select().maybeSingle();
+  if (error) { console.warn('comment:', error.message); return null; }
+  return data;
+}
+export async function deleteComment(id) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return;
+  await sb.from('comments').delete().eq('id', id).eq('user_id', u);
 }
 
 // Vollständiges Profil eines anderen Nutzers (öffentlich lesbar).

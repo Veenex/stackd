@@ -8,6 +8,7 @@ import {
   syncAll, clearUserCache,
   searchUsers, getFollowing, follow, unfollow, fetchFriendsFeed,
   fetchUserProfile, fetchUserItems,
+  toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
@@ -293,6 +294,7 @@ function openDetail(list, id) {
   $('#dp-spotify').href = `https://open.spotify.com/search/${q}`;
   $('#dp-apple').href = `https://music.apple.com/search?term=${q}`;
   $('#dp-note').value = item.note || '';
+  $('#dp-review').value = item.review || '';
   detailRating = createRatingInput($('#dp-rating'), item.rating);
   dpLiked = !!item.liked;
   $('#dp-like').classList.toggle('liked', dpLiked);
@@ -339,6 +341,7 @@ function openPreview(result) {
   $('#dp-spotify').href = `https://open.spotify.com/search/${q}`;
   $('#dp-apple').href = `https://music.apple.com/search?term=${q}`;
   $('#dp-note').value = '';
+  $('#dp-review').value = '';
   detailRating = createRatingInput($('#dp-rating'), 0);
   dpLiked = false;
   $('#dp-like').classList.toggle('liked', false);
@@ -361,6 +364,7 @@ async function addPreviewTo(list) {
     ...item,
     rating: detailRating ? detailRating.getValue() : 0,
     note: $('#dp-note').value.trim(),
+    review: $('#dp-review').value.trim(),
     liked: dpLiked,
   });
   closeDetail();
@@ -445,6 +449,7 @@ $('#dp-save').addEventListener('click', () => {
     coverUrl: $('#dp-edit-cover').value.trim(),
     price: parseFloat($('#dp-edit-price').value) || 0,
     note: $('#dp-note').value.trim(),
+    review: $('#dp-review').value.trim(),
     rating: detailRating ? detailRating.getValue() : 0,
     liked: dpLiked,
   });
@@ -1347,13 +1352,56 @@ async function renderFriendsRow() {
   el.innerHTML = feed.map((r, i) => {
     const cov = r.coverUrl ? `<img src="${escapeHtml(r.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : '';
     const who = r.by ? (r.by.display_name || r.by.username || '') : '';
+    const rev = (r.review || '').trim() ? '<span class="friend-rev">„' + escapeHtml(r.review.trim().slice(0, 50)) + (r.review.trim().length > 50 ? '…' : '') + '"</span>' : '';
+    const stars = Number(r.rating) > 0 ? `<span class="friend-rating">${ratingDisplayHtml(r.rating)}</span>` : '';
     return `<button class="chart-item friend-item" data-idx="${i}">
         <div class="chart-cover${r.coverUrl ? '' : ' placeholder'}">${cov}</div>
-        <div class="chart-meta"><span class="chart-title">${escapeHtml(r.title || '')}</span><span class="chart-artist">${escapeHtml(r.artist || '')}</span><span class="friend-by">von ${escapeHtml(who)}</span></div>
+        <div class="chart-meta"><span class="chart-title">${escapeHtml(r.title || '')}</span><span class="chart-artist">${escapeHtml(r.artist || '')}</span><span class="friend-by">von ${escapeHtml(who)}</span>${stars}${rev}</div>
       </button>`;
   }).join('');
   el.querySelectorAll('.friend-item').forEach((b) =>
-    b.addEventListener('click', () => openPreview(friendsFeedCache[+b.dataset.idx])));
+    b.addEventListener('click', () => openActivity(friendsFeedCache[+b.dataset.idx])));
+}
+
+// ---------- Aktivitäts-Fenster (Review, Like, Kommentare) ----------
+let activityItem = null;
+async function openActivity(it) {
+  if (!it) return;
+  activityItem = it;
+  const cov = $('#act-cover');
+  cov.className = 'chart-cover' + (it.coverUrl ? '' : ' placeholder');
+  cov.innerHTML = it.coverUrl ? `<img src="${escapeHtml(it.coverUrl)}" alt="" />` : '';
+  $('#act-name').textContent = it.title || '';
+  $('#act-artist').textContent = it.artist || '';
+  $('#act-by').textContent = 'von ' + (it.by ? (it.by.display_name || it.by.username || '') : '');
+  $('#act-rating').innerHTML = Number(it.rating) > 0 ? ratingDisplayHtml(it.rating) : '<span class="hint">Keine Bewertung</span>';
+  $('#act-review').textContent = (it.review || '').trim() || '';
+  $('#act-review').style.display = (it.review || '').trim() ? '' : 'none';
+  $('#act-like').classList.remove('liked');
+  $('#act-like-count').textContent = '…';
+  $('#act-comments').innerHTML = '<p class="hint">Lade…</p>';
+  $('#act-comment-input').value = '';
+  $('#activity-dialog').showModal();
+  // Likes
+  try { const li = await fetchLikeInfo(it.id); $('#act-like-count').textContent = li.count; $('#act-like').classList.toggle('liked', li.liked); }
+  catch { $('#act-like-count').textContent = '0'; }
+  renderActivityComments();
+}
+async function renderActivityComments() {
+  if (!activityItem) return;
+  let comments = [];
+  try { comments = await fetchComments(activityItem.id); } catch { /* ignorieren */ }
+  const box = $('#act-comments');
+  if (!comments.length) { box.innerHTML = '<p class="hint">Noch keine Kommentare.</p>'; return; }
+  const me = getUser();
+  box.innerHTML = comments.map((c) => {
+    const name = c.by ? (c.by.display_name || c.by.username || '?') : '?';
+    const del = (me && me.id === c.userId) ? `<button class="act-c-del" data-id="${c.id}">×</button>` : '';
+    return `<div class="act-comment"><span class="act-c-name">${escapeHtml(name)}</span><span class="act-c-text">${escapeHtml(c.text)}</span>${del}</div>`;
+  }).join('');
+  box.querySelectorAll('.act-c-del').forEach((b) => b.addEventListener('click', async () => {
+    await deleteComment(b.dataset.id); renderActivityComments();
+  }));
 }
 
 // ---------- Freunde finden (Suche + Folgen) ----------
@@ -1490,6 +1538,23 @@ switchView('home');
 $('#btn-find-friends').addEventListener('click', openFriendsDialog);
 $('#btn-friends-close').addEventListener('click', () => $('#friends-dialog').close());
 $('#user-back').addEventListener('click', closeUserProfile);
+$('#btn-activity-close').addEventListener('click', () => $('#activity-dialog').close());
+$('#act-album').addEventListener('click', () => { $('#activity-dialog').close(); if (activityItem) openPreview(activityItem); });
+$('#act-like').addEventListener('click', async () => {
+  if (!activityItem || !requireAuth()) return;
+  const res = await toggleActivityLike(activityItem.id);
+  if (res === null) return;
+  $('#act-like').classList.toggle('liked', res);
+  try { const li = await fetchLikeInfo(activityItem.id); $('#act-like-count').textContent = li.count; } catch { /* ignorieren */ }
+});
+$('#act-comment-send').addEventListener('click', async () => {
+  if (!activityItem || !requireAuth()) return;
+  const inp = $('#act-comment-input'); const t = inp.value.trim(); if (!t) return;
+  inp.value = '';
+  await addComment(activityItem.id, t);
+  renderActivityComments();
+});
+$('#act-comment-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('#act-comment-send').click(); } });
 $('#friends-search').addEventListener('input', (e) => {
   clearTimeout(friendsSearchTimer);
   const q = e.target.value;
