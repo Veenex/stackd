@@ -160,7 +160,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Stackd · Build 81</p>
+        <p class="hint profile-version">Stackd · Build 82</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -244,6 +244,7 @@
         <h2 class="dp-title" id="dp-title"></h2>
         <p class="dp-artist" id="dp-artist"></p>
         <p class="dp-meta" id="dp-meta"></p>
+        <p class="dp-cond" id="dp-condition"></p>
         <div class="dp-listen">
           <a id="dp-spotify" class="listen-btn spotify" target="_blank" rel="noopener">Spotify</a>
           <a id="dp-apple" class="listen-btn apple" target="_blank" rel="noopener">Apple Music</a>
@@ -297,6 +298,34 @@
           <label>Barcode<input type="text" id="dp-edit-barcode" inputmode="numeric" /></label>
           <label>Cover-URL<input type="url" id="dp-edit-cover" /></label>
           <label>Kaufpreis (€)<input type="number" id="dp-edit-price" step="0.01" inputmode="decimal" /></label>
+          <label>Zustand Platte (Media)
+            <select id="dp-edit-media">
+              <option value="">—</option>
+              <option>Mint (M)</option>
+              <option>Near Mint (NM)</option>
+              <option>Very Good Plus (VG+)</option>
+              <option>Very Good (VG)</option>
+              <option>Good Plus (G+)</option>
+              <option>Good (G)</option>
+              <option>Fair (F)</option>
+              <option>Poor (P)</option>
+            </select>
+          </label>
+          <label>Zustand Hülle (Sleeve)
+            <select id="dp-edit-sleeve">
+              <option value="">—</option>
+              <option>Mint (M)</option>
+              <option>Near Mint (NM)</option>
+              <option>Very Good Plus (VG+)</option>
+              <option>Very Good (VG)</option>
+              <option>Good Plus (G+)</option>
+              <option>Good (G)</option>
+              <option>Fair (F)</option>
+              <option>Poor (P)</option>
+              <option>Generic</option>
+              <option>No Cover</option>
+            </select>
+          </label>
         </div>
       </details>
 

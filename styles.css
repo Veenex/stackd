@@ -754,6 +754,8 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .dp-title { font-size: 22px; font-weight: 700; margin: 0; line-height: 1.2; }
 .dp-artist { color: var(--indigo); margin: 5px 0 0; font-size: 15px; font-weight: 600; }
 .dp-meta { color: var(--muted); margin: 6px 0 0; font-size: 13px; }
+.dp-cond { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
+.dp-cond:empty { display: none; }
 .dp-listen { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
 .listen-btn {
   flex: 1; max-width: 170px; text-align: center;

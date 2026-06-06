@@ -277,6 +277,13 @@ async function renderDiscs(item) {
   }));
 }
 
+function setConditionDisplay(media, sleeve) {
+  const parts = [];
+  if (media) parts.push('Media ' + media);
+  if (sleeve) parts.push('Hülle ' + sleeve);
+  $('#dp-condition').textContent = parts.length ? 'Zustand: ' + parts.join('  ·  ') : '';
+}
+
 function openDetail(list, id) {
   const item = getList(list).find((i) => i.id === id);
   if (!item) return;
@@ -307,6 +314,9 @@ function openDetail(list, id) {
   $('#dp-edit-barcode').value = item.barcode || '';
   $('#dp-edit-cover').value = item.coverUrl || '';
   $('#dp-edit-price').value = item.price ? item.price : '';
+  $('#dp-edit-media').value = item.mediaCond || '';
+  $('#dp-edit-sleeve').value = item.sleeveCond || '';
+  setConditionDisplay(item.mediaCond, item.sleeveCond);
   $('.dp-edit').open = false;
 
   $('#dp-move').textContent = list === 'collection' ? 'In Wishlist' : 'In Collection';
@@ -342,6 +352,7 @@ function openPreview(result) {
   $('#dp-apple').href = `https://music.apple.com/search?term=${q}`;
   $('#dp-note').value = '';
   $('#dp-review').value = '';
+  setConditionDisplay('', '');
   detailRating = createRatingInput($('#dp-rating'), 0);
   dpLiked = false;
   $('#dp-like').classList.toggle('liked', false);
@@ -448,6 +459,8 @@ $('#dp-save').addEventListener('click', () => {
     barcode: $('#dp-edit-barcode').value.trim(),
     coverUrl: $('#dp-edit-cover').value.trim(),
     price: parseFloat($('#dp-edit-price').value) || 0,
+    mediaCond: $('#dp-edit-media').value,
+    sleeveCond: $('#dp-edit-sleeve').value,
     note: $('#dp-note').value.trim(),
     review: $('#dp-review').value.trim(),
     rating: detailRating ? detailRating.getValue() : 0,

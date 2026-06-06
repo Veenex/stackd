@@ -44,6 +44,8 @@ function toRow(item, list, u) {
     rating: Number(item.rating) || 0,
     liked: !!item.liked,
     price: Number(item.price) || 0,
+    media_cond: item.mediaCond || null,
+    sleeve_cond: item.sleeveCond || null,
     source: item.source || null,
     source_id: item.sourceId || null,
     master_id: item.masterId || null,
@@ -58,6 +60,7 @@ function fromRow(r) {
     label: r.label || '', format: r.format || '', barcode: r.barcode || '',
     coverUrl: r.cover_url || '', note: r.note || '', review: r.review || '',
     rating: Number(r.rating) || 0, liked: !!r.liked, price: Number(r.price) || 0,
+    mediaCond: r.media_cond || '', sleeveCond: r.sleeve_cond || '',
     source: r.source || '', sourceId: r.source_id || '', masterId: r.master_id || 0,
   };
 }
@@ -77,6 +80,7 @@ export function addItem(list, item) {
     id: crypto.randomUUID(), addedAt: Date.now(),
     artist: '', title: '', year: '', label: '', format: '', barcode: '',
     coverUrl: '', note: '', review: '', rating: 0, liked: false, price: 0,
+    mediaCond: '', sleeveCond: '',
     source: 'manual', sourceId: '',
     ...item,
   };
