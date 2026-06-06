@@ -57,8 +57,15 @@
     <!-- Datenbank durchsuchen -->
     <section id="view-search" class="view">
       <div class="toolbar">
-        <input type="search" id="search-db" class="search" placeholder="Künstler oder Album suchen…" />
-        <button id="btn-search-db" class="btn">Suchen</button>
+        <input type="search" id="search-db" class="search" placeholder="Album suchen…" enterkeyhint="search" />
+        <button id="search-cancel" class="link-btn search-cancel hidden">Cancel</button>
+      </div>
+      <div id="search-filters" class="search-filters hidden">
+        <button class="sfilter active" data-sf="alben">Alben</button>
+        <button class="sfilter" data-sf="artist">Künstler/in</button>
+        <button class="sfilter" data-sf="members">Members</button>
+        <button class="sfilter" data-sf="reviews">Reviews</button>
+        <button class="sfilter" data-sf="playlists">Playlists</button>
       </div>
       <div id="browse-content"></div>
       <p id="search-status" class="empty-hint"></p>
@@ -126,8 +133,6 @@
         <p class="profile-meta-line" id="profile-meta-line"></p>
         <p class="profile-bio-display" id="profile-bio-display"></p>
 
-        <button id="btn-find-friends" class="btn ghost find-friends-btn">Freunde finden</button>
-
         <div class="profile-section">
           <span class="dp-label">Favoriten</span>
           <div id="profile-favorites" class="fav-slots"></div>
@@ -162,7 +167,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Discend · Build 87</p>
+        <p class="hint profile-version">Discend · Build 88</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">

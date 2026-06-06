@@ -7,6 +7,7 @@ import {
   getPlaylists, createPlaylist, deletePlaylist, togglePlaylistItem,
   syncAll, clearUserCache,
   searchUsers, getFollowing, follow, unfollow, fetchFriendsFeed,
+  fetchReviewsFeed, fetchFriendsLists, searchReviews, searchPlaylists,
   fetchUserProfile, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
@@ -25,7 +26,7 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 const VIEW_TITLES = {
-  home: 'Start',
+  home: 'Discend',
   collection: 'Collection',
   search: 'Suche',
   add: 'Hinzufügen',
@@ -77,11 +78,13 @@ $$('.tab').forEach((tab) => {
     // Gast-Modus: Sammeln/Scannen/Profil nur für angemeldete Nutzer
     if (['add', 'collection', 'settings'].includes(view) && !getUser()) { openAuth('login'); return; }
     if (view === currentView && !detailWasOpen) {
-      // erneutes Antippen des aktiven Tabs: nach oben scrollen
+      // erneutes Antippen des aktiven Tabs
       if (view === 'settings') setProfileTab('profile');
+      if (view === 'search') { focusSearch(); return; } // 2. Klick auf Lupe → direkt tippen
       const main = document.getElementById('main');
       if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
+      if (view !== 'search') clearSearch(); // beim Tab-Wechsel Suchleiste leeren
       switchView(view);
     }
   });
@@ -680,6 +683,12 @@ let searchResults = [];
 let trendingCache = null;
 let popularCache = null;
 let friendsFeedCache = [];
+let homeTab = 'alben';        // 'alben' | 'reviews' | 'lists'
+let homeReviewsCache = [];
+let homeListsCache = [];
+let searchFilter = 'alben';   // 'alben' | 'artist' | 'members' | 'reviews' | 'playlists'
+let reviewSearchCache = [];
+let playlistSearchCache = [];
 let friendsFollowing = new Set();
 
 const SUGG_GENRES = ['Rock', 'Electronic', 'Jazz', 'Hip Hop', 'Funk / Soul', 'Pop', 'Reggae', 'Classical', 'Blues'];
@@ -885,19 +894,138 @@ async function runDbSearchWith(params) {
   }
 }
 
-function runDbSearch() {
+const SEARCH_PLACEHOLDERS = {
+  alben: 'Album suchen…', artist: 'Künstler/in suchen…', members: 'Mitglieder suchen…',
+  reviews: 'Reviews suchen…', playlists: 'Playlists suchen…',
+};
+const SEARCH_HINTS = {
+  artist: 'Tippe eine Künstler/in.', members: 'Tippe einen Namen oder @username.',
+  reviews: 'Suche Reviews nach Album oder Künstler/in.', playlists: 'Suche Playlists nach Name.',
+};
+
+function updateSearchPlaceholder() {
+  const s = $('#search-db'); if (s) s.placeholder = SEARCH_PLACEHOLDERS[searchFilter] || 'Suchen…';
+}
+function showFilterHint() {
+  $('#browse-content').innerHTML = `<p class="hint">${SEARCH_HINTS[searchFilter] || ''}</p>`;
+  $('#search-status').textContent = '';
+}
+function setSearchFilter(f) {
+  searchFilter = f;
+  $$('.sfilter').forEach((b) => b.classList.toggle('active', b.dataset.sf === f));
+  updateSearchPlaceholder();
   const q = $('#search-db').value.trim();
-  if (!q) { renderBrowse(); return; }
-  runDbSearchWith({ q });
+  if (q) runSearch();
+  else if (f === 'alben') renderBrowse();
+  else showFilterHint();
+}
+// Such-UI (Filter-Zeile + Cancel-Button) ein-/ausblenden.
+function showSearchUI() {
+  const sf = $('#search-filters'); if (sf) sf.classList.remove('hidden');
+  const cb = $('#search-cancel'); if (cb) cb.classList.remove('hidden');
+}
+function hideSearchUI() {
+  const sf = $('#search-filters'); if (sf) sf.classList.add('hidden');
+  const cb = $('#search-cancel'); if (cb) cb.classList.add('hidden');
+}
+// Suchleiste leeren + Filter zurücksetzen (beim Tab-Wechsel).
+function clearSearch() {
+  const s = $('#search-db'); if (s) s.value = '';
+  searchFilter = 'alben';
+  $$('.sfilter').forEach((b) => b.classList.toggle('active', b.dataset.sf === 'alben'));
+  updateSearchPlaceholder();
+  hideSearchUI();
+}
+// Cancel-Button: Suche abbrechen, zurück zum Stöbern.
+function cancelSearch() {
+  const s = $('#search-db'); if (s) { s.value = ''; s.blur(); }
+  searchFilter = 'alben';
+  $$('.sfilter').forEach((b) => b.classList.toggle('active', b.dataset.sf === 'alben'));
+  updateSearchPlaceholder();
+  hideSearchUI();
+  renderBrowse();
+}
+// 2. Klick auf den Such-Tab: Filter zeigen + direkt ins Eingabefeld.
+function focusSearch() {
+  showSearchUI();
+  const s = $('#search-db'); if (s) { s.focus(); s.select(); }
+}
+// Aus den Home-CTAs „Freunde finden" → Suche mit Members-Filter.
+function goMemberSearch() {
+  if (!requireAuth()) return;
+  switchView('search');
+  setSearchFilter('members');
+  showSearchUI();
+  setTimeout(() => { const s = $('#search-db'); if (s) s.focus(); }, 60);
 }
 
-$('#btn-search-db').addEventListener('click', runDbSearch);
+function runSearch() {
+  const q = $('#search-db').value.trim();
+  if (!q) { if (searchFilter === 'alben') renderBrowse(); else showFilterHint(); return; }
+  if (searchFilter === 'artist') runDbSearchWith({ artist: q });
+  else if (searchFilter === 'members') runMemberSearch(q);
+  else if (searchFilter === 'reviews') runReviewSearch(q);
+  else if (searchFilter === 'playlists') runPlaylistSearch(q);
+  else runDbSearchWith({ q });
+}
+
+async function runMemberSearch(q) {
+  const c = $('#browse-content'); $('#search-status').textContent = '';
+  c.innerHTML = '<p class="hint">Suche…</p>';
+  let users = [];
+  try { users = await searchUsers(q); } catch { /* ignorieren */ }
+  if (!users.length) { c.innerHTML = ''; $('#search-status').textContent = 'Niemand gefunden.'; return; }
+  c.innerHTML = '<div class="friends-results">' + users.map((u) => {
+    const av = u.avatar_url ? `style="background-image:url('${escapeHtml(u.avatar_url)}')"` : '';
+    return `<button class="friend-row" data-id="${u.id}">
+        <span class="friend-av${u.avatar_url ? '' : ' placeholder'}" ${av}></span>
+        <span class="friend-name">${escapeHtml(u.display_name || u.username)}<small>@${escapeHtml(u.username)}</small></span>
+        <span class="friend-go">›</span>
+      </button>`;
+  }).join('') + '</div>';
+  c.querySelectorAll('.friend-row').forEach((row) => row.addEventListener('click', () => {
+    const u = users.find((x) => x.id === row.dataset.id); if (u) openUserProfile(u);
+  }));
+}
+
+async function runReviewSearch(q) {
+  const c = $('#browse-content'); $('#search-status').textContent = '';
+  c.innerHTML = '<p class="hint">Suche…</p>';
+  let revs = [];
+  try { revs = await searchReviews(q); } catch { /* ignorieren */ }
+  if (!revs.length) { c.innerHTML = ''; $('#search-status').textContent = 'Keine Reviews gefunden.'; return; }
+  reviewSearchCache = revs;
+  c.innerHTML = '<div class="rev-list">' + revs.map((r, i) => reviewCardHtml(r, i)).join('') + '</div>';
+  c.querySelectorAll('.rev-card').forEach((card) => card.addEventListener('click', () => openPreview(reviewSearchCache[+card.dataset.idx])));
+}
+
+async function runPlaylistSearch(q) {
+  const c = $('#browse-content'); $('#search-status').textContent = '';
+  c.innerHTML = '<p class="hint">Suche…</p>';
+  let lists = [];
+  try { lists = await searchPlaylists(q); } catch { /* ignorieren */ }
+  if (!lists.length) { c.innerHTML = ''; $('#search-status').textContent = 'Keine Playlists gefunden.'; return; }
+  playlistSearchCache = lists;
+  c.innerHTML = '<div class="lists-wrap">' + lists.map((l, i) => listCardHtml(l, i)).join('') + '</div>';
+  c.querySelectorAll('.list-card').forEach((card) => card.addEventListener('click', () => {
+    const l = playlistSearchCache[+card.dataset.idx]; if (l && l.by) openUserProfile(l.by);
+  }));
+}
+
+let searchTimer = null;
+$('#search-cancel').addEventListener('click', cancelSearch);
 $('#search-db').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); runDbSearch(); }
+  if (e.key === 'Enter') { e.preventDefault(); runSearch(); $('#search-db').blur(); } // Enter startet die Suche + schließt die Tastatur
 });
 $('#search-db').addEventListener('input', () => {
-  if (!$('#search-db').value.trim()) renderBrowse();
+  const v = $('#search-db').value.trim();
+  if (!v) { if (searchFilter === 'alben') renderBrowse(); else showFilterHint(); return; }
+  if (['members', 'reviews', 'playlists'].includes(searchFilter)) {
+    clearTimeout(searchTimer); searchTimer = setTimeout(runSearch, 300);
+  }
 });
+$('#search-db').addEventListener('focus', showSearchUI);
+$$('.sfilter').forEach((b) => b.addEventListener('click', () => setSearchFilter(b.dataset.sf)));
 
 // ---------- Manuelles Formular ----------
 $('#manual-form').addEventListener('submit', (e) => {
@@ -1352,6 +1480,29 @@ function greetingText() {
 function renderHome() {
   const el = $('#home-content');
   el.innerHTML =
+    '<div class="home-tabs">' +
+      '<button class="home-tab" data-htab="alben">Alben</button>' +
+      '<button class="home-tab" data-htab="reviews">Reviews</button>' +
+      '<button class="home-tab" data-htab="lists">Lists</button>' +
+    '</div>' +
+    '<div id="home-tabbody"></div>';
+  el.querySelectorAll('.home-tab').forEach((b) => b.addEventListener('click', () => setHomeTab(b.dataset.htab)));
+  setHomeTab(homeTab);
+}
+
+function setHomeTab(tab) {
+  homeTab = tab;
+  $$('.home-tab').forEach((b) => b.classList.toggle('active', b.dataset.htab === tab));
+  const body = $('#home-tabbody');
+  if (!body) return;
+  if (tab === 'reviews') renderHomeReviews(body);
+  else if (tab === 'lists') renderHomeLists(body);
+  else renderHomeAlben(body);
+}
+
+// „Alben" = die normale Startseite (Begrüßung + Charts + Neuzugänge).
+function renderHomeAlben(body) {
+  body.innerHTML =
     '<div class="home-greet">' +
       '<button class="home-greet-av" id="home-greet-av" aria-label="Mein Profil"></button>' +
       '<div class="home-greet-text"><span class="home-greet-hello" id="home-greet-hello"></span></div>' +
@@ -1383,6 +1534,76 @@ function renderHome() {
   loadPopularThisWeek();
   renderFriendsRow();
   loadNewReleases();
+}
+
+// „Reviews" = Reviews von Gefolgten zuerst, danach allgemein neueste.
+async function renderHomeReviews(body) {
+  body.innerHTML = '<div class="rev-list"><p class="hint">Lade…</p></div>';
+  const wrap = body.querySelector('.rev-list');
+  let revs = [];
+  try { revs = await fetchReviewsFeed(30); } catch { /* ignorieren */ }
+  if (!wrap) return;
+  if (!revs.length) {
+    wrap.innerHTML = '<div class="home-empty-card">Noch keine Reviews. Folge Leuten oder schreibe selbst eine Review auf einer Album-Seite.</div>';
+    return;
+  }
+  homeReviewsCache = revs;
+  wrap.innerHTML = revs.map((r, i) => reviewCardHtml(r, i)).join('');
+  wrap.querySelectorAll('.rev-card').forEach((c) => c.addEventListener('click', () => openPreview(homeReviewsCache[+c.dataset.idx])));
+}
+
+// Eine Review-Karte (für Reviews-Home-Tab und Review-Suche).
+function reviewCardHtml(r, i) {
+  const cov = r.coverUrl ? `<img src="${escapeHtml(r.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : '';
+  const who = r.by ? (r.by.display_name || r.by.username || '') : '';
+  const stars = Number(r.rating) > 0 ? `<span class="friend-rating">${ratingDisplayHtml(r.rating)}</span>` : '';
+  const raw = (r.review || '').trim();
+  const text = escapeHtml(raw.slice(0, 240)) + (raw.length > 240 ? '…' : '');
+  return `<button class="rev-card" data-idx="${i}">
+      <div class="rev-cover${r.coverUrl ? '' : ' placeholder'}">${cov}</div>
+      <div class="rev-body">
+        <div class="rev-head"><span class="rev-title">${escapeHtml(r.title || '')}</span><span class="rev-artist">${escapeHtml(r.artist || '')}</span></div>
+        <div class="rev-who">${escapeHtml(who)}${stars}</div>
+        <p class="rev-text">${text}</p>
+      </div>
+    </button>`;
+}
+
+// Eine Listen-Karte (für Lists-Home-Tab und Playlist-Suche).
+function listCardHtml(l, i) {
+  const covers = l.items.slice(0, 4).map((it) => (it && it.coverUrl)
+    ? `<div class="ll-cover"><img src="${escapeHtml(it.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" /></div>`
+    : '<div class="ll-cover placeholder"></div>').join('');
+  const who = l.by ? (l.by.display_name || l.by.username || '') : '';
+  return `<button class="list-card" data-idx="${i}">
+      <div class="ll-covers">${covers || '<div class="ll-cover placeholder"></div>'}</div>
+      <div class="ll-meta"><span class="ll-name">${escapeHtml(l.name || 'Liste')}</span><span class="ll-by">${escapeHtml(who)} · ${l.items.length} Alben</span></div>
+    </button>`;
+}
+
+// „Lists" = Playlists von Gefolgten.
+async function renderHomeLists(body) {
+  if (!getUser()) {
+    body.innerHTML = '<div class="home-empty-card">Melde dich an, um Listen von Freunden zu sehen. <button id="lists-cta" class="link-btn">Anmelden</button></div>';
+    const b = body.querySelector('#lists-cta'); if (b) b.onclick = () => openAuth('login');
+    return;
+  }
+  body.innerHTML = '<div class="lists-wrap"><p class="hint">Lade…</p></div>';
+  const wrap = body.querySelector('.lists-wrap');
+  let lists = [];
+  try { lists = await fetchFriendsLists(20); } catch { /* ignorieren */ }
+  if (!wrap) return;
+  if (!lists.length) {
+    wrap.innerHTML = '<div class="home-empty-card">Noch keine Listen von Freunden. <button id="lists-cta" class="link-btn">Freunde finden</button></div>';
+    const b = wrap.querySelector('#lists-cta'); if (b) b.onclick = goMemberSearch;
+    return;
+  }
+  homeListsCache = lists;
+  wrap.innerHTML = lists.map((l, i) => listCardHtml(l, i)).join('');
+  wrap.querySelectorAll('.list-card').forEach((c) => c.addEventListener('click', () => {
+    const l = homeListsCache[+c.dataset.idx];
+    if (l && l.by) openUserProfile(l.by);
+  }));
 }
 
 // „Neu erschienen" – beliebte Releases des aktuellen Jahres (über Discogs).
@@ -1452,7 +1673,7 @@ async function renderFriendsRow() {
   try { feed = await fetchFriendsFeed(20); } catch { /* ignorieren */ }
   if (!feed.length) {
     el.innerHTML = '<div class="home-empty-card">Noch nichts von Freunden. <button id="friends-cta" class="link-btn">Freunde finden</button></div>';
-    const b = el.querySelector('#friends-cta'); if (b) b.onclick = openFriendsDialog;
+    const b = el.querySelector('#friends-cta'); if (b) b.onclick = goMemberSearch;
     return;
   }
   friendsFeedCache = feed;
@@ -1671,8 +1892,6 @@ $('#manual-rating-clear').addEventListener('click', () => manualRating && manual
 loadSettings();
 switchView('home');
 
-// Freunde finden
-$('#btn-find-friends').addEventListener('click', openFriendsDialog);
 $('#btn-friends-close').addEventListener('click', () => $('#friends-dialog').close());
 $('#user-back').addEventListener('click', closeUserProfile);
 $('#btn-activity-close').addEventListener('click', () => $('#activity-dialog').close());

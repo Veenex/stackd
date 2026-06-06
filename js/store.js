@@ -433,6 +433,106 @@ export async function fetchFriendsFeed(limit = 20) {
   return [...adds, ...plys].sort((a, b) => b.ts - a.ts).slice(0, limit);
 }
 
+// Reviews-Feed: zuerst Reviews von Gefolgten, danach allgemein neueste Reviews.
+export async function fetchReviewsFeed(limit = 30) {
+  const sb = await cloud(); const u = uid();
+  if (!sb) return [];
+  let followeeIds = [];
+  if (u) {
+    const { data: f } = await sb.from('follows').select('followee_id').eq('follower_id', u);
+    followeeIds = (f || []).map((r) => r.followee_id);
+  }
+  const out = []; const seen = new Set();
+  const addRows = async (rows) => {
+    const withRev = (rows || []).filter((it) => (it.review || '').trim() && !seen.has(it.id));
+    if (!withRev.length) return;
+    const userIds = [...new Set(withRev.map((i) => i.user_id))];
+    const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', userIds);
+    const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
+    for (const it of withRev) {
+      seen.add(it.id);
+      out.push({ ...fromRow(it), by: pmap[it.user_id] || null, ts: it.added_at ? new Date(it.added_at).getTime() : 0 });
+    }
+  };
+  // 1) Reviews von Gefolgten zuerst
+  if (followeeIds.length) {
+    const { data } = await sb.from('items').select('*').in('user_id', followeeIds)
+      .not('review', 'is', null).order('added_at', { ascending: false }).limit(limit);
+    await addRows(data);
+  }
+  // 2) Allgemein neueste Reviews auffüllen (eigene ausgenommen)
+  if (out.length < limit) {
+    const { data } = await sb.from('items').select('*')
+      .not('review', 'is', null).order('added_at', { ascending: false }).limit(limit * 2);
+    await addRows((data || []).filter((it) => !u || it.user_id !== u));
+  }
+  return out.slice(0, limit);
+}
+
+// Listen (Playlists) von Gefolgten – für den „Lists"-Home-Tab.
+export async function fetchFriendsLists(limit = 20) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return [];
+  const { data: f } = await sb.from('follows').select('followee_id').eq('follower_id', u);
+  const ids = (f || []).map((r) => r.followee_id);
+  if (!ids.length) return [];
+  const { data: pls } = await sb.from('playlists').select('*').in('user_id', ids)
+    .order('created_at', { ascending: false }).limit(limit);
+  if (!pls || !pls.length) return [];
+  const plIds = pls.map((p) => p.id);
+  const ownerIds = [...new Set(pls.map((p) => p.user_id))];
+  const [{ data: plItems }, { data: items }, { data: profs }] = await Promise.all([
+    sb.from('playlist_items').select('*').in('playlist_id', plIds),
+    sb.from('items').select('*').in('user_id', ownerIds),
+    sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ownerIds),
+  ]);
+  const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
+  const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
+  return pls.map((p) => ({
+    id: p.id, name: p.name, description: p.description || '', by: pmap[p.user_id] || null,
+    items: (plItems || []).filter((pi) => pi.playlist_id === p.id).map((pi) => map[pi.item_id]).filter(Boolean),
+  }));
+}
+
+// Reviews suchen (nach Album-Titel oder Künstler/in), öffentlich.
+export async function searchReviews(q, limit = 30) {
+  const sb = await cloud(); if (!sb || !q.trim()) return [];
+  const safe = q.trim().replace(/[%_,()\\]/g, ' ').trim();
+  if (!safe) return [];
+  const { data } = await sb.from('items').select('*').not('review', 'is', null)
+    .or(`title.ilike.%${safe}%,artist.ilike.%${safe}%`)
+    .order('added_at', { ascending: false }).limit(limit * 2);
+  const rows = (data || []).filter((it) => (it.review || '').trim());
+  if (!rows.length) return [];
+  const userIds = [...new Set(rows.map((i) => i.user_id))];
+  const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', userIds);
+  const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
+  return rows.slice(0, limit).map((it) => ({ ...fromRow(it), by: pmap[it.user_id] || null }));
+}
+
+// Playlists suchen (nach Name), öffentlich – mit Cover-Vorschau + Ersteller.
+export async function searchPlaylists(q, limit = 30) {
+  const sb = await cloud(); if (!sb || !q.trim()) return [];
+  const safe = q.trim().replace(/[%_,()\\]/g, ' ').trim();
+  if (!safe) return [];
+  const { data: pls } = await sb.from('playlists').select('*').ilike('name', `%${safe}%`)
+    .order('created_at', { ascending: false }).limit(limit);
+  if (!pls || !pls.length) return [];
+  const plIds = pls.map((p) => p.id);
+  const ownerIds = [...new Set(pls.map((p) => p.user_id))];
+  const [{ data: plItems }, { data: items }, { data: profs }] = await Promise.all([
+    sb.from('playlist_items').select('*').in('playlist_id', plIds),
+    sb.from('items').select('*').in('user_id', ownerIds),
+    sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ownerIds),
+  ]);
+  const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
+  const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
+  return pls.map((p) => ({
+    id: p.id, name: p.name, description: p.description || '', by: pmap[p.user_id] || null,
+    items: (plItems || []).filter((pi) => pi.playlist_id === p.id).map((pi) => map[pi.item_id]).filter(Boolean),
+  }));
+}
+
 // ---------- Einstellungen (vorerst global lokal) ----------
 export function getSettings() {
   try { return JSON.parse(localStorage.getItem(KEYS.settings)) || {}; } catch { return {}; }
