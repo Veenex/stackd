@@ -149,6 +149,8 @@
           <div id="value-range" class="value-range"></div>
         </div>
 
+        <button id="btn-wrapped" class="btn ghost wrapped-btn">📊 Stackd Wrapped</button>
+
         <details class="profile-settings">
           <summary>Backup</summary>
           <div class="form">
@@ -160,7 +162,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Stackd · Build 83</p>
+        <p class="hint profile-version">Stackd · Build 84</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -437,6 +439,16 @@
         <input type="text" id="act-comment-input" placeholder="Kommentar schreiben…" autocomplete="off" />
         <button id="act-comment-send" class="btn primary">Senden</button>
       </div>
+    </div>
+  </dialog>
+
+  <dialog id="wrapped-dialog" class="dialog">
+    <div class="wrapped-sheet">
+      <div class="friends-head">
+        <span id="wrapped-title">Stackd Wrapped</span>
+        <button id="btn-wrapped-close" class="dialog-close" aria-label="Schließen">×</button>
+      </div>
+      <div id="wrapped-body"></div>
     </div>
   </dialog>
 

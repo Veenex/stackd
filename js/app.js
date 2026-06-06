@@ -9,7 +9,7 @@ import {
   searchUsers, getFollowing, follow, unfollow, fetchFriendsFeed,
   fetchUserProfile, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
-  addPlay, fetchPlays, deletePlay,
+  addPlay, fetchPlays, deletePlay, fetchUserPlays,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
@@ -433,6 +433,46 @@ $('#dp-play-add').addEventListener('click', async () => {
   renderDiaryPlays(editing.id);
   toast('Eingetragen');
 });
+
+// ---------- Stackd Wrapped (Jahresrückblick) ----------
+async function openWrapped() {
+  if (!requireAuth()) return;
+  const year = new Date().getFullYear();
+  $('#wrapped-title').textContent = 'Stackd Wrapped ' + year;
+  $('#wrapped-body').innerHTML = '<p class="hint">Lade…</p>';
+  $('#wrapped-dialog').showModal();
+  const coll = getList('collection');
+  const addedThisYear = coll.filter((i) => new Date(i.addedAt || 0).getFullYear() === year).length;
+  const rated = coll.filter((i) => Number(i.rating) > 0);
+  const avg = rated.length ? (rated.reduce((s, i) => s + Number(i.rating), 0) / rated.length) : 0;
+  const topRated = [...rated].sort((a, b) => b.rating - a.rating).slice(0, 3);
+  let plays = [];
+  try { plays = await fetchUserPlays(getUser().id); } catch { /* ignorieren */ }
+  const playsThisYear = plays.filter((p) => String(p.played_on || '').startsWith(String(year)));
+  const counts = {};
+  playsThisYear.forEach((p) => { counts[p.item_id] = (counts[p.item_id] || 0) + 1; });
+  let mostId = null, mostN = 0;
+  Object.entries(counts).forEach(([id, n]) => { if (n > mostN) { mostN = n; mostId = id; } });
+  const mostItem = mostId ? coll.find((i) => i.id === mostId) : null;
+  const cards = [
+    { label: 'Alben hinzugefügt', val: addedThisYear },
+    { label: 'Hör-Einträge', val: playsThisYear.length },
+    { label: 'Alben gesamt', val: coll.length },
+    { label: 'Ø Bewertung', val: avg ? avg.toFixed(1) + ' ♪' : '–' },
+  ];
+  let html = `<div class="wrapped-cards">${cards.map((c) => `<div class="wrapped-card"><span class="wrapped-num">${c.val}</span><span class="wrapped-lbl">${c.label}</span></div>`).join('')}</div>`;
+  if (mostItem) {
+    html += `<span class="dp-label wrapped-h">Meistgehört (${mostN}×)</span><button class="wrapped-album" data-id="${mostItem.id}"><div class="chart-cover${mostItem.coverUrl ? '' : ' placeholder'}">${mostItem.coverUrl ? `<img src="${escapeHtml(mostItem.coverUrl)}" alt="" />` : ''}</div><div class="chart-meta"><span class="chart-title">${escapeHtml(mostItem.title || '')}</span><span class="chart-artist">${escapeHtml(mostItem.artist || '')}</span></div></button>`;
+  }
+  if (topRated.length) {
+    html += '<span class="dp-label wrapped-h">Top bewertet</span>' + topRated.map((it) => `<button class="wrapped-row" data-id="${it.id}"><span class="chart-title">${escapeHtml(it.artist || '')} – ${escapeHtml(it.title || '')}</span>${ratingDisplayHtml(it.rating)}</button>`).join('');
+  }
+  if (!coll.length && !playsThisYear.length) html = `<p class="hint">Noch keine Daten für ${year}. Füg Alben hinzu und log, was du hörst!</p>`;
+  $('#wrapped-body').innerHTML = html;
+  $('#wrapped-body').querySelectorAll('[data-id]').forEach((b) => b.addEventListener('click', () => { $('#wrapped-dialog').close(); openDetail('collection', b.dataset.id); }));
+}
+$('#btn-wrapped').addEventListener('click', openWrapped);
+$('#btn-wrapped-close').addEventListener('click', () => $('#wrapped-dialog').close());
 
 $('#detail-back').addEventListener('click', closeDetail);
 $('#dp-rating-clear').addEventListener('click', () => detailRating && detailRating.setValue(0));

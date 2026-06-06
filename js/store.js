@@ -359,6 +359,11 @@ export async function deletePlay(id) {
   if (!sb || !u) return;
   await sb.from('plays').delete().eq('id', id).eq('user_id', u);
 }
+export async function fetchUserPlays(userId) {
+  const sb = await cloud(); if (!sb || !userId) return [];
+  const { data } = await sb.from('plays').select('*').eq('user_id', userId).order('played_on', { ascending: false });
+  return data || [];
+}
 
 // Vollständiges Profil eines anderen Nutzers (öffentlich lesbar).
 export async function fetchUserProfile(userId) {
