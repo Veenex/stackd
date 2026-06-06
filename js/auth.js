@@ -123,7 +123,10 @@ async function onSubmit(e) {
   try {
     if (mode === 'login') {
       const { error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) return setMsg(/invalid login/i.test(error.message) ? 'E-Mail oder Passwort falsch.' : error.message, 'error');
+      if (error) {
+        if (/not confirmed|confirm/i.test(error.message)) return setMsg('Bitte bestätige zuerst den Link in deiner Bestätigungs-E-Mail.', 'error');
+        return setMsg(/invalid login/i.test(error.message) ? 'E-Mail oder Passwort falsch.' : error.message, 'error');
+      }
       closeAuth();
     } else if (mode === 'register') {
       if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return setMsg('Username: 3–20 Zeichen, nur Buchstaben, Zahlen, _', 'error');
