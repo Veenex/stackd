@@ -893,6 +893,12 @@ body.logged-in .logout-btn { display: block; }
 .vr-note { color: var(--muted); font-size: 12px; margin: 6px 0 0; line-height: 1.4; }
 .vr-loading { color: var(--petrol); }
 
+/* Listen: Beschreibung + Anlege-Dialog */
+.pl-desc { color: var(--muted); font-size: 13px; line-height: 1.4; margin: 2px 0 8px; }
+.pl-create { display: flex; flex-direction: column; gap: 8px; }
+#new-playlist-desc { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); padding: 10px 12px; font-family: inherit; font-size: 15px; resize: vertical; }
+#up-lists .playlist-item { margin-bottom: 14px; }
+
 /* Feed-Karte: Bewertung + Review-Schnipsel */
 .friend-rating { display: block; margin-top: 3px; }
 .friend-rev { display: block; font-size: 11px; color: var(--muted); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

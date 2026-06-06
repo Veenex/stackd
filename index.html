@@ -160,7 +160,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Stackd · Build 80</p>
+        <p class="hint profile-version">Stackd · Build 81</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -352,6 +352,10 @@
         <div id="up-collection" class="cat-covers uptab-panel hidden"></div>
         <div id="up-wishlist" class="cat-covers uptab-panel hidden"></div>
       </div>
+      <div class="profile-section" id="up-lists-section" hidden>
+        <span class="dp-label">Playlists</span>
+        <div id="up-lists"></div>
+      </div>
     </div>
   </section>
 
@@ -447,7 +451,8 @@
         <button type="button" id="btn-create-pl-close" class="dialog-close" aria-label="Schließen">×</button>
       </div>
       <div class="pl-create">
-        <input type="text" id="new-playlist-name" placeholder="" />
+        <input type="text" id="new-playlist-name" placeholder="Name der Playlist" />
+        <textarea id="new-playlist-desc" rows="2" placeholder="Beschreibung (optional)"></textarea>
         <button id="btn-create-playlist" class="btn primary">Anlegen</button>
       </div>
     </div>

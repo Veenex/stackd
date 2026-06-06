@@ -142,14 +142,14 @@ export function savePlaylists(pls) {
   const k = userKey('playlists');
   if (k) write(k, pls);
 }
-export function createPlaylist(name) {
-  const p = { id: crypto.randomUUID(), name: (name || '').trim() || 'Neue Playlist', itemIds: [], createdAt: Date.now() };
+export function createPlaylist(name, description) {
+  const p = { id: crypto.randomUUID(), name: (name || '').trim() || 'Neue Liste', description: (description || '').trim(), itemIds: [], createdAt: Date.now() };
   const u = uid();
   if (!u) return p;
   const pls = getPlaylists(); pls.push(p); savePlaylists(pls);
   (async () => {
     const sb = await cloud(); if (!sb) return;
-    const { error } = await sb.from('playlists').insert({ id: p.id, user_id: u, name: p.name, created_at: new Date(p.createdAt).toISOString() });
+    const { error } = await sb.from('playlists').insert({ id: p.id, user_id: u, name: p.name, description: p.description || null, created_at: new Date(p.createdAt).toISOString() });
     if (error) console.warn('playlist insert:', error.message);
   })();
   return p;
@@ -195,7 +195,7 @@ export function togglePlaylistItem(playlistId, itemId) {
 // ---------- Sync: Login (Pull + einmalige Migration) / Logout ----------
 function assemblePlaylists(pls, plItems) {
   return (pls || []).map((p) => ({
-    id: p.id, name: p.name,
+    id: p.id, name: p.name, description: p.description || '',
     createdAt: p.created_at ? new Date(p.created_at).getTime() : Date.now(),
     itemIds: (plItems || []).filter((pi) => pi.playlist_id === p.id).map((pi) => pi.item_id),
   }));
@@ -209,7 +209,7 @@ async function uploadItems(sb, items, list, u) {
 }
 async function uploadPlaylists(sb, pls, u) {
   for (const p of (pls || [])) {
-    await sb.from('playlists').upsert({ id: p.id, user_id: u, name: p.name, created_at: new Date(p.createdAt || Date.now()).toISOString() });
+    await sb.from('playlists').upsert({ id: p.id, user_id: u, name: p.name, description: p.description || null, created_at: new Date(p.createdAt || Date.now()).toISOString() });
     if (p.itemIds && p.itemIds.length) {
       await sb.from('playlist_items').upsert(p.itemIds.map((it) => ({ playlist_id: p.id, item_id: it })));
     }
@@ -337,6 +337,23 @@ export async function fetchUserProfile(userId) {
   const sb = await cloud(); if (!sb || !userId) return null;
   const { data } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
   return data || null;
+}
+
+// Listen (Playlists) eines anderen Nutzers inkl. der enthaltenen Alben (Cover).
+export async function fetchUserPlaylists(userId) {
+  const sb = await cloud(); if (!sb || !userId) return [];
+  const { data: pls } = await sb.from('playlists').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+  if (!pls || !pls.length) return [];
+  const plIds = pls.map((p) => p.id);
+  const [{ data: plItems }, { data: items }] = await Promise.all([
+    sb.from('playlist_items').select('*').in('playlist_id', plIds),
+    sb.from('items').select('*').eq('user_id', userId),
+  ]);
+  const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
+  return pls.map((p) => ({
+    id: p.id, name: p.name, description: p.description || '',
+    items: (plItems || []).filter((pi) => pi.playlist_id === p.id).map((pi) => map[pi.item_id]).filter(Boolean),
+  }));
 }
 
 // Sammlung/Wishlist eines anderen Nutzers.

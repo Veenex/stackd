@@ -7,7 +7,7 @@ import {
   getPlaylists, createPlaylist, deletePlaylist, togglePlaylistItem,
   syncAll, clearUserCache,
   searchUsers, getFollowing, follow, unfollow, fetchFriendsFeed,
-  fetchUserProfile, fetchUserItems,
+  fetchUserProfile, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange } from './api.js';
@@ -1196,7 +1196,8 @@ function renderPlaylists() {
     const covers = albums.length
       ? `<div class="playlist-albums">${albums.map((a) => `<button class="pa-cover" data-id="${a.id}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.remove()" />` : ''}</button>`).join('')}</div>`
       : '<p class="playlist-empty">Noch leer.</p>';
-    return `<div class="playlist-item"><div class="playlist-head"><span class="pl-title">${escapeHtml(p.name)}</span><span><span class="pl-count">${albums.length}</span> <button class="playlist-del" data-del="${p.id}">löschen</button></span></div>${covers}</div>`;
+    const desc = p.description ? `<p class="pl-desc">${escapeHtml(p.description)}</p>` : '';
+    return `<div class="playlist-item"><div class="playlist-head"><span class="pl-title">${escapeHtml(p.name)}</span><span><span class="pl-count">${albums.length}</span> <button class="playlist-del" data-del="${p.id}">löschen</button></span></div>${desc}${covers}</div>`;
   }).join('');
   c.querySelectorAll('.pa-cover').forEach((b) => b.addEventListener('click', () => openDetail('collection', b.dataset.id)));
   c.querySelectorAll('.playlist-del').forEach((b) => b.addEventListener('click', (e) => {
@@ -1210,8 +1211,9 @@ $('#btn-create-pl-close').addEventListener('click', () => $('#create-playlist-di
 $('#btn-create-playlist').addEventListener('click', () => {
   const name = $('#new-playlist-name').value.trim();
   if (!name) return;
-  createPlaylist(name);
+  createPlaylist(name, $('#new-playlist-desc').value.trim());
   $('#new-playlist-name').value = '';
+  $('#new-playlist-desc').value = '';
   $('#create-playlist-dialog').close();
   renderPlaylists();
   toast('Playlist angelegt');
@@ -1483,6 +1485,8 @@ async function openUserProfile(user) {
   // Sammlung/Wishlist starten eingeklappt
   $('#up-collection').classList.add('hidden');
   $('#up-wishlist').classList.add('hidden');
+  $('#up-lists').innerHTML = '';
+  $('#up-lists-section').hidden = true;
   $('#user-page').classList.remove('hidden');
   $('#user-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
@@ -1515,6 +1519,27 @@ async function openUserProfile(user) {
   // Sammlung + Wishlist Cover-Grids
   fillCoverGrid($('#up-collection'), coll);
   fillCoverGrid($('#up-wishlist'), wish);
+  // Listen des Nutzers
+  let lists = [];
+  try { lists = await fetchUserPlaylists(u.id); } catch { /* ignorieren */ }
+  renderUserLists(lists);
+}
+// Listen (Playlists) eines Nutzers anzeigen
+function renderUserLists(lists) {
+  const sec = $('#up-lists-section'); const box = $('#up-lists');
+  if (!lists.length) { sec.hidden = true; box.innerHTML = ''; return; }
+  sec.hidden = false;
+  box.innerHTML = lists.map((pl) => {
+    const covers = pl.items.length
+      ? '<div class="playlist-albums">' + pl.items.map((a, i) => `<button class="pa-cover" data-pl="${pl.id}" data-i="${i}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : ''}</button>`).join('') + '</div>'
+      : '<p class="playlist-empty">Leer.</p>';
+    const desc = pl.description ? `<p class="pl-desc">${escapeHtml(pl.description)}</p>` : '';
+    return `<div class="playlist-item"><div class="playlist-head"><span class="pl-title">${escapeHtml(pl.name)}</span><span class="pl-count">${pl.items.length}</span></div>${desc}${covers}</div>`;
+  }).join('');
+  box.querySelectorAll('.pa-cover').forEach((b) => b.addEventListener('click', () => {
+    const pl = lists.find((x) => x.id === b.dataset.pl);
+    if (pl) openPreview(pl.items[+b.dataset.i]);
+  }));
 }
 // Cover-Grid mit Klick -> Album-Vorschau (Items im Closure)
 function fillCoverGrid(el, items) {
