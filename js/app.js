@@ -49,6 +49,7 @@ function switchView(view) {
     $('#view-title').textContent = VIEW_TITLES[view] || '';
   }
   $('#header-settings').classList.toggle('hidden', view !== 'settings');
+  $('#header-share').classList.toggle('hidden', view !== 'settings');
   if (view !== 'add') {
     // Kamera schließen + Scan-UI zurücksetzen, sobald man den Tab verlässt
     stopScanner();
@@ -394,8 +395,28 @@ function setListenLinks(q) {
   $('#dp-spotify').href = `https://open.spotify.com/search/${q}`;
   $('#dp-apple').href = `https://music.apple.com/search?term=${q}`;
   $('#dp-amazon').href = `https://music.amazon.com/search/${q}`;
-  $('#dp-youtube').href = `https://www.youtube.com/results?search_query=${q}`;
+  $('#dp-youtube').href = `https://music.youtube.com/search?q=${q}`;
 }
+
+// ---------- Teilen (Web Share API, Fallback: Link kopieren) ----------
+async function shareLink(text) {
+  const url = location.origin + location.pathname;
+  try {
+    if (navigator.share) { await navigator.share({ title: 'Discend', text, url }); return; }
+    await navigator.clipboard.writeText(text + ' ' + url);
+    toast('Link kopiert');
+  } catch { /* abgebrochen/ignorieren */ }
+}
+function shareProfile() {
+  shareLink(`${profileName() || 'Mein Profil'} auf Discend`);
+}
+function shareAlbum() {
+  const a = editing ? getList(editing.list).find((i) => i.id === editing.id) : previewResult;
+  if (!a) return;
+  shareLink(`${a.artist || ''} – ${a.title || ''} auf Discend`.replace(/^ – /, '').trim());
+}
+$('#header-share').addEventListener('click', shareProfile);
+$('#as-share').addEventListener('click', shareAlbum);
 
 // Community-Bewertung: Histogramm (0,5–5) + Schnitt aus ALLEN Profilen.
 let communityReq = 0;
@@ -1184,10 +1205,12 @@ function renderProfile() {
   const loc = (p.location || '').trim();
   const web = (p.website || '').trim();
   const parts = [];
-  if (loc) parts.push(`📍 ${escapeHtml(loc)}`);
+  const PIN = '<svg class="meta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+  const LNK = '<svg class="meta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  if (loc) parts.push(`${PIN} ${escapeHtml(loc)}`);
   if (web) {
     const href = /^https?:\/\//.test(web) ? web : 'https://' + web;
-    parts.push(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener">🔗 ${escapeHtml(web.replace(/^https?:\/\//, ''))}</a>`);
+    parts.push(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${LNK} ${escapeHtml(web.replace(/^https?:\/\//, ''))}</a>`);
   }
   $('#profile-meta-line').innerHTML = parts.join('  ·  ');
   $('#profile-bio-display').textContent = p.bio || '';

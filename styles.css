@@ -64,6 +64,9 @@ body {
 .header-gear { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text); cursor: pointer; padding: 4px; display: inline-flex; }
 .header-gear.hidden { display: none; }
 .header-gear svg { width: 23px; height: 23px; display: block; }
+.header-share { background: none; border: none; color: var(--text); cursor: pointer; padding: 4px; display: inline-flex; }
+.header-share.hidden { display: none; }
+.header-share svg { width: 22px; height: 22px; display: block; }
 .badge {
   background: var(--surface-2);
   color: var(--muted);
@@ -581,9 +584,10 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 }
 .banner-edit svg { width: 20px; height: 20px; }
 .profile-meta-line { text-align: center; color: var(--muted); font-size: 13px; margin: 12px 0 0; }
-.profile-meta-line a { color: var(--accent); text-decoration: none; }
+.profile-meta-line a { color: var(--muted); text-decoration: none; }
 .profile-meta-line:empty { display: none; }
-.profile-bio-display { text-align: center; color: var(--text); font-size: 14px; margin: 8px 0 0; line-height: 1.5; white-space: pre-wrap; }
+.meta-ico { width: 13px; height: 13px; display: inline-block; vertical-align: -2px; color: var(--muted); }
+.profile-bio-display { text-align: center; color: var(--muted); font-size: 14px; margin: 8px 0 0; line-height: 1.5; white-space: pre-wrap; }
 .profile-bio-display:empty { display: none; }
 .profile-section { margin-top: 24px; }
 .ps-images { display: flex; gap: 8px; }
@@ -857,6 +861,7 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
   color: #fff; flex: 0 0 auto;
 }
 .listen-ico svg { width: 20px; height: 20px; display: block; }
+.listen-ico img { width: 20px; height: 20px; display: block; }
 .listen-ico.spotify { background: #1db954; }
 .listen-ico.apple { background: #fa243c; }
 .listen-ico.amazon { background: #25d1da; }
@@ -896,6 +901,7 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .as-toggle.liked { color: var(--rose); border-color: var(--rose); }
 .as-rated { margin-top: 16px; text-align: center; }
 .as-rated .rating-row { justify-content: center; }
+.as-row { width: 100%; margin-top: 10px; padding: 13px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); border-radius: 12px; font-size: 15px; cursor: pointer; text-align: center; }
 .as-done { width: 100%; margin-top: 16px; padding: 14px; border: none; border-radius: 12px; background: var(--surface-2); color: var(--text); font-weight: 700; font-size: 16px; cursor: pointer; }
 .dp-section { margin-top: 24px; }
 .like-btn {
