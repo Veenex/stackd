@@ -167,7 +167,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Discend · Build 89</p>
+        <p class="hint profile-version">Discend · Build 90</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -526,6 +526,18 @@
         <input type="text" id="pl-dialog-new" placeholder="Neue Playlist…" />
         <button id="btn-pl-dialog-create" class="btn">+</button>
       </div>
+    </div>
+  </dialog>
+
+  <!-- Listen-Ansicht (sortierbar/ranked) -->
+  <dialog id="playlist-view-dialog" class="dialog">
+    <div class="wrapped-sheet">
+      <div class="friends-head">
+        <span id="plv-title"></span>
+        <button type="button" id="btn-plv-close" class="dialog-close" aria-label="Schließen">×</button>
+      </div>
+      <p id="plv-desc" class="pl-desc"></p>
+      <div id="plv-list"></div>
     </div>
   </dialog>
 

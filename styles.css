@@ -1026,6 +1026,22 @@ body.logged-in .logout-btn { display: block; }
 .vh-diff.up { color: #4caf50; }
 .vh-diff.down { color: var(--rose); }
 
+/* Listen-Ansicht (sortierbar/ranked) */
+.pl-title { background: none; border: none; color: var(--text); font: inherit; font-weight: 700; cursor: pointer; padding: 0; text-align: left; }
+#playlist-view-dialog { width: min(94vw, 460px); }
+#plv-title { font-weight: 700; font-size: 17px; }
+.plv-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.plv-rank { width: 22px; flex-shrink: 0; text-align: center; font-weight: 700; color: var(--muted); }
+.plv-album { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; background: none; border: none; text-align: left; cursor: pointer; padding: 0; color: var(--text); }
+.plv-cover { width: 44px; height: 44px; flex-shrink: 0; border-radius: 5px; overflow: hidden; background: var(--surface-2); }
+.plv-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.plv-meta { min-width: 0; display: flex; flex-direction: column; }
+.plv-ctrls { flex-shrink: 0; display: flex; align-items: center; gap: 2px; }
+.plv-mv, .plv-rm { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 6px; border-radius: 6px; }
+.plv-mv:disabled { opacity: 0.3; cursor: default; }
+.plv-mv:active, .plv-rm:active { background: var(--surface-2); }
+.plv-rm { color: var(--rose); font-size: 18px; }
+
 /* ---------- Desktop: zentrierte Spalte (Handy <720px bleibt unverändert) ---------- */
 @media (min-width: 720px) {
   .app-header { width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; }

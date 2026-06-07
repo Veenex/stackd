@@ -190,9 +190,32 @@ export function togglePlaylistItem(playlistId, itemId) {
   if (uid()) (async () => {
     const sb = await cloud(); if (!sb) return;
     let error;
-    if (nowAdded) ({ error } = await sb.from('playlist_items').insert({ playlist_id: playlistId, item_id: itemId }));
+    if (nowAdded) ({ error } = await sb.from('playlist_items').insert({ playlist_id: playlistId, item_id: itemId, position: p.itemIds.length - 1 }));
     else ({ error } = await sb.from('playlist_items').delete().eq('playlist_id', playlistId).eq('item_id', itemId));
     if (error) console.warn('playlist item:', error.message);
+  })();
+}
+
+// Reihenfolge in einer Liste ändern (dir = -1 hoch, +1 runter) und persistieren.
+export function movePlaylistItem(playlistId, itemId, dir) {
+  const pls = getPlaylists();
+  const p = pls.find((x) => x.id === playlistId);
+  if (!p) return;
+  const i = p.itemIds.indexOf(itemId);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= p.itemIds.length) return;
+  [p.itemIds[i], p.itemIds[j]] = [p.itemIds[j], p.itemIds[i]];
+  savePlaylists(pls);
+  persistPlaylistOrder(p);
+}
+function persistPlaylistOrder(p) {
+  if (!uid()) return;
+  (async () => {
+    const sb = await cloud(); if (!sb) return;
+    const rows = p.itemIds.map((it, idx) => ({ playlist_id: p.id, item_id: it, position: idx }));
+    if (!rows.length) return;
+    const { error } = await sb.from('playlist_items').upsert(rows);
+    if (error) console.warn('playlist reorder:', error.message);
   })();
 }
 
@@ -201,7 +224,7 @@ function assemblePlaylists(pls, plItems) {
   return (pls || []).map((p) => ({
     id: p.id, name: p.name, description: p.description || '',
     createdAt: p.created_at ? new Date(p.created_at).getTime() : Date.now(),
-    itemIds: (plItems || []).filter((pi) => pi.playlist_id === p.id).map((pi) => pi.item_id),
+    itemIds: (plItems || []).filter((pi) => pi.playlist_id === p.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((pi) => pi.item_id),
   }));
 }
 
@@ -215,7 +238,7 @@ async function uploadPlaylists(sb, pls, u) {
   for (const p of (pls || [])) {
     await sb.from('playlists').upsert({ id: p.id, user_id: u, name: p.name, description: p.description || null, created_at: new Date(p.createdAt || Date.now()).toISOString() });
     if (p.itemIds && p.itemIds.length) {
-      await sb.from('playlist_items').upsert(p.itemIds.map((it) => ({ playlist_id: p.id, item_id: it })));
+      await sb.from('playlist_items').upsert(p.itemIds.map((it, idx) => ({ playlist_id: p.id, item_id: it, position: idx })));
     }
   }
 }
@@ -385,7 +408,7 @@ export async function fetchUserPlaylists(userId) {
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
   return pls.map((p) => ({
     id: p.id, name: p.name, description: p.description || '',
-    items: (plItems || []).filter((pi) => pi.playlist_id === p.id).map((pi) => map[pi.item_id]).filter(Boolean),
+    items: (plItems || []).filter((pi) => pi.playlist_id === p.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((pi) => map[pi.item_id]).filter(Boolean),
   }));
 }
 
@@ -490,7 +513,7 @@ export async function fetchFriendsLists(limit = 20) {
   const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
   return pls.map((p) => ({
     id: p.id, name: p.name, description: p.description || '', by: pmap[p.user_id] || null,
-    items: (plItems || []).filter((pi) => pi.playlist_id === p.id).map((pi) => map[pi.item_id]).filter(Boolean),
+    items: (plItems || []).filter((pi) => pi.playlist_id === p.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((pi) => map[pi.item_id]).filter(Boolean),
   }));
 }
 
@@ -529,7 +552,7 @@ export async function searchPlaylists(q, limit = 30) {
   const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
   return pls.map((p) => ({
     id: p.id, name: p.name, description: p.description || '', by: pmap[p.user_id] || null,
-    items: (plItems || []).filter((pi) => pi.playlist_id === p.id).map((pi) => map[pi.item_id]).filter(Boolean),
+    items: (plItems || []).filter((pi) => pi.playlist_id === p.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((pi) => map[pi.item_id]).filter(Boolean),
   }));
 }
 

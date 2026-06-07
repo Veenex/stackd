@@ -4,7 +4,7 @@ import {
   getList, addItem, updateItem, deleteItem, moveItem,
   getSettings, saveSettings, exportAll, importAll,
   sortItems, filterItems,
-  getPlaylists, createPlaylist, deletePlaylist, togglePlaylistItem,
+  getPlaylists, createPlaylist, deletePlaylist, togglePlaylistItem, movePlaylistItem,
   syncAll, clearUserCache,
   searchUsers, getFollowing, follow, unfollow, fetchFriendsFeed,
   fetchReviewsFeed, fetchFriendsLists, searchReviews, searchPlaylists,
@@ -1457,14 +1457,53 @@ function renderPlaylists() {
       ? `<div class="playlist-albums">${albums.map((a) => `<button class="pa-cover" data-id="${a.id}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.remove()" />` : ''}</button>`).join('')}</div>`
       : '<p class="playlist-empty">Noch leer.</p>';
     const desc = p.description ? `<p class="pl-desc">${escapeHtml(p.description)}</p>` : '';
-    return `<div class="playlist-item"><div class="playlist-head"><span class="pl-title">${escapeHtml(p.name)}</span><span><span class="pl-count">${albums.length}</span> <button class="playlist-del" data-del="${p.id}">löschen</button></span></div>${desc}${covers}</div>`;
+    return `<div class="playlist-item"><div class="playlist-head"><button class="pl-title" data-plopen="${p.id}">${escapeHtml(p.name)}</button><span><span class="pl-count">${albums.length}</span> <button class="playlist-del" data-del="${p.id}">löschen</button></span></div>${desc}${covers}</div>`;
   }).join('');
+  c.querySelectorAll('.pl-title[data-plopen]').forEach((b) => b.addEventListener('click', () => openPlaylistView(b.dataset.plopen)));
   c.querySelectorAll('.pa-cover').forEach((b) => b.addEventListener('click', () => openDetail('collection', b.dataset.id)));
   c.querySelectorAll('.playlist-del').forEach((b) => b.addEventListener('click', (e) => {
     e.stopPropagation();
     if (confirm('Playlist löschen?')) { deletePlaylist(b.dataset.del); renderPlaylists(); }
   }));
 }
+
+// ---------- Listen-Ansicht (sortierbar/ranked) ----------
+let plvId = null;
+function openPlaylistView(id) {
+  plvId = id;
+  renderPlaylistView();
+  $('#playlist-view-dialog').showModal();
+}
+function renderPlaylistView() {
+  const p = getPlaylists().find((x) => x.id === plvId);
+  if (!p) { $('#playlist-view-dialog').close(); return; }
+  $('#plv-title').textContent = p.name;
+  const descEl = $('#plv-desc');
+  descEl.textContent = p.description || '';
+  descEl.style.display = p.description ? '' : 'none';
+  const coll = getList('collection');
+  const albums = p.itemIds.map((id) => coll.find((x) => x.id === id)).filter(Boolean);
+  const list = $('#plv-list');
+  if (!albums.length) { list.innerHTML = '<p class="pl-none">Noch leer. Füge Alben über „+ Playlist" auf einer Albumseite hinzu.</p>'; return; }
+  list.innerHTML = albums.map((a, i) => `
+    <div class="plv-row">
+      <span class="plv-rank">${i + 1}</span>
+      <button class="plv-album" data-open="${a.id}">
+        <span class="plv-cover${a.coverUrl ? '' : ' placeholder'}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.remove()" />` : ''}</span>
+        <span class="plv-meta"><span class="chart-title">${escapeHtml(a.title || '')}</span><span class="chart-artist">${escapeHtml(a.artist || '')}</span></span>
+      </button>
+      <span class="plv-ctrls">
+        <button class="plv-mv" data-up="${a.id}" ${i === 0 ? 'disabled' : ''} aria-label="nach oben">▲</button>
+        <button class="plv-mv" data-down="${a.id}" ${i === albums.length - 1 ? 'disabled' : ''} aria-label="nach unten">▼</button>
+        <button class="plv-rm" data-rm="${a.id}" aria-label="entfernen">×</button>
+      </span>
+    </div>`).join('');
+  list.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => { $('#playlist-view-dialog').close(); openDetail('collection', b.dataset.open); }));
+  list.querySelectorAll('[data-up]').forEach((b) => b.addEventListener('click', () => { movePlaylistItem(plvId, b.dataset.up, -1); renderPlaylistView(); }));
+  list.querySelectorAll('[data-down]').forEach((b) => b.addEventListener('click', () => { movePlaylistItem(plvId, b.dataset.down, 1); renderPlaylistView(); }));
+  list.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', () => { togglePlaylistItem(plvId, b.dataset.rm); renderPlaylistView(); renderPlaylists(); }));
+}
+$('#btn-plv-close').addEventListener('click', () => $('#playlist-view-dialog').close());
 
 $('#btn-new-playlist').addEventListener('click', () => $('#create-playlist-dialog').showModal());
 $('#btn-create-pl-close').addEventListener('click', () => $('#create-playlist-dialog').close());
