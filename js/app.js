@@ -13,7 +13,7 @@ import {
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
   recordValueSnapshot, fetchValueHistory,
 } from './store.js';
-import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange } from './api.js';
+import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 
@@ -58,7 +58,7 @@ function switchView(view) {
     $('#scan-status').textContent = '';
   }
   renderCounts();
-  if (view === 'collection') renderList('collection');
+  if (view === 'collection') { renderList('collection'); renderValueRange(); }
   if (view === 'home') renderHome();
   if (view === 'search') renderBrowse();
   if (view === 'settings') {
@@ -800,7 +800,7 @@ function openBrowseTab(name) {
   else if (name === 'genre') renderDrillList(BROWSE_GENRES.map((g) => ({ label: g, params: { genre: g } })), 'Genre');
   else if (name === 'popular') browseCovers({ sort: 'have', sort_order: 'desc', per_page: 60 }, 'Most Popular – meistgesammelt', renderBrowse);
   else if (name === 'rated') browseCovers({ sort: 'want', sort_order: 'desc', per_page: 60 }, 'Highest Rated – am meisten begehrt', renderBrowse);
-  else if (name === 'top500') browseCovers({ sort: 'have', sort_order: 'desc', per_page: 100 }, 'Top 100 – meistgesammelt', renderBrowse);
+  else if (name === 'top500') browseCovers({ sort: 'have', sort_order: 'desc', per_page: 100, pages: 5 }, 'Top 500 – meistgesammelt', renderBrowse);
 }
 
 function renderDrillList(items, title) {
@@ -835,7 +835,17 @@ async function browseCovers(params, title, backFn) {
   wireBack();
   let res;
   try {
-    res = await discogsSearch(params);
+    const pages = params.pages || 1;
+    if (pages > 1) {
+      res = [];
+      for (let pg = 1; pg <= pages; pg++) {
+        const part = await discogsSearch({ ...params, per_page: 100, page: pg });
+        res = res.concat(part);
+        if (part.length < 100) break; // keine weiteren Seiten vorhanden
+      }
+    } else {
+      res = await discogsSearch(params);
+    }
   } catch (err) {
     c.innerHTML = head(`<p class="hint">Fehler: ${escapeHtml(err?.message || String(err))}</p>`);
     wireBack();
@@ -1110,6 +1120,7 @@ function renderProfile() {
   renderHisto();
   renderStatRows();
   renderValueRange();
+  renderGenreStats();
 }
 
 function renderRecent() {
@@ -1153,14 +1164,12 @@ function renderHisto() {
 function renderStatRows() {
   const coll = getList('collection');
   const wish = getList('wishlist');
-  const total = coll.reduce((sum, i) => sum + (Number(i.price) || 0), 0);
   const rows = [
     { label: 'Alben', val: coll.length, go: () => switchView('collection') },
     { label: 'Wishlist', val: wish.length, go: () => setProfileTab('watchlist') },
     { label: 'Favoriten', val: coll.filter((i) => i.liked).length },
     { label: 'Bewertet', val: coll.filter((i) => Number(i.rating) > 0).length },
     { label: 'Notizen', val: coll.filter((i) => (i.note || '').trim()).length },
-    { label: 'Sammlungswert', val: fmtEuro(total) },
   ];
   const ul = $('#stat-rows');
   ul.innerHTML = rows.map((r, idx) =>
@@ -1186,9 +1195,14 @@ function valueRangeBar(min, max, valued, total, loading) {
 }
 
 async function renderValueRange() {
-  const el = $('#value-range'); if (!el) return;
+  const els = document.querySelectorAll('.value-range'); if (!els.length) return;
+  const setHtml = (h) => els.forEach((e) => { e.innerHTML = h; });
   const coll = getList('collection');
-  if (!coll.length) { el.innerHTML = '<p class="hint">Noch keine Alben in der Sammlung.</p>'; return; }
+  if (!coll.length) {
+    const pe = document.getElementById('value-range'); if (pe) pe.innerHTML = '<p class="hint">Noch keine Alben in der Sammlung.</p>';
+    const ce = document.getElementById('value-collection'); if (ce) ce.innerHTML = '';
+    return;
+  }
   const cache = readPriceCache();
   const now = Date.now();
   let min = 0, max = 0, valued = 0;
@@ -1201,7 +1215,7 @@ async function renderValueRange() {
       else toFetch.push(it);
     }
   }
-  el.innerHTML = valueRangeBar(min, max, valued, coll.length, toFetch.length > 0);
+  setHtml(valueRangeBar(min, max, valued, coll.length, toFetch.length > 0));
   if (!toFetch.length) { if (valued > 0) recordValueSnapshot(Math.round((min + max) / 2)); return; }
   const reqId = ++valueRangeReq;
   const cap = toFetch.slice(0, 40); // pro Durchgang begrenzen (Rate-Limit)
@@ -1218,7 +1232,59 @@ async function renderValueRange() {
     }
   };
   await Promise.all([worker(), worker(), worker()]);
-  if (reqId === valueRangeReq && currentView === 'settings') renderValueRange();
+  if (reqId === valueRangeReq && (currentView === 'settings' || currentView === 'collection')) renderValueRange();
+}
+
+// ---------- Genre-Statistik + Entdecken nach Genre (#9) ----------
+let genreLoadReq = 0;
+function renderGenreStats() {
+  const el = $('#genre-stats'); if (!el) return;
+  const coll = getList('collection');
+  if (!coll.length) { el.innerHTML = '<p class="hint">Noch keine Alben in der Sammlung.</p>'; return; }
+  const counts = {};
+  for (const it of coll) {
+    const g = (it.genre || '').trim();
+    if (g) counts[g] = (counts[g] || 0) + 1;
+  }
+  const missing = coll.filter((it) => it.source === 'discogs' && it.sourceId && !(it.genre || '').trim());
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  if (!entries.length) {
+    el.innerHTML = `<p class="hint">${missing.length ? 'Genres werden geladen…' : 'Keine Genre-Daten verfügbar.'}</p>`;
+  } else {
+    const maxN = entries[0][1];
+    el.innerHTML = entries.map(([g, n]) => `
+      <button class="genre-row" data-genre="${escapeHtml(g)}">
+        <span class="genre-name">${escapeHtml(g)}</span>
+        <span class="genre-bar"><span class="genre-fill" style="width:${Math.round((n / maxN) * 100)}%"></span></span>
+        <span class="genre-count">${n}</span>
+      </button>`).join('') + (missing.length ? '<p class="hint genre-loading">Weitere Genres werden geladen…</p>' : '');
+    el.querySelectorAll('.genre-row').forEach((b) => b.addEventListener('click', () => openGenre(b.dataset.genre)));
+  }
+  if (missing.length) loadGenres(missing);
+}
+
+// Fehlende Genres im Hintergrund nachladen (gedrosselt, wie bei den Preisen).
+async function loadGenres(missing) {
+  const reqId = ++genreLoadReq;
+  const cap = missing.slice(0, 40);
+  let idx = 0;
+  const worker = async () => {
+    while (idx < cap.length) {
+      if (reqId !== genreLoadReq) return;
+      const it = cap[idx++];
+      let g = '';
+      try { g = await fetchGenre(it); } catch { /* ignorieren */ }
+      if (g) updateItem('collection', it.id, { genre: g });
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  if (reqId === genreLoadReq && currentView === 'settings') renderGenreStats();
+}
+
+// Genre antippen → in der Suche die Top-Alben dieses Genres zeigen (Entdecken).
+function openGenre(genre) {
+  switchView('search');
+  browseCovers({ genre, sort: 'have', sort_order: 'desc', per_page: 60 }, 'Genre: ' + genre, renderBrowse);
 }
 
 // Aktueller Sammlungswert (Mittel aus min–max) nur aus dem Cache – ohne Netz.

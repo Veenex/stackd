@@ -34,10 +34,21 @@ function normalize(partial) {
     format: '',
     barcode: '',
     coverUrl: '',
+    genre: '',
     source: '',
     sourceId: '',
     ...partial,
   };
+}
+
+// Primäres Genre aus einem Discogs-Treffer (genre[] bzw. style[]).
+function pickGenre(hit) {
+  const g = hit.genre || hit.genres;
+  if (Array.isArray(g) && g.length) return g[0];
+  if (typeof g === 'string' && g) return g;
+  const s = hit.style || hit.styles;
+  if (Array.isArray(s) && s.length) return s[0];
+  return '';
 }
 
 // ---------- Discogs (über Proxy) ----------
@@ -62,6 +73,7 @@ async function lookupDiscogs(barcode) {
     format: Array.isArray(hit.format) ? hit.format.join(', ') : (hit.format || ''),
     barcode,
     coverUrl: hit.cover_image || hit.thumb || '',
+    genre: pickGenre(hit),
     source: 'discogs',
     sourceId: String(hit.id || ''),
     masterId: hit.master_id || 0,
@@ -182,16 +194,26 @@ function normalizeDiscogsHit(hit) {
     format: Array.isArray(hit.format) ? hit.format.join(', ') : (hit.format || ''),
     barcode: Array.isArray(hit.barcode) ? hit.barcode[0] : '',
     coverUrl: hit.cover_image || hit.thumb || '',
+    genre: pickGenre(hit),
     source: 'discogs',
     sourceId: String(hit.id || ''),
     masterId: hit.master_id || 0,
   });
 }
 
+// Genre eines Albums nachladen (Backfill bestehender Sammlungseinträge).
+export async function fetchGenre(item) {
+  if (!item || item.source !== 'discogs' || !item.sourceId) return '';
+  try {
+    const d = await discogsProxy('release', { id: item.sourceId });
+    return pickGenre(d);
+  } catch { return ''; }
+}
+
 // Flexible Discogs-Suche (q / artist / genre / style / year). Normalisierte Treffer.
 export async function discogsSearch(params = {}) {
   const proxyParams = { per_page: params.per_page || 30 };
-  ['q', 'artist', 'genre', 'style', 'year', 'sort', 'sort_order'].forEach((k) => {
+  ['q', 'artist', 'genre', 'style', 'year', 'sort', 'sort_order', 'page'].forEach((k) => {
     if (params[k]) proxyParams[k] = params[k];
   });
   const data = await discogsProxy('search', proxyParams);

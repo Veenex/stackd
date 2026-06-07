@@ -1042,6 +1042,17 @@ body.logged-in .logout-btn { display: block; }
 .plv-mv:active, .plv-rm:active { background: var(--surface-2); }
 .plv-rm { color: var(--rose); font-size: 18px; }
 
+/* Genre-Statistik (#9) */
+.genre-row { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; cursor: pointer; padding: 5px 0; color: var(--text); text-align: left; }
+.genre-name { flex: 0 0 38%; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.genre-bar { flex: 1; height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.genre-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--petrol), var(--indigo)); border-radius: 999px; }
+.genre-count { flex: 0 0 auto; font-size: 12px; color: var(--muted); min-width: 18px; text-align: right; }
+.genre-loading { margin-top: 6px; }
+
+/* Sammlungswert direkt unter dem Filter im Collection-Tab */
+.value-collection { margin: 2px 0 12px; }
+
 /* ---------- Desktop: zentrierte Spalte (Handy <720px bleibt unverändert) ---------- */
 @media (min-width: 720px) {
   .app-header { width: 100%; max-width: 700px; margin-left: auto; margin-right: auto; }

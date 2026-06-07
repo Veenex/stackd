@@ -37,6 +37,7 @@ function toRow(item, list, u) {
     year: item.year ? String(item.year) : null,
     label: item.label || null,
     format: item.format || null,
+    genre: item.genre || null,
     barcode: item.barcode || null,
     cover_url: item.coverUrl || null,
     note: item.note || null,
@@ -57,7 +58,7 @@ function fromRow(r) {
     id: r.id,
     addedAt: r.added_at ? new Date(r.added_at).getTime() : Date.now(),
     artist: r.artist || '', title: r.title || '', year: r.year || '',
-    label: r.label || '', format: r.format || '', barcode: r.barcode || '',
+    label: r.label || '', format: r.format || '', genre: r.genre || '', barcode: r.barcode || '',
     coverUrl: r.cover_url || '', note: r.note || '', review: r.review || '',
     rating: Number(r.rating) || 0, liked: !!r.liked, price: Number(r.price) || 0,
     mediaCond: r.media_cond || '', sleeveCond: r.sleeve_cond || '',
@@ -78,7 +79,7 @@ export function saveList(list, items) {
 export function addItem(list, item) {
   const record = {
     id: crypto.randomUUID(), addedAt: Date.now(),
-    artist: '', title: '', year: '', label: '', format: '', barcode: '',
+    artist: '', title: '', year: '', label: '', format: '', genre: '', barcode: '',
     coverUrl: '', note: '', review: '', rating: 0, liked: false, price: 0,
     mediaCond: '', sleeveCond: '',
     source: 'manual', sourceId: '',
