@@ -11,6 +11,7 @@ import {
   fetchUserProfile, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
+  recordValueSnapshot, fetchValueHistory,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
@@ -471,6 +472,24 @@ async function openWrapped() {
     html += '<span class="dp-label wrapped-h">Top bewertet</span>' + topRated.map((it) => `<button class="wrapped-row" data-id="${it.id}"><span class="chart-title">${escapeHtml(it.artist || '')} – ${escapeHtml(it.title || '')}</span>${ratingDisplayHtml(it.rating)}</button>`).join('');
   }
   if (!coll.length && !playsThisYear.length) html = `<p class="hint">Noch keine Daten für ${year}. Füg Alben hinzu und log, was du hörst!</p>`;
+  // Sammlungswert-Verlauf (heutigen Wert sichern + Verlauf zeichnen)
+  try {
+    const v = computeCachedValue();
+    if (v > 0) await recordValueSnapshot(v);
+    const hist = await fetchValueHistory(getUser().id);
+    if (hist.length) {
+      const last = hist[hist.length - 1].value;
+      html += '<span class="dp-label wrapped-h">Sammlungswert-Verlauf</span>';
+      if (hist.length >= 2) {
+        const first = hist[0].value;
+        const diff = last - first;
+        const diffStr = (diff >= 0 ? '+' : '−') + fmtEuro(Math.abs(diff));
+        html += `<div class="vh-wrap">${valueHistorySvg(hist)}<div class="vh-labels"><span>${fmtEuro(first)}</span><span class="vh-diff ${diff >= 0 ? 'up' : 'down'}">${diffStr}</span><span>${fmtEuro(last)}</span></div></div>`;
+      } else {
+        html += `<p class="hint">Aktueller Wert: ${fmtEuro(last)}. Der Verlauf wächst ab jetzt – schau in ein paar Tagen wieder rein.</p>`;
+      }
+    }
+  } catch { /* ignorieren */ }
   $('#wrapped-body').innerHTML = html;
   $('#wrapped-body').querySelectorAll('[data-id]').forEach((b) => b.addEventListener('click', () => { $('#wrapped-dialog').close(); openDetail('collection', b.dataset.id); }));
 }
@@ -1183,7 +1202,7 @@ async function renderValueRange() {
     }
   }
   el.innerHTML = valueRangeBar(min, max, valued, coll.length, toFetch.length > 0);
-  if (!toFetch.length) return;
+  if (!toFetch.length) { if (valued > 0) recordValueSnapshot(Math.round((min + max) / 2)); return; }
   const reqId = ++valueRangeReq;
   const cap = toFetch.slice(0, 40); // pro Durchgang begrenzen (Rate-Limit)
   let idx = 0;
@@ -1200,6 +1219,39 @@ async function renderValueRange() {
   };
   await Promise.all([worker(), worker(), worker()]);
   if (reqId === valueRangeReq && currentView === 'settings') renderValueRange();
+}
+
+// Aktueller Sammlungswert (Mittel aus min–max) nur aus dem Cache – ohne Netz.
+function computeCachedValue() {
+  const coll = getList('collection'); if (!coll.length) return 0;
+  const cache = readPriceCache(); const now = Date.now();
+  let min = 0, max = 0, valued = 0;
+  for (const it of coll) {
+    if (Number(it.price) > 0) { min += Number(it.price); max += Number(it.price); valued++; continue; }
+    if (it.source === 'discogs' && it.sourceId) {
+      const c = cache[it.sourceId];
+      if (c && c.min != null && (now - c.at) < PRICE_TTL) { min += c.min; max += c.max; valued++; }
+    }
+  }
+  return valued ? Math.round((min + max) / 2) : 0;
+}
+
+// Mini-Liniendiagramm (SVG) für den Wertverlauf.
+function valueHistorySvg(hist) {
+  const vals = hist.map((h) => h.value);
+  const minV = Math.min(...vals), maxV = Math.max(...vals);
+  const span = (maxV - minV) || 1;
+  const W = 300, H = 70, pad = 5, n = hist.length;
+  const pts = hist.map((h, i) => {
+    const x = pad + (n > 1 ? (i * (W - 2 * pad)) / (n - 1) : (W - 2 * pad) / 2);
+    const y = H - pad - ((h.value - minV) / span) * (H - 2 * pad);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const area = `${pad},${H - pad} ${pts.join(' ')} ${(W - pad)},${H - pad}`;
+  return `<svg class="vh-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polygon class="vh-area" points="${area}"/>
+      <polyline class="vh-line" points="${pts.join(' ')}"/>
+    </svg>`;
 }
 
 function favSlotInner(item) {

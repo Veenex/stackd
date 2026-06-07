@@ -533,6 +533,23 @@ export async function searchPlaylists(q, limit = 30) {
   }));
 }
 
+// ---------- Sammlungswert-Verlauf (1 Schnappschuss pro Tag) ----------
+export async function recordValueSnapshot(value) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u || !(value > 0)) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const { error } = await sb.from('value_history')
+    .upsert({ user_id: u, snap_date: today, value: Math.round(value) }, { onConflict: 'user_id,snap_date' });
+  if (error) console.warn('value snapshot:', error.message);
+}
+export async function fetchValueHistory(userId, limit = 90) {
+  const sb = await cloud(); const id = userId || uid();
+  if (!sb || !id) return [];
+  const { data } = await sb.from('value_history').select('snap_date,value')
+    .eq('user_id', id).order('snap_date', { ascending: true }).limit(limit);
+  return (data || []).map((r) => ({ date: r.snap_date, value: Number(r.value) }));
+}
+
 // ---------- Einstellungen (vorerst global lokal) ----------
 export function getSettings() {
   try { return JSON.parse(localStorage.getItem(KEYS.settings)) || {}; } catch { return {}; }
