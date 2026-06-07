@@ -11,7 +11,7 @@ import {
   fetchUserProfile, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
-  recordValueSnapshot, fetchValueHistory,
+  recordValueSnapshot, fetchValueHistory, fetchAlbumRatings,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
@@ -302,12 +302,12 @@ function openDetail(list, id) {
   $('#dp-artist').textContent = item.artist || '(unbekannt)';
   $('#dp-meta').textContent = [item.year, item.label, item.format].filter(Boolean).join('  ·  ');
 
-  const q = encodeURIComponent(`${item.artist || ''} ${item.title || ''}`.trim());
-  $('#dp-spotify').href = `https://open.spotify.com/search/${q}`;
-  $('#dp-apple').href = `https://music.apple.com/search?term=${q}`;
+  setListenLinks(encodeURIComponent(`${item.artist || ''} ${item.title || ''}`.trim()));
   $('#dp-note').value = item.note || '';
   $('#dp-review').value = item.review || '';
-  detailRating = createRatingInput($('#dp-rating'), item.rating);
+  detailRating = createRatingInput($('#dp-rating'), item.rating, (val) => {
+    if (editing) updateItem(editing.list, editing.id, { rating: val }); // Sterne sofort speichern
+  });
   dpLiked = !!item.liked;
   $('#dp-like').classList.toggle('liked', dpLiked);
 
@@ -331,7 +331,9 @@ function openDetail(list, id) {
   renderDiaryPlays(item.id);
   renderDiscs(item);
   loadTracklist(item);
+  renderCommunityRating(item);
 
+  { const as0 = $('#dp-actions'); if (as0 && as0.open) as0.close(); }
   detailPage.classList.remove('hidden');
   $('#detail-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
@@ -340,9 +342,82 @@ function openDetail(list, id) {
 function closeDetail() {
   detailPage.classList.add('hidden');
   detailPage.classList.remove('preview');
+  const as = $('#dp-actions'); if (as && as.open) as.close();
   document.body.style.overflow = '';
   editing = null;
   previewResult = null;
+}
+
+// ⋯-Button oben rechts → Aktions-Sheet (Sammlung/Liked/Wishlist, Bewertung, Optionen).
+$('#dp-menu').addEventListener('click', openActionsSheet);
+$('#as-done').addEventListener('click', () => $('#dp-actions').close());
+
+function openActionsSheet() {
+  if (!requireAuth()) return;
+  const album = editing ? getList(editing.list).find((i) => i.id === editing.id) : previewResult;
+  if (!album) return;
+  $('#as-title').textContent = album.title || '';
+  $('#as-year').textContent = album.year ? '· ' + album.year : '';
+  $('#as-collection').classList.toggle('active', !!editing && editing.list === 'collection');
+  $('#as-wishlist').classList.toggle('active', !!editing && editing.list === 'wishlist');
+  $('#dp-like').classList.toggle('liked', dpLiked);
+  $('#dp-actions').showModal();
+}
+
+// Toggle „Sammlung": Preview→hinzufügen, Wishlist→verschieben, schon drin→entfernen.
+$('#as-collection').addEventListener('click', () => {
+  if (!requireAuth()) return;
+  if (previewResult) { addPreviewTo('collection'); return; }
+  if (!editing) return;
+  if (editing.list === 'wishlist') {
+    moveItem('wishlist', 'collection', editing.id); closeDetail();
+    renderList('collection'); renderList('wishlist'); renderCounts(); toast('In Sammlung verschoben');
+  } else if (confirm('Aus der Sammlung entfernen?')) {
+    deleteItem('collection', editing.id); closeDetail(); renderList('collection'); renderCounts(); toast('Entfernt');
+  }
+});
+// Toggle „Wishlist": analog.
+$('#as-wishlist').addEventListener('click', () => {
+  if (!requireAuth()) return;
+  if (previewResult) { addPreviewTo('wishlist'); return; }
+  if (!editing) return;
+  if (editing.list === 'collection') {
+    moveItem('collection', 'wishlist', editing.id); closeDetail();
+    renderList('collection'); renderList('wishlist'); renderCounts(); toast('In Wishlist verschoben');
+  } else if (confirm('Von der Wishlist entfernen?')) {
+    deleteItem('wishlist', editing.id); closeDetail(); renderList('wishlist'); renderCounts(); toast('Entfernt');
+  }
+});
+
+// Streaming-Such-Deeplinks (4 Dienste).
+function setListenLinks(q) {
+  $('#dp-spotify').href = `https://open.spotify.com/search/${q}`;
+  $('#dp-apple').href = `https://music.apple.com/search?term=${q}`;
+  $('#dp-amazon').href = `https://music.amazon.com/search/${q}`;
+  $('#dp-youtube').href = `https://www.youtube.com/results?search_query=${q}`;
+}
+
+// Community-Bewertung: Histogramm (0,5–5) + Schnitt aus ALLEN Profilen.
+let communityReq = 0;
+async function renderCommunityRating(item) {
+  const el = $('#dp-community'); if (!el) return;
+  const rq = ++communityReq;
+  el.innerHTML = '<p class="hint">Lade…</p>';
+  let ratings = [];
+  try { ratings = await fetchAlbumRatings(item); } catch { /* ignorieren */ }
+  if (rq !== communityReq) return;
+  if (!ratings.length) { el.innerHTML = '<p class="hint">Noch keine Bewertungen. Sei die/der Erste!</p>'; return; }
+  const buckets = new Array(10).fill(0); // 0=0,5 … 9=5,0
+  ratings.forEach((r) => { const i = Math.round(r * 2) - 1; if (i >= 0 && i < 10) buckets[i]++; });
+  const maxN = Math.max(...buckets, 1);
+  const avg = ratings.reduce((s, r) => s + r, 0) / ratings.length;
+  const bars = buckets.map((n) => `<span class="cr-bar"><span class="cr-fill" style="height:${Math.round((n / maxN) * 100)}%"></span></span>`).join('');
+  el.innerHTML = `<div class="cr-wrap">
+      <span class="cr-min">${noteSvg()}</span>
+      <div class="cr-bars">${bars}</div>
+      <div class="cr-side"><span class="cr-avg">${avg.toFixed(1)}</span><span class="cr-stars">${ratingDisplayHtml(Math.round(avg * 2) / 2)}</span></div>
+    </div>
+    <p class="cr-count">${ratings.length} ${ratings.length === 1 ? 'Bewertung' : 'Bewertungen'}</p>`;
 }
 
 // Album aus der Suche/Datenbank ansehen (noch nicht gespeichert) -> Detailseite mit Tracklist
@@ -355,9 +430,7 @@ function openPreview(result) {
   $('#dp-title').textContent = result.title || '(ohne Titel)';
   $('#dp-artist').textContent = result.artist || '';
   $('#dp-meta').textContent = [result.year, result.label, result.format].filter(Boolean).join('  ·  ');
-  const q = encodeURIComponent(`${result.artist || ''} ${result.title || ''}`.trim());
-  $('#dp-spotify').href = `https://open.spotify.com/search/${q}`;
-  $('#dp-apple').href = `https://music.apple.com/search?term=${q}`;
+  setListenLinks(encodeURIComponent(`${result.artist || ''} ${result.title || ''}`.trim()));
   $('#dp-note').value = '';
   $('#dp-review').value = '';
   setConditionDisplay('', '');
@@ -366,6 +439,8 @@ function openPreview(result) {
   $('#dp-like').classList.toggle('liked', false);
   renderDiscs(result);
   loadTracklist(result);
+  renderCommunityRating(result);
+  { const as0 = $('#dp-actions'); if (as0 && as0.open) as0.close(); }
   detailPage.classList.remove('hidden');
   $('#detail-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
@@ -502,6 +577,7 @@ $('#dp-like').addEventListener('click', () => {
   if (!requireAuth()) return; // Gäste: erst anmelden
   dpLiked = !dpLiked;
   $('#dp-like').classList.toggle('liked', dpLiked);
+  if (editing) updateItem(editing.list, editing.id, { liked: dpLiked }); // sofort speichern
 });
 
 $('#dp-add-collection').addEventListener('click', () => addPreviewTo('collection'));

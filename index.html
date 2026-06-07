@@ -173,7 +173,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Discend · Build 93</p>
+        <p class="hint profile-version">Discend · Build 95</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -242,8 +242,9 @@
     <header class="detail-bar">
       <button id="detail-back" class="icon-btn" aria-label="Zurück">‹</button>
       <div class="detail-bar-actions">
-        <button id="dp-move" class="icon-btn-text"></button>
-        <button id="dp-delete" class="icon-btn-text danger-text">Löschen</button>
+        <button id="dp-menu" class="icon-btn" aria-label="Bearbeiten" title="Bearbeiten">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
       </div>
     </header>
     <div class="detail-scroll" id="detail-scroll">
@@ -258,22 +259,51 @@
         <p class="dp-artist" id="dp-artist"></p>
         <p class="dp-meta" id="dp-meta"></p>
         <p class="dp-cond" id="dp-condition"></p>
-        <div class="dp-listen">
-          <a id="dp-spotify" class="listen-btn spotify" target="_blank" rel="noopener">Spotify</a>
-          <a id="dp-apple" class="listen-btn apple" target="_blank" rel="noopener">Apple Music</a>
+        <div class="dp-listen" id="dp-listen">
+          <a id="dp-spotify" class="listen-ico spotify" target="_blank" rel="noopener" aria-label="Spotify" title="Spotify"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="9" width="3" height="11" rx="1.2"/><rect x="10.5" y="4" width="3" height="16" rx="1.2"/><rect x="17" y="12" width="3" height="8" rx="1.2"/></svg></a>
+          <a id="dp-apple" class="listen-ico apple" target="_blank" rel="noopener" aria-label="Apple Music" title="Apple Music"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3v12.5a3.5 3.5 0 1 1-2-3.16V6.3l-8 1.6v9.1a3.5 3.5 0 1 1-2-3.16V5z"/></svg></a>
+          <a id="dp-amazon" class="listen-ico amazon" target="_blank" rel="noopener" aria-label="Amazon Music" title="Amazon Music"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3v12.5a3.5 3.5 0 1 1-2-3.16V6.3l-8 1.6v9.1a3.5 3.5 0 1 1-2-3.16V5z"/></svg></a>
+          <a id="dp-youtube" class="listen-ico youtube" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></a>
         </div>
       </div>
 
-      <div class="dp-section">
-        <span class="dp-label">Deine Bewertung</span>
-        <div class="rating-row">
-          <div id="dp-rating"></div>
-          <button type="button" id="dp-like" class="like-btn" aria-label="Gefällt mir" title="Gefällt mir">
-            <svg class="heart-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/></svg>
-          </button>
-          <button type="button" id="dp-rating-clear" class="link-btn">zurücksetzen</button>
-        </div>
+      <div class="dp-section" id="dp-community-section">
+        <span class="dp-label">Bewertungen</span>
+        <div id="dp-community"></div>
       </div>
+
+      <div class="dp-section">
+        <span class="dp-label">Tracklist</span>
+        <ol id="dp-tracklist" class="dp-tracklist"></ol>
+        <p id="dp-tracklist-status" class="hint"></p>
+      </div>
+
+      <dialog id="dp-actions" class="actions-sheet">
+      <div class="as-sheet">
+        <div class="as-head"><span id="as-title"></span> <span id="as-year" class="as-year"></span></div>
+
+        <div class="as-toggles">
+          <button type="button" class="as-toggle" id="as-collection">
+            <span class="as-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg></span>
+            <span class="as-lbl">Sammlung</span>
+          </button>
+          <button type="button" class="as-toggle" id="dp-like" aria-label="Gefällt mir">
+            <span class="as-ico"><svg class="heart-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/></svg></span>
+            <span class="as-lbl">Liked</span>
+          </button>
+          <button type="button" class="as-toggle" id="as-wishlist">
+            <span class="as-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg></span>
+            <span class="as-lbl">Wishlist</span>
+          </button>
+        </div>
+
+        <div class="as-rated">
+          <span class="dp-label">Bewertung</span>
+          <div class="rating-row">
+            <div id="dp-rating"></div>
+            <button type="button" id="dp-rating-clear" class="link-btn">zurücksetzen</button>
+          </div>
+        </div>
 
       <div class="dp-section">
         <span class="dp-label">Review (öffentlich)</span>
@@ -302,12 +332,6 @@
           <button type="button" id="dp-play-add" class="btn ghost">Eintragen</button>
         </div>
         <ul id="dp-plays" class="dp-plays"></ul>
-      </div>
-
-      <div class="dp-section">
-        <span class="dp-label">Tracklist</span>
-        <ol id="dp-tracklist" class="dp-tracklist"></ol>
-        <p id="dp-tracklist-status" class="hint"></p>
       </div>
 
       <details class="dp-edit">
@@ -351,6 +375,14 @@
           </label>
         </div>
       </details>
+
+        <div class="dp-save-row dp-owner-actions">
+          <button id="dp-move" class="btn ghost"></button>
+          <button id="dp-delete" class="btn ghost danger-text">Löschen</button>
+        </div>
+        <button type="button" id="as-done" class="as-done">Fertig</button>
+      </div><!-- /.as-sheet -->
+      </dialog>
 
     </div>
   </section>

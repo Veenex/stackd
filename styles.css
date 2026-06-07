@@ -528,7 +528,7 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 /* Vorschau-Modus (Album aus der Suche, noch nicht gespeichert) */
 #dp-preview-actions { display: none; gap: 8px; }
 #dp-preview-actions .btn { flex: 1; }
-#detail-page.preview #dp-preview-actions { display: flex; }
+#detail-page.preview #dp-preview-actions { display: none; }
 #detail-page.preview #dp-move,
 #detail-page.preview #dp-delete,
 #detail-page.preview .dp-save-row,
@@ -847,6 +847,55 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .listen-btn.spotify { background: #1db954; color: #fff; }
 .listen-btn.apple { background: #fa243c; color: #fff; }
 .listen-btn svg { width: 18px; height: 18px; }
+
+/* Streaming als kleine runde Icons */
+.dp-listen { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+.listen-ico {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; flex: 0 0 auto;
+}
+.listen-ico svg { width: 20px; height: 20px; display: block; }
+.listen-ico.spotify { background: #1db954; }
+.listen-ico.apple { background: #fa243c; }
+.listen-ico.amazon { background: #25d1da; }
+.listen-ico.youtube { background: #ff0000; }
+
+/* Bearbeiten-Panel (über ⋯ oben rechts) */
+.dp-edit-panel.hidden { display: none; }
+.dp-edit-panel { border-top: 1px solid var(--border); margin-top: 20px; padding-top: 4px; }
+.dp-owner-actions { margin-top: 18px; }
+
+/* Community-Bewertung (Histogramm + Schnitt) */
+.cr-wrap { display: flex; align-items: flex-end; gap: 8px; }
+.cr-min { color: var(--petrol); flex: 0 0 auto; }
+.cr-min svg { width: 14px; height: 14px; display: block; }
+.cr-bars { flex: 1; display: flex; align-items: flex-end; gap: 3px; height: 56px; }
+.cr-bar { flex: 1; height: 100%; display: flex; align-items: flex-end; }
+.cr-fill { width: 100%; min-height: 2px; background: var(--surface-2); border-radius: 2px; }
+.cr-side { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; }
+.cr-avg { font-size: 26px; font-weight: 700; line-height: 1; color: var(--text); }
+.cr-stars { margin-top: 2px; }
+.cr-count { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+
+/* Album-Aktions-Sheet (⋯) */
+.actions-sheet { border: none; padding: 0; background: transparent; margin: auto auto 0; width: min(100vw, 700px); max-height: 90vh; }
+.actions-sheet::backdrop { background: rgba(0, 0, 0, .6); }
+.as-sheet {
+  background: var(--surface); border-radius: 18px 18px 0 0;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); max-height: 90vh; overflow-y: auto;
+}
+.as-head { text-align: center; font-weight: 700; font-size: 17px; margin: 2px 0 16px; color: var(--text); }
+.as-head .as-year { color: var(--muted); font-weight: 400; }
+.as-toggles { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.as-toggle { display: flex; flex-direction: column; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px 6px; color: var(--muted); cursor: pointer; }
+.as-toggle .as-ico svg { width: 26px; height: 26px; display: block; }
+.as-toggle .as-lbl { font-size: 12px; font-weight: 600; }
+.as-toggle.active { color: var(--petrol); border-color: var(--petrol); }
+.as-toggle.liked { color: var(--rose); border-color: var(--rose); }
+.as-rated { margin-top: 16px; text-align: center; }
+.as-rated .rating-row { justify-content: center; }
+.as-done { width: 100%; margin-top: 16px; padding: 14px; border: none; border-radius: 12px; background: var(--surface-2); color: var(--text); font-weight: 700; font-size: 16px; cursor: pointer; }
 .dp-section { margin-top: 24px; }
 .like-btn {
   display: inline-flex; align-items: center;

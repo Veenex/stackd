@@ -557,6 +557,27 @@ export async function searchPlaylists(q, limit = 30) {
   }));
 }
 
+// ---------- Community-Bewertung eines Albums (alle Profile) ----------
+// Aggregiert die Bewertungen ALLER Nutzer für dasselbe Album (per Master-Release,
+// sonst Pressung/Source, sonst Künstler+Titel). Eine Bewertung pro Nutzer.
+export async function fetchAlbumRatings(item) {
+  const sb = await cloud(); if (!sb || !item) return [];
+  let q = sb.from('items').select('rating,user_id').gt('rating', 0);
+  if (item.masterId && Number(item.masterId) > 0) q = q.eq('master_id', Number(item.masterId));
+  else if (item.sourceId) q = q.eq('source_id', String(item.sourceId));
+  else if (item.title) {
+    const esc = (s) => String(s || '').replace(/[%_\\]/g, (m) => '\\' + m);
+    q = q.ilike('title', esc(item.title)).ilike('artist', esc(item.artist || ''));
+  } else return [];
+  const { data } = await q;
+  const seen = new Set(); const out = [];
+  for (const r of (data || [])) {
+    if (seen.has(r.user_id)) continue; // eine Bewertung pro Nutzer
+    seen.add(r.user_id); out.push(Number(r.rating));
+  }
+  return out.filter((n) => n > 0);
+}
+
 // ---------- Sammlungswert-Verlauf (1 Schnappschuss pro Tag) ----------
 export async function recordValueSnapshot(value) {
   const sb = await cloud(); const u = uid();
