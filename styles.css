@@ -855,17 +855,8 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 
 /* Streaming als kleine runde Icons */
 .dp-listen { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
-.listen-ico {
-  width: 40px; height: 40px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  color: #fff; flex: 0 0 auto;
-}
-.listen-ico svg { width: 20px; height: 20px; display: block; }
-.listen-ico img { width: 20px; height: 20px; display: block; }
-.listen-ico.spotify { background: #1db954; }
-.listen-ico.apple { background: #fa243c; }
-.listen-ico.amazon { background: #25d1da; }
-.listen-ico.youtube { background: #ff0000; }
+.listen-ico { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.listen-ico img { width: 36px; height: 36px; display: block; border-radius: 8px; object-fit: cover; }
 
 /* Bearbeiten-Panel (über ⋯ oben rechts) */
 .dp-edit-panel.hidden { display: none; }
