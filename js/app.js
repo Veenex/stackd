@@ -11,7 +11,7 @@ import {
   fetchUserProfile, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
-  recordValueSnapshot, fetchValueHistory, fetchAlbumRatings,
+  recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
@@ -333,6 +333,7 @@ function openDetail(list, id) {
   renderDiscs(item);
   loadTracklist(item);
   renderCommunityRating(item);
+  renderAlbumReviews(item);
 
   { const as0 = $('#dp-actions'); if (as0 && as0.open) as0.close(); }
   detailPage.classList.remove('hidden');
@@ -441,6 +442,32 @@ async function renderCommunityRating(item) {
     <p class="cr-count">${ratings.length} ${ratings.length === 1 ? 'Bewertung' : 'Bewertungen'}</p>`;
 }
 
+// Öffentliche Reviews aller Nutzer unter dem Album.
+let reviewsReq = 0;
+let albumReviewsCache = [];
+async function renderAlbumReviews(item) {
+  const el = $('#dp-reviews'); if (!el) return;
+  const rq = ++reviewsReq;
+  el.innerHTML = '<p class="hint">Lade…</p>';
+  let revs = [];
+  try { revs = await fetchAlbumReviews(item); } catch { /* ignorieren */ }
+  if (rq !== reviewsReq) return;
+  if (!revs.length) { el.innerHTML = '<p class="hint">Noch keine Reviews zu diesem Album.</p>'; return; }
+  albumReviewsCache = revs;
+  el.innerHTML = revs.map((r, i) => {
+    const who = r.by ? (r.by.display_name || r.by.username || '') : '';
+    const av = (r.by && r.by.avatar_url) ? `style="background-image:url('${escapeHtml(r.by.avatar_url)}')"` : '';
+    const stars = r.rating > 0 ? `<span class="ar-rating">${ratingDisplayHtml(r.rating)}</span>` : '';
+    return `<div class="ar-card" data-idx="${i}">
+        <div class="ar-head"><span class="ar-av${(r.by && r.by.avatar_url) ? '' : ' placeholder'}" ${av}></span><span class="ar-name">${escapeHtml(who)}</span>${stars}</div>
+        <p class="ar-text">${escapeHtml(r.review.trim())}</p>
+      </div>`;
+  }).join('');
+  el.querySelectorAll('.ar-card').forEach((c) => c.addEventListener('click', () => {
+    const r = albumReviewsCache[+c.dataset.idx]; if (r && r.by) openUserProfile(r.by);
+  }));
+}
+
 // Album aus der Suche/Datenbank ansehen (noch nicht gespeichert) -> Detailseite mit Tracklist
 function openPreview(result) {
   if (!result) return;
@@ -461,6 +488,7 @@ function openPreview(result) {
   renderDiscs(result);
   loadTracklist(result);
   renderCommunityRating(result);
+  renderAlbumReviews(result);
   { const as0 = $('#dp-actions'); if (as0 && as0.open) as0.close(); }
   detailPage.classList.remove('hidden');
   $('#detail-scroll').scrollTop = 0;

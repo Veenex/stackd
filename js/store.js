@@ -578,6 +578,27 @@ export async function fetchAlbumRatings(item) {
   return out.filter((n) => n > 0);
 }
 
+// Öffentliche Reviews ALLER Nutzer zu einem Album (eine pro Nutzer, neueste zuerst).
+export async function fetchAlbumReviews(item, limit = 30) {
+  const sb = await cloud(); if (!sb || !item) return [];
+  let q = sb.from('items').select('user_id,rating,review,added_at').not('review', 'is', null);
+  if (item.masterId && Number(item.masterId) > 0) q = q.eq('master_id', Number(item.masterId));
+  else if (item.sourceId) q = q.eq('source_id', String(item.sourceId));
+  else if (item.title) {
+    const esc = (s) => String(s || '').replace(/[%_\\]/g, (m) => '\\' + m);
+    q = q.ilike('title', esc(item.title)).ilike('artist', esc(item.artist || ''));
+  } else return [];
+  const { data } = await q.order('added_at', { ascending: false }).limit(limit * 2);
+  const rows = (data || []).filter((r) => (r.review || '').trim());
+  const seen = new Set(); const uniq = [];
+  for (const r of rows) { if (seen.has(r.user_id)) continue; seen.add(r.user_id); uniq.push(r); }
+  if (!uniq.length) return [];
+  const ids = [...new Set(uniq.map((r) => r.user_id))];
+  const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
+  const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
+  return uniq.slice(0, limit).map((r) => ({ by: pmap[r.user_id] || null, rating: Number(r.rating) || 0, review: r.review }));
+}
+
 // ---------- Sammlungswert-Verlauf (1 Schnappschuss pro Tag) ----------
 export async function recordValueSnapshot(value) {
   const sb = await cloud(); const u = uid();
