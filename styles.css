@@ -480,21 +480,25 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 /* Vinyl-Platte, die rechts hinter dem Cover hervorschaut – etwa zur Hälfte sichtbar.
    Die Farbe kommt aus der Variable --vinyl (von app.js gesetzt). */
 .dp-vinyl {
-  --vinyl: #1a1a1a;
+  --vinyl: #15151a;
+  --label: #e9e2d0;
   position: absolute; z-index: 1;
-  top: 6%; height: 88%; aspect-ratio: 1 / 1;
+  top: 5%; height: 90%; aspect-ratio: 1 / 1;
   right: -46%;
   border-radius: 50%;
   background:
-    /* Mittel-Label */
-    radial-gradient(circle at center, rgba(0,0,0,.18) 0 22%, rgba(0,0,0,0) 22.4%),
-    radial-gradient(circle at center, #ece4d2 0 21%, rgba(0,0,0,0) 21.4%),
-    /* Rillen als dunkle Ringe über der Grundfarbe */
-    repeating-radial-gradient(circle at center, rgba(0,0,0,.42) 0 1px, rgba(0,0,0,0) 1px 4px),
-    /* Glanz */
-    linear-gradient(125deg, rgba(255,255,255,.28) 0%, rgba(255,255,255,0) 38%),
+    /* Lichtreflex/Glanz */
+    linear-gradient(135deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,0) 22%, rgba(255,255,255,0) 57%, rgba(255,255,255,.13) 70%, rgba(255,255,255,0) 85%),
+    /* Label */
+    radial-gradient(circle at 50% 50%, var(--label) 0 19%, rgba(0,0,0,0) 19.4%),
+    /* Label-Schattenring */
+    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0 19.2%, rgba(0,0,0,.45) 19.8% 20.9%, rgba(0,0,0,0) 21.3%),
+    /* feine Rillen */
+    repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,.5) 0 .6px, rgba(0,0,0,0) .6px 2.4px),
+    /* Tiefe zum Rand */
+    radial-gradient(circle at 50% 50%, rgba(255,255,255,.05) 0 50%, rgba(0,0,0,.45) 100%),
     var(--vinyl);
-  box-shadow: 0 10px 26px rgba(0, 0, 0, .55);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .6);
 }
 .dp-vinyl::after {
   content: ''; position: absolute; top: 50%; left: 50%;
