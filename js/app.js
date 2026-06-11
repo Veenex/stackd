@@ -15,7 +15,7 @@ import {
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, fetchReleaseInfo, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
-import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
+import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, sendPasswordReset } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 
 // Anzeigename aus dem Supabase-Profil (display_name, sonst username).
@@ -1659,6 +1659,8 @@ function downscaleImage(file, maxW, quality) {
 
 function openProfileSettings() {
   const p = getProfile() || {};
+  $('#profile-settings-dialog').classList.remove('show-auth');
+  $('#ps-signed-name').textContent = p.display_name || p.username || '';
   $('#ps-name').value = p.display_name || p.username || '';
   $('#ps-email').value = (getUser() && getUser().email) || '';
   $('#ps-email').readOnly = true;
@@ -1671,7 +1673,24 @@ function openProfileSettings() {
   $('#profile-settings-dialog').showModal();
 }
 $('#header-settings').addEventListener('click', openProfileSettings);
-$('#btn-psettings-close').addEventListener('click', () => $('#profile-settings-dialog').close());
+$('#ps-cancel').addEventListener('click', () => $('#profile-settings-dialog').close());
+$('#ps-signout').addEventListener('click', async () => { $('#profile-settings-dialog').close(); await signOut(); });
+$('#ps-auth-open').addEventListener('click', () => {
+  $('#ps-auth-msg').textContent = ''; $('#ps-newpw').value = '';
+  $('#profile-settings-dialog').classList.add('show-auth');
+});
+$('#ps-auth-back').addEventListener('click', () => $('#profile-settings-dialog').classList.remove('show-auth'));
+$('#ps-pw-save').addEventListener('click', async () => {
+  const msg = $('#ps-auth-msg'); msg.textContent = 'Bitte warten…';
+  const err = await changePassword($('#ps-newpw').value);
+  msg.textContent = err || 'Passwort geändert.';
+  if (!err) $('#ps-newpw').value = '';
+});
+$('#ps-pw-reset').addEventListener('click', async () => {
+  const msg = $('#ps-auth-msg'); msg.textContent = 'Sende…';
+  const err = await sendPasswordReset();
+  msg.textContent = err || 'Reset-Link gesendet – schau in dein Postfach.';
+});
 $('#ps-save').addEventListener('click', () => {
   const name = $('#ps-name').value.trim();
   updateProfile({

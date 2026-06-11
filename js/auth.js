@@ -68,6 +68,20 @@ export async function signOut() {
   try { if (sb) await sb.auth.signOut(); } catch { /* ignorieren */ }
 }
 
+// Passwort ändern (eingeloggt). Gibt null bei Erfolg, sonst Fehlertext.
+export async function changePassword(password) {
+  if (!sb) return 'Backend nicht erreichbar.';
+  if ((password || '').length < 6) return 'Passwort: mindestens 6 Zeichen.';
+  const { error } = await sb.auth.updateUser({ password });
+  return error ? error.message : null;
+}
+// Reset-Link an die eigene E-Mail senden.
+export async function sendPasswordReset() {
+  if (!sb || !currentUser) return 'Nicht angemeldet.';
+  const { error } = await sb.auth.resetPasswordForEmail(currentUser.email, { redirectTo: location.origin + location.pathname });
+  return error ? error.message : null;
+}
+
 // ---------- Overlay-UI ----------
 export function openAuth(m) {
   mode = m || 'login';

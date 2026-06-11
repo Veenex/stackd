@@ -181,7 +181,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Discend · Build 106</p>
+        <p class="hint profile-version">Discend · Build 107</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -531,29 +531,58 @@
   </nav>
 
   <!-- Profil bearbeiten -->
-  <dialog id="profile-settings-dialog">
-    <div class="cover-pick">
-      <div class="cover-pick-head">
-        <span>Profil bearbeiten</span>
-        <button type="button" id="btn-psettings-close" class="dialog-close" aria-label="Schließen">×</button>
+  <dialog id="profile-settings-dialog" class="settings-sheet">
+    <div class="set-wrap">
+      <div class="set-bar">
+        <button type="button" id="ps-cancel" class="set-cancel">Cancel</button>
+        <span class="set-title">Settings</span>
+        <button type="button" id="ps-save" class="set-save">Save</button>
       </div>
-      <div class="form ps-form">
-        <div class="ps-images">
-          <button type="button" id="ps-banner-btn" class="btn">Banner ändern</button>
-          <button type="button" id="ps-avatar-btn" class="btn">Profilbild ändern</button>
+      <div class="set-body">
+        <!-- Haupt-Panel -->
+        <div class="set-panel" id="ps-main">
+          <div class="set-signed">Angemeldet als <strong id="ps-signed-name"></strong></div>
+          <button type="button" class="set-row set-row-nav" id="ps-auth-open"><span>Passwort &amp; Anmeldung</span><span class="set-chev">›</span></button>
+          <button type="button" class="set-row set-signout" id="ps-signout">Abmelden</button>
+
+          <div class="set-section-label">Profil</div>
+          <div class="set-fields">
+            <label class="set-field"><span>Name</span><input type="text" id="ps-name" placeholder="Dein Name" /></label>
+            <label class="set-field"><span>E-Mail</span><input type="email" id="ps-email" readonly /></label>
+            <label class="set-field"><span>Ort</span><input type="text" id="ps-location" placeholder="z. B. Köln" /></label>
+            <label class="set-field"><span>Website</span><input type="url" id="ps-website" placeholder="https://…" /></label>
+            <label class="set-field set-field-bio"><span>Bio</span><textarea id="ps-bio" rows="3" placeholder="Über dich oder deine Sammlung"></textarea></label>
+            <label class="set-field set-check"><span>Sammlungswert verbergen</span><input type="checkbox" id="ps-hide-value" /></label>
+          </div>
+
+          <div class="set-section-label">Lieblingsalben</div>
+          <div id="ps-favorites" class="fav-slots"></div>
+          <div class="set-section-label">Lieblingssongs</div>
+          <div id="ps-songs" class="fav-songs-edit"></div>
+
+          <div class="set-section-label">Profilbild &amp; Banner</div>
+          <div class="ps-images">
+            <button type="button" id="ps-avatar-btn" class="btn">Profilbild ändern</button>
+            <button type="button" id="ps-banner-btn" class="btn">Banner ändern</button>
+          </div>
+
+          <div class="set-section-label">Daten</div>
+          <button type="button" id="btn-import-discogs" class="btn ghost set-wide">Discogs-Sammlung importieren</button>
         </div>
-        <label>Username<input type="text" id="ps-name" placeholder="Dein Name" /></label>
-        <label>E-Mail<input type="email" id="ps-email" placeholder="optional" /></label>
-        <label>Ort<input type="text" id="ps-location" placeholder="z. B. Köln" /></label>
-        <label>Website<input type="url" id="ps-website" placeholder="https://…" /></label>
-        <label>Beschreibung<textarea id="ps-bio" rows="3" placeholder="Über dich oder deine Sammlung"></textarea></label>
-        <span class="dp-label">Favoriten</span>
-        <div id="ps-favorites" class="fav-slots"></div>
-        <span class="dp-label">Lieblingssongs</span>
-        <div id="ps-songs" class="fav-songs-edit"></div>
-        <label class="ps-check"><input type="checkbox" id="ps-hide-value" /> Sammlungswert öffentlich verbergen</label>
-        <button type="button" id="btn-import-discogs" class="btn ghost">Discogs-Sammlung importieren</button>
-        <button id="ps-save" class="btn primary">Speichern</button>
+
+        <!-- Passwort & Anmeldung (slidet von rechts) -->
+        <div class="set-panel" id="ps-auth-panel">
+          <button type="button" class="set-back" id="ps-auth-back">‹ Zurück</button>
+          <div class="set-section-label">Passwort ändern</div>
+          <div class="set-fields">
+            <label class="set-field"><span>Neues Passwort</span><input type="password" id="ps-newpw" placeholder="mind. 6 Zeichen" autocomplete="new-password" /></label>
+          </div>
+          <button type="button" id="ps-pw-save" class="btn primary set-wide">Passwort speichern</button>
+          <button type="button" id="ps-pw-reset" class="btn ghost set-wide">Reset-Link per E-Mail senden</button>
+          <p id="ps-auth-msg" class="hint"></p>
+          <div class="set-section-label">Zwei-Faktor-Authentifizierung</div>
+          <p class="hint">Bald verfügbar.</p>
+        </div>
       </div>
     </div>
   </dialog>
