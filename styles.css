@@ -462,10 +462,8 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .dp-hero { text-align: center; }
 .dp-cover-wrap {
   position: relative;
-  width: min(60%, 220px);
-  /* nach links versetzt, damit die rechts herausschauende Platte den Block mittig wirken lässt */
-  margin: 8px auto 16px;
-  transform: translateX(-21%);
+  width: min(78%, 320px);
+  margin: 8px auto 18px;
 }
 .dp-cover {
   position: relative; z-index: 2;

@@ -253,13 +253,14 @@ function setDetailCover(url) {
 
 // Farbe der herausschauenden Vinyl-Scheibe setzen
 function setVinylColor(css) {
-  $('#dp-vinyl').style.setProperty('--vinyl', css || '#1a1a1a');
+  const el = $('#dp-vinyl'); if (el) el.style.setProperty('--vinyl', css || '#1a1a1a');
 }
 
 // Vinyl-Scheibe + farbige Varianten anzeigen, die das Album anbietet
 async function renderDiscs(item) {
-  setVinylColor('#1a1a1a'); // Standard sofort
   const wrap = $('#dp-variants');
+  if (!wrap) return; // Vinyl-Anzeige entfernt
+  setVinylColor('#1a1a1a'); // Standard sofort
   wrap.innerHTML = '';
   wrap.classList.add('hidden');
   const reqId = ++discReq;
@@ -331,7 +332,6 @@ function openDetail(list, id) {
   $('#dp-play-date').value = new Date().toISOString().slice(0, 10);
   $('#dp-play-note').value = '';
   renderDiaryPlays(item.id);
-  renderDiscs(item);
   loadTracklist(item);
   renderCommunityRating(item);
   renderAlbumReviews(item);
@@ -486,7 +486,6 @@ function openPreview(result) {
   detailRating = createRatingInput($('#dp-rating'), 0);
   dpLiked = false;
   $('#dp-like').classList.toggle('liked', false);
-  renderDiscs(result);
   loadTracklist(result);
   renderCommunityRating(result);
   renderAlbumReviews(result);
