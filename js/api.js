@@ -460,6 +460,27 @@ export async function fetchPriceRange(item) {
   return null;
 }
 
+// Release-Infos + Tracklist in einem Discogs-Aufruf (für die Album-Infos).
+export async function fetchReleaseInfo(item) {
+  if (!item || item.source !== 'discogs' || !item.sourceId) return null;
+  try {
+    const d = await discogsProxy('release', { id: item.sourceId });
+    const tracklist = (d.tracklist || [])
+      .filter((t) => !t.type_ || t.type_ === 'track')
+      .map((t) => ({ position: t.position || '', title: t.title || '', duration: t.duration || '' }));
+    const labels = (d.labels || []).map((l) => ({ name: l.name, catno: l.catno || '' })).filter((l) => l.name);
+    const formats = (d.formats || []).map((f) =>
+      [f.qty && f.qty !== '1' ? f.qty + '×' : '', f.name, ...(f.descriptions || [])].filter(Boolean).join(' ')
+    ).filter(Boolean);
+    return {
+      tracklist,
+      genres: d.genres || [], styles: d.styles || [],
+      country: d.country || '', year: d.year || '',
+      labels, formats, notes: d.notes || '',
+    };
+  } catch { return null; }
+}
+
 export async function fetchTracklist(item) {
   if (!item || !item.sourceId) return null;
 

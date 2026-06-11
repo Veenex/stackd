@@ -12,8 +12,9 @@ import {
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
+  fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
 } from './store.js';
-import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
+import { lookupBarcode, fetchTracklist, fetchReleaseInfo, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 
@@ -514,29 +515,60 @@ async function addPreviewTo(list) {
   toast(list === 'collection' ? 'Zur Collection hinzugefügt' : 'Zur Wishlist hinzugefügt');
 }
 
+function renderAlbumInfo(info) {
+  const sec = $('#dp-info-section'); const el = $('#dp-info'); if (!sec || !el) return;
+  const rows = [];
+  if (info) {
+    const gs = [...(info.genres || []), ...(info.styles || [])];
+    if (gs.length) rows.push(['Genre', gs.join(', ')]);
+    if (info.labels && info.labels.length) rows.push(['Label', info.labels.map((l) => l.name + (l.catno ? ' · ' + l.catno : '')).join(', ')]);
+    if (info.formats && info.formats.length) rows.push(['Format', info.formats.join(' · ')]);
+    if (info.country) rows.push(['Land', info.country]);
+    if (info.year) rows.push(['Jahr', String(info.year)]);
+  }
+  if (!rows.length) { el.innerHTML = ''; sec.classList.add('hidden'); return; }
+  sec.classList.remove('hidden');
+  el.innerHTML = rows.map(([k, v]) => `<div class="info-row"><span class="info-k">${k}</span><span class="info-v">${escapeHtml(v)}</span></div>`).join('')
+    + (info.notes ? `<p class="info-notes">${escapeHtml(info.notes.slice(0, 400))}${info.notes.length > 400 ? '…' : ''}</p>` : '');
+}
+
 async function loadTracklist(item) {
   const ol = $('#dp-tracklist');
   const status = $('#dp-tracklist-status');
   ol.innerHTML = '';
+  renderAlbumInfo(null);
   if (item.source === 'manual' || !item.sourceId) {
     status.textContent = 'Keine Tracklist (manuell hinzugefügt).';
     return;
   }
   const reqId = ++tracklistReq;
   status.textContent = 'Lade Tracklist…';
-  let tracks = null;
+  let tracks = null, info = null;
   try {
-    tracks = await fetchTracklist(item);
+    if (item.source === 'discogs') { info = await fetchReleaseInfo(item); tracks = info ? info.tracklist : null; }
+    else { tracks = await fetchTracklist(item); }
   } catch { /* ignorieren */ }
   if (reqId !== tracklistReq) return; // ein neueres Album wurde geöffnet
+  renderAlbumInfo(info);
   if (!tracks || !tracks.length) {
     status.textContent = 'Keine Tracklist gefunden.';
     return;
   }
   status.textContent = '';
   ol.innerHTML = tracks
-    .map((t) => `<li><span class="trk-pos">${escapeHtml(t.position)}</span><span class="trk-title">${escapeHtml(t.title)}</span><span class="trk-dur">${escapeHtml(t.duration)}</span></li>`)
+    .map((t) => `<li><span class="trk-pos">${escapeHtml(t.position)}</span><span class="trk-title">${escapeHtml(t.title)}</span><span class="trk-dur">${escapeHtml(t.duration)}</span><button class="trk-like" data-pos="${escapeHtml(t.position)}" aria-label="Song liken">${heartSvg()}</button></li>`)
     .join('');
+  ol.querySelectorAll('.trk-like').forEach((b) => b.addEventListener('click', async () => {
+    if (!requireAuth()) return;
+    const t = tracks.find((x) => String(x.position) === b.dataset.pos) || { position: b.dataset.pos };
+    const res = await toggleSongLike(item, t);
+    if (res !== null) b.classList.toggle('liked', res);
+  }));
+  // Gelikte Songs nicht-blockierend nachladen und markieren.
+  fetchSongLikes(item.sourceId).then((likes) => {
+    if (reqId !== tracklistReq) return;
+    ol.querySelectorAll('.trk-like').forEach((b) => { if (likes.has(String(b.dataset.pos))) b.classList.add('liked'); });
+  }).catch(() => {});
 }
 
 // Tagebuch-Einträge eines Albums anzeigen
@@ -1243,6 +1275,7 @@ function renderProfile() {
   $('#profile-meta-line').innerHTML = parts.join('  ·  ');
   $('#profile-bio-display').textContent = p.bio || '';
   renderFavoritesDisplay();
+  renderFavoriteSongs();
   renderRecent();
   renderHisto();
   renderStatRows();
@@ -1483,6 +1516,65 @@ function favSlotInner(item) {
     : '<span class="fav-disc"></span>';
 }
 
+// Lieblingssongs im Profil (selbst gewählt, gespeichert in profile.fav_songs).
+let favSongsCache = [];
+let songPickCache = [];
+function renderFavoriteSongs() {
+  const el = $('#profile-songs'); if (!el) return;
+  const songs = ((getProfile() || {}).fav_songs || []).filter(Boolean).slice(0, 4);
+  if (!songs.length) { el.innerHTML = '<p class="hint">Noch keine Lieblingssongs gewählt – über das Zahnrad oben bearbeiten.</p>'; return; }
+  favSongsCache = songs;
+  el.innerHTML = songs.map((s, i) => `<button class="fav-song" data-idx="${i}"><span class="fs-title">${escapeHtml(s.title || '(Song)')}</span><span class="fs-artist">${escapeHtml(s.artist || s.album || '')}</span></button>`).join('');
+  el.querySelectorAll('.fav-song').forEach((b) => b.addEventListener('click', () => {
+    const s = favSongsCache[+b.dataset.idx];
+    if (s && s.albumId) openPreview({ source: 'discogs', sourceId: s.albumId, title: s.album || '', artist: s.artist || '', coverUrl: '' });
+  }));
+}
+// Bearbeiten im Einstellungs-Dialog (4 Slots).
+function renderFavoriteSongsEdit() {
+  const el = $('#ps-songs'); if (!el) return;
+  const songs = (getProfile() || {}).fav_songs || [];
+  let html = '';
+  for (let i = 0; i < 4; i++) {
+    const s = songs[i];
+    html += s
+      ? `<button type="button" class="fav-song-slot filled" data-slot="${i}"><span class="fs-title">${escapeHtml(s.title || '(Song)')}</span><span class="fs-artist">${escapeHtml(s.artist || s.album || '')}</span><span class="fav-x">×</span></button>`
+      : `<button type="button" class="fav-song-slot empty" data-slot="${i}">+ Song</button>`;
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('.fav-song-slot').forEach((b) => b.addEventListener('click', () => {
+    const slot = +b.dataset.slot;
+    if (b.classList.contains('filled')) removeFavSong(slot); else openSongPicker(slot);
+  }));
+}
+function refreshFavSongs() { renderFavoriteSongsEdit(); renderFavoriteSongs(); }
+function removeFavSong(slot) {
+  const arr = ((getProfile() || {}).fav_songs || []).slice();
+  arr[slot] = null;
+  updateProfile({ fav_songs: arr });
+  refreshFavSongs();
+}
+async function openSongPicker(slot) {
+  const box = $('#song-pick-list');
+  box.innerHTML = '<p class="hint">Lade…</p>';
+  $('#song-dialog').showModal();
+  let songs = [];
+  try { songs = await fetchMyLikedSongs(50); } catch { /* ignorieren */ }
+  if (!songs.length) { box.innerHTML = '<p class="hint">Du hast noch keine Songs gelikt. Like Songs über das Herz neben den Tracks auf einer Albumseite.</p>'; return; }
+  songPickCache = songs;
+  box.innerHTML = songs.map((s, i) => `<button class="song-pick-row" data-i="${i}"><span class="fs-title">${escapeHtml(s.title || '(Song)')}</span><span class="fs-artist">${escapeHtml(s.artist || s.album || '')}</span></button>`).join('');
+  box.querySelectorAll('.song-pick-row').forEach((b) => b.addEventListener('click', () => {
+    const s = songPickCache[+b.dataset.i];
+    const arr = ((getProfile() || {}).fav_songs || []).slice();
+    while (arr.length < 4) arr.push(null);
+    arr[slot] = { albumId: s.albumId, position: s.position, title: s.title, artist: s.artist, album: s.album };
+    updateProfile({ fav_songs: arr });
+    $('#song-dialog').close();
+    refreshFavSongs();
+  }));
+}
+$('#btn-song-close').addEventListener('click', () => $('#song-dialog').close());
+
 // Anzeige auf der Profilseite (klickbar -> Albumseite)
 function renderFavoritesDisplay() {
   const favIds = (getProfile() || {}).favorites || [];
@@ -1574,7 +1666,9 @@ function openProfileSettings() {
   $('#ps-location').value = p.location || '';
   $('#ps-website').value = p.website || '';
   $('#ps-bio').value = p.bio || '';
+  $('#ps-hide-value').checked = !!p.hide_value;
   renderFavoritesEdit();
+  renderFavoriteSongsEdit();
   $('#profile-settings-dialog').showModal();
 }
 $('#header-settings').addEventListener('click', openProfileSettings);
@@ -1586,6 +1680,7 @@ $('#ps-save').addEventListener('click', () => {
     location: $('#ps-location').value.trim(),
     website: $('#ps-website').value.trim(),
     bio: $('#ps-bio').value.trim(),
+    hide_value: $('#ps-hide-value').checked,
   });
   if (currentView === 'settings') $('#view-title').textContent = profileName() || 'Mein Profil';
   $('#profile-settings-dialog').close();
@@ -2138,9 +2233,10 @@ async function openUserProfile(user) {
   $('#user-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
   // Sammlung + Wishlist parallel laden
-  let coll = [], wish = [];
-  try { [coll, wish] = await Promise.all([fetchUserItems(u.id, 'collection'), fetchUserItems(u.id, 'wishlist')]); }
+  let coll = [], wish = [], vhist = [];
+  try { [coll, wish, vhist] = await Promise.all([fetchUserItems(u.id, 'collection'), fetchUserItems(u.id, 'wishlist'), u.hide_value ? Promise.resolve([]) : fetchValueHistory(u.id)]); }
   catch { /* ignorieren */ }
+  const latestVal = vhist.length ? vhist[vhist.length - 1].value : 0;
   // Statistiken
   const rated = coll.filter((i) => Number(i.rating) > 0);
   const avg = rated.length ? (rated.reduce((s, i) => s + Number(i.rating), 0) / rated.length) : 0;
@@ -2148,7 +2244,8 @@ async function openUserProfile(user) {
     `<li class="stat-toggle" data-panel="up-collection"><span>Sammlung</span><span class="stat-num">${coll.length}<span class="stat-chev">›</span></span></li>` +
     `<li class="stat-toggle" data-panel="up-wishlist"><span>Wishlist</span><span class="stat-num">${wish.length}<span class="stat-chev">›</span></span></li>` +
     `<li><span>Bewertet</span><span class="stat-num">${rated.length}</span></li>` +
-    `<li><span>Ø Bewertung</span><span class="stat-num">${avg ? avg.toFixed(1) + ' ♪' : '–'}</span></li>`;
+    `<li><span>Ø Bewertung</span><span class="stat-num">${avg ? avg.toFixed(1) + ' ♪' : '–'}</span></li>` +
+    ((!u.hide_value && latestVal > 0) ? `<li><span>Sammlungswert</span><span class="stat-num">${fmtEuro(latestVal)}</span></li>` : '');
   $('#up-stats').querySelectorAll('.stat-toggle').forEach((li) => li.addEventListener('click', () => {
     const panel = document.getElementById(li.dataset.panel);
     const nowHidden = panel.classList.toggle('hidden');

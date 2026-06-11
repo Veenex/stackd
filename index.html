@@ -143,6 +143,11 @@
         </div>
 
         <div class="profile-section">
+          <span class="dp-label">Lieblingssongs</span>
+          <div id="profile-songs" class="fav-songs"></div>
+        </div>
+
+        <div class="profile-section">
           <span class="dp-label">Zuletzt hinzugefügt</span>
           <div id="recent-activity" class="recent-row"></div>
         </div>
@@ -164,7 +169,6 @@
         </div>
 
         <button id="btn-wrapped" class="btn ghost wrapped-btn">📊 Discend Wrapped</button>
-        <button id="btn-import-discogs" class="btn ghost">Discogs-Sammlung importieren</button>
 
         <details class="profile-settings">
           <summary>Backup</summary>
@@ -177,7 +181,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Discend · Build 100</p>
+        <p class="hint profile-version">Discend · Build 104</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -274,6 +278,11 @@
       <div class="dp-section" id="dp-community-section">
         <span class="dp-label">Bewertungen</span>
         <div id="dp-community"></div>
+      </div>
+
+      <div class="dp-section hidden" id="dp-info-section">
+        <span class="dp-label">Infos</span>
+        <div id="dp-info"></div>
       </div>
 
       <div class="dp-section">
@@ -542,6 +551,10 @@
         <label>Beschreibung<textarea id="ps-bio" rows="3" placeholder="Über dich oder deine Sammlung"></textarea></label>
         <span class="dp-label">Favoriten</span>
         <div id="ps-favorites" class="fav-slots"></div>
+        <span class="dp-label">Lieblingssongs</span>
+        <div id="ps-songs" class="fav-songs-edit"></div>
+        <label class="ps-check"><input type="checkbox" id="ps-hide-value" /> Sammlungswert öffentlich verbergen</label>
+        <button type="button" id="btn-import-discogs" class="btn ghost">Discogs-Sammlung importieren</button>
         <button id="ps-save" class="btn primary">Speichern</button>
       </div>
     </div>
@@ -598,6 +611,17 @@
       </div>
       <div id="fav-pick-grid" class="cover-grid"></div>
       <p id="fav-pick-status" class="hint"></p>
+    </div>
+  </dialog>
+
+  <!-- Lieblingssong wählen (aus gelikten Songs) -->
+  <dialog id="song-dialog">
+    <div class="cover-pick">
+      <div class="cover-pick-head">
+        <span>Lieblingssong wählen</span>
+        <button type="button" id="btn-song-close" class="dialog-close" aria-label="Schließen">×</button>
+      </div>
+      <div id="song-pick-list" class="song-pick-list"></div>
     </div>
   </dialog>
 

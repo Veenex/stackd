@@ -557,6 +557,40 @@ export async function searchPlaylists(q, limit = 30) {
   }));
 }
 
+// ---------- Lieblingssongs (einzelne Tracks liken) ----------
+export async function fetchSongLikes(albumId) {
+  const u = uid(); if (!u || !albumId) return new Set();
+  const sb = await cloud(); if (!sb) return new Set();
+  const { data } = await sb.from('song_likes').select('position').eq('user_id', u).eq('album_id', String(albumId));
+  return new Set((data || []).map((r) => String(r.position)));
+}
+export async function fetchMyLikedSongs(limit = 4) {
+  const u = uid(); if (!u) return [];
+  const sb = await cloud(); if (!sb) return [];
+  const { data } = await sb.from('song_likes')
+    .select('album_id,position,title,artist,album,created_at')
+    .eq('user_id', u).order('created_at', { ascending: false }).limit(limit);
+  return (data || []).map((r) => ({ albumId: r.album_id, position: r.position, title: r.title || '', artist: r.artist || '', album: r.album || '' }));
+}
+export async function toggleSongLike(album, track) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return null;
+  const albumId = String(album.sourceId || album.masterId || '');
+  const pos = String(track.position || '');
+  if (!albumId) return null;
+  const { data: ex } = await sb.from('song_likes').select('position')
+    .eq('user_id', u).eq('album_id', albumId).eq('position', pos).maybeSingle();
+  if (ex) {
+    await sb.from('song_likes').delete().eq('user_id', u).eq('album_id', albumId).eq('position', pos);
+    return false;
+  }
+  await sb.from('song_likes').insert({
+    user_id: u, album_id: albumId, position: pos,
+    title: track.title || null, artist: album.artist || null, album: album.title || null,
+  });
+  return true;
+}
+
 // ---------- Community-Bewertung eines Albums (alle Profile) ----------
 // Aggregiert die Bewertungen ALLER Nutzer für dasselbe Album (per Master-Release,
 // sonst Pressung/Source, sonst Künstler+Titel). Eine Bewertung pro Nutzer.

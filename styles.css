@@ -637,7 +637,7 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .histo { display: flex; align-items: flex-end; gap: 8px; }
 .histo-end { color: var(--petrol); display: inline-flex; align-items: flex-end; gap: 1px; flex-shrink: 0; }
 .mini-note { width: 13px; height: 13px; display: block; }
-.histo-bars { flex: 1; display: flex; align-items: flex-end; gap: 3px; height: 48px; }
+.histo-bars { flex: 1; display: flex; align-items: flex-end; gap: 1px; height: 48px; }
 .histo-bar { flex: 1; background: #313d4e; min-height: 3px; position: relative; }
 .histo-val {
   position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
@@ -867,7 +867,7 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .cr-wrap { display: flex; align-items: flex-end; gap: 8px; }
 .cr-min { color: var(--petrol); flex: 0 0 auto; }
 .cr-min svg { width: 14px; height: 14px; display: block; }
-.cr-bars { flex: 1; display: flex; align-items: flex-end; gap: 3px; height: 56px; }
+.cr-bars { flex: 1; display: flex; align-items: flex-end; gap: 1px; height: 56px; }
 .cr-bar { flex: 1; height: 100%; display: flex; align-items: flex-end; }
 .cr-fill { width: 100%; min-height: 2px; background: var(--surface-2); border-radius: 2px; }
 .cr-side { flex: 0 0 auto; display: flex; flex-direction: column; align-items: flex-end; }
@@ -929,6 +929,14 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .trk-pos { color: var(--muted); min-width: 26px; }
 .trk-title { flex: 1; min-width: 0; }
 .trk-dur { color: var(--muted); font-variant-numeric: tabular-nums; }
+.trk-like { background: none; border: none; color: var(--muted); cursor: pointer; padding: 0 0 0 8px; flex: 0 0 auto; align-self: center; display: inline-flex; }
+.trk-like .heart-ico { width: 16px; height: 16px; }
+.trk-like.liked { color: var(--rose); }
+/* Album-Infos (#16) */
+.info-row { display: flex; gap: 10px; padding: 4px 0; font-size: 14px; }
+.info-k { flex: 0 0 84px; color: var(--muted); }
+.info-v { flex: 1; color: var(--text); }
+.info-notes { margin: 8px 0 0; font-size: 13px; color: var(--muted); line-height: 1.45; white-space: pre-wrap; }
 .dp-edit { margin-top: 24px; border-top: 1px solid var(--border); }
 .dp-edit summary { cursor: pointer; color: var(--muted); font-size: 14px; padding: 12px 0; }
 .dp-edit .form { margin-top: 6px; }
@@ -1108,6 +1116,22 @@ body.logged-in .logout-btn { display: block; }
 
 /* Sammlungswert direkt unter dem Filter im Collection-Tab */
 .value-collection { margin: 2px 0 12px; }
+
+/* Checkbox-Zeile in Profil-Einstellungen */
+.ps-check { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); cursor: pointer; }
+.ps-check input { width: auto; margin: 0; }
+
+/* Lieblingssongs im Profil */
+.fav-songs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fav-song { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; text-align: left; cursor: pointer; color: var(--text); display: flex; flex-direction: column; min-width: 0; }
+.fs-title { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fs-artist { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fav-songs-edit { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fav-song-slot { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; text-align: left; cursor: pointer; color: var(--text); display: flex; flex-direction: column; justify-content: center; min-width: 0; position: relative; min-height: 46px; }
+.fav-song-slot.empty { align-items: center; color: var(--muted); }
+.fav-song-slot .fav-x { position: absolute; top: 2px; right: 8px; color: var(--muted); font-size: 16px; }
+.song-pick-list { max-height: 55vh; overflow-y: auto; }
+.song-pick-row { display: flex; flex-direction: column; width: 100%; background: none; border: none; border-bottom: 1px solid var(--border); padding: 11px 2px; text-align: left; cursor: pointer; color: var(--text); }
 
 /* ---------- Desktop: zentrierte Spalte (Handy <720px bleibt unverändert) ---------- */
 @media (min-width: 720px) {
