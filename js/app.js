@@ -13,7 +13,7 @@ import {
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
 } from './store.js';
-import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre } from './api.js';
+import { lookupBarcode, fetchTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 
@@ -1413,6 +1413,36 @@ function openGenre(genre) {
   switchView('search');
   browseCovers({ genre, sort: 'have', sort_order: 'desc', per_page: 60 }, 'Genre: ' + genre, renderBrowse);
 }
+
+// ---------- Discogs-Sammlung importieren (#18) ----------
+function dedupeKey(it) {
+  if (it.masterId) return 'm' + it.masterId;
+  if (it.sourceId) return 's' + it.sourceId;
+  return (String(it.artist) + '|' + String(it.title)).toLowerCase().trim();
+}
+async function importDiscogs() {
+  if (!requireAuth()) return;
+  const def = (getProfile() || {}).username || '';
+  const username = prompt('Discogs-Username (öffentliche Sammlung):', def);
+  if (username == null) return;
+  const u = username.trim(); if (!u) return;
+  toast('Importiere…');
+  let items = [];
+  try { items = await fetchDiscogsCollection(u); } catch { toast('Import fehlgeschlagen'); return; }
+  if (!items.length) { toast('Keine öffentliche Sammlung gefunden'); return; }
+  const have = new Set(getList('collection').map(dedupeKey));
+  let added = 0;
+  for (const it of items) {
+    const k = dedupeKey(it);
+    if (have.has(k)) continue;
+    have.add(k);
+    addItem('collection', it);
+    added++;
+  }
+  renderList('collection'); renderCounts(); renderProfile();
+  toast(`${added} importiert, ${items.length - added} schon vorhanden`);
+}
+$('#btn-import-discogs').addEventListener('click', importDiscogs);
 
 // Aktueller Sammlungswert (Mittel aus min–max) nur aus dem Cache – ohne Netz.
 function computeCachedValue() {

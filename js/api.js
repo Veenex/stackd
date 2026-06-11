@@ -201,6 +201,35 @@ function normalizeDiscogsHit(hit) {
   });
 }
 
+// Öffentliche Discogs-Sammlung eines Nutzers laden (paginiert) → normalisierte Items.
+export async function fetchDiscogsCollection(username) {
+  const out = [];
+  let page = 1, pages = 1;
+  do {
+    const data = await discogsProxy('collection', { username, per_page: 100, page });
+    pages = data.pagination?.pages || 1;
+    for (const r of (data.releases || [])) {
+      const bi = r.basic_information || {};
+      const artist = ((bi.artists || [])[0]?.name || '').replace(/\s*\(\d+\)$/, '').trim();
+      out.push(normalize({
+        artist,
+        title: bi.title || '',
+        year: bi.year ? String(bi.year) : '',
+        label: ((bi.labels || [])[0]?.name) || '',
+        format: (bi.formats || []).map((f) => f.name).filter(Boolean).join(', '),
+        coverUrl: bi.cover_image || bi.thumb || '',
+        genre: (bi.genres || [])[0] || '',
+        source: 'discogs',
+        sourceId: String(r.id || ''),
+        masterId: bi.master_id || 0,
+        rating: Number(r.rating) || 0,
+      }));
+    }
+    page++;
+  } while (page <= pages && page <= 20);
+  return out;
+}
+
 // Genre eines Albums nachladen (Backfill bestehender Sammlungseinträge).
 export async function fetchGenre(item) {
   if (!item || item.source !== 'discogs' || !item.sourceId) return '';

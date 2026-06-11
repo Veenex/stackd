@@ -32,6 +32,13 @@ Deno.serve(async (req) => {
         const v = p.get(k);
         if (v) target.searchParams.set(k, v);
       }
+    } else if (action === "collection") {
+      const user = encodeURIComponent(p.get("username") || "");
+      target = new URL(`${DISCOGS}/users/${user}/collection/folders/0/releases`);
+      for (const k of ["per_page", "page", "sort", "sort_order"]) {
+        const v = p.get(k);
+        if (v) target.searchParams.set(k, v);
+      }
     } else {
       // search
       target = new URL(`${DISCOGS}/database/search`);
