@@ -949,11 +949,82 @@ const BROWSE_TABS = [
 ];
 const BROWSE_DECADES = [['2020er', '2020-2029'], ['2010er', '2010-2019'], ['2000er', '2000-2009'], ['1990er', '1990-1999'], ['1980er', '1980-1989'], ['1970er', '1970-1979'], ['1960er', '1960-1969'], ['1950er', '1950-1959']];
 
+const INFO_PAGES = [
+  { id: 'impressum', label: 'Impressum' },
+  { id: 'datenschutz', label: 'Datenschutz' },
+  { id: 'faq', label: 'FAQ' },
+  { id: 'kontakt', label: 'Kontakt' },
+];
+const INFO_CONTENT = {
+  impressum: {
+    title: 'Impressum',
+    html: `<p><strong>Angaben gemäß § 5 DDG</strong></p>
+      <p>[Vorname Nachname]<br>[Straße und Hausnummer]<br>[PLZ Ort]<br>Deutschland</p>
+      <p><strong>Kontakt</strong><br>E-Mail: [deine-E-Mail-Adresse]</p>
+      <p><strong>Verantwortlich für den Inhalt</strong><br>[Vorname Nachname], Anschrift wie oben.</p>
+      <p class="info-note">Entwurf – bitte die Platzhalter [&hellip;] durch deine echten Daten ersetzen. Eine ladungsfähige Anschrift ist für öffentlich zugängliche Dienste in Deutschland Pflicht.</p>`,
+  },
+  datenschutz: {
+    title: 'Datenschutzerklärung',
+    html: `<h3>1. Verantwortlicher</h3>
+      <p>[Vorname Nachname], [Anschrift], E-Mail: [deine-E-Mail-Adresse] (siehe Impressum).</p>
+      <h3>2. Welche Daten wir verarbeiten</h3>
+      <ul>
+        <li><strong>Konto:</strong> E-Mail-Adresse, Username, verschlüsseltes Passwort.</li>
+        <li><strong>Profil:</strong> Anzeigename, Ort, Website, Bio, Profil- und Bannerbild (sofern angegeben).</li>
+        <li><strong>Inhalte:</strong> Sammlung, Wishlist, Listen, Bewertungen, öffentliche Reviews, Hör-Einträge, gelikte Songs, Lieblingsalben/-songs, optional importierte Discogs-Daten.</li>
+        <li><strong>Technisch:</strong> Beim Laden von Inhalten/Bildern werden IP-Adresse und Geräteangaben an die unten genannten Dienste übermittelt.</li>
+      </ul>
+      <h3>3. Öffentlich sichtbar</h3>
+      <p>Dein Profil (Name, Bio, Ort, Favoriten), deine Sammlung/Wishlist, Bewertungen und Reviews sind für andere Nutzer bzw. öffentlich sichtbar. Den Sammlungswert kannst du in den Einstellungen verbergen.</p>
+      <h3>4. Dienste / Auftragsverarbeiter</h3>
+      <ul>
+        <li><strong>Supabase</strong> – Hosting, Datenbank, Anmeldung (Region EU).</li>
+        <li><strong>Resend</strong> – Versand von Bestätigungs- und Passwort-E-Mails.</li>
+        <li><strong>Discogs</strong> – Abruf von Album- und Marktwert-Daten.</li>
+        <li><strong>Apple/iTunes</strong> – Cover-Grafiken und Tracklists.</li>
+        <li><strong>Cloudflare</strong> (Domain/DNS) und <strong>GitHub Pages</strong> (Auslieferung der App).</li>
+      </ul>
+      <h3>5. Zwecke & Rechtsgrundlage</h3>
+      <p>Verarbeitung zur Bereitstellung der App und deines Kontos (Art. 6 Abs. 1 lit. b DSGVO) sowie zur Funktion und Sicherheit (lit. f).</p>
+      <h3>6. Speicherung</h3>
+      <p>Daten werden gespeichert, solange dein Konto besteht. Anmelde-Token liegen lokal in deinem Browser. Es gibt kein Werbe-Tracking und keine Werbe-Cookies.</p>
+      <h3>7. Deine Rechte</h3>
+      <p>Du hast Recht auf Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit und Widerspruch. Dein Konto inkl. aller Daten kannst du jederzeit in den Einstellungen unter „Account löschen" selbst löschen. Es besteht ein Beschwerderecht bei einer Datenschutz-Aufsichtsbehörde.</p>
+      <h3>8. Kontakt</h3>
+      <p>Bei Fragen: [deine-E-Mail-Adresse].</p>
+      <p class="info-note">Entwurf – bitte vor Veröffentlichung fachkundig prüfen lassen und Platzhalter ersetzen.</p>`,
+  },
+  faq: {
+    title: 'FAQ',
+    html: `<h3>Was ist Discend?</h3><p>Eine App, um deine Musik-/Vinyl-Sammlung zu katalogisieren, zu bewerten, Listen zu führen und Freunden zu folgen.</p>
+      <h3>Brauche ich ein Konto?</h3><p>Stöbern geht ohne Konto. Zum Sammeln, Bewerten, Liken, Folgen und für Listen brauchst du ein kostenloses Konto.</p>
+      <h3>Woher kommen die Album-Daten?</h3><p>Aus Discogs (Alben, Marktwert) sowie Apple/iTunes (Cover, Tracklists).</p>
+      <h3>Sind meine Daten öffentlich?</h3><p>Profil, Sammlung, Bewertungen und Reviews sind für andere sichtbar. Den Sammlungswert kannst du verbergen.</p>
+      <h3>Wie lösche ich mein Konto?</h3><p>Profil → Einstellungen (Zahnrad) → ganz unten „Account löschen".</p>`,
+  },
+  kontakt: {
+    title: 'Kontakt',
+    html: `<p>Fragen, Feedback oder ein Problem entdeckt? Schreib uns:</p>
+      <p><a href="mailto:[deine-E-Mail-Adresse]">[deine-E-Mail-Adresse]</a></p>`,
+  },
+};
+
 function renderBrowse() {
   const c = $('#browse-content');
   $('#search-status').textContent = '';
-  c.innerHTML = `<ul class="browse-list">${BROWSE_TABS.map((t) => `<li class="browse-row" data-tab="${t.id}"><span>${t.label}</span><span class="chev">›</span></li>`).join('')}</ul>`;
+  c.innerHTML = `<ul class="browse-list">${BROWSE_TABS.map((t) => `<li class="browse-row" data-tab="${t.id}"><span>${t.label}</span><span class="chev">›</span></li>`).join('')}</ul>
+    <p class="browse-section">Discend.app</p>
+    <ul class="browse-list">${INFO_PAGES.map((p) => `<li class="browse-row" data-info="${p.id}"><span>${p.label}</span><span class="chev">›</span></li>`).join('')}</ul>`;
   c.querySelectorAll('.browse-row[data-tab]').forEach((li) => li.addEventListener('click', () => openBrowseTab(li.dataset.tab)));
+  c.querySelectorAll('.browse-row[data-info]').forEach((li) => li.addEventListener('click', () => renderInfoPage(li.dataset.info)));
+}
+
+function renderInfoPage(key) {
+  const page = INFO_CONTENT[key]; if (!page) return;
+  const c = $('#browse-content');
+  c.innerHTML = `<button class="browse-back" id="browse-back">‹ zurück</button><div class="info-page"><h2>${escapeHtml(page.title)}</h2>${page.html}</div>`;
+  $('#browse-back').addEventListener('click', renderBrowse);
 }
 
 function openBrowseTab(name) {
