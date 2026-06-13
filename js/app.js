@@ -15,7 +15,7 @@ import {
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, fetchReleaseInfo, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
-import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, sendPasswordReset } from './auth.js';
+import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, sendPasswordReset, deleteAccount } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 
 // Anzeigename aus dem Supabase-Profil (display_name, sonst username).
@@ -1659,7 +1659,7 @@ function downscaleImage(file, maxW, quality) {
 
 function openProfileSettings() {
   const p = getProfile() || {};
-  $('#profile-settings-dialog').classList.remove('show-auth');
+  $('#profile-settings-dialog').classList.remove('show-auth', 'show-delete');
   $('#ps-signed-name').textContent = p.display_name || p.username || '';
   $('#ps-name').value = p.display_name || p.username || '';
   $('#ps-email').value = (getUser() && getUser().email) || '';
@@ -1690,6 +1690,21 @@ $('#ps-pw-reset').addEventListener('click', async () => {
   const msg = $('#ps-auth-msg'); msg.textContent = 'Sende…';
   const err = await sendPasswordReset();
   msg.textContent = err || 'Reset-Link gesendet – schau in dein Postfach.';
+});
+$('#ps-delete-open').addEventListener('click', () => {
+  $('#ps-del-ack').checked = false; $('#ps-del-confirm').disabled = true; $('#ps-del-msg').textContent = '';
+  $('#profile-settings-dialog').classList.add('show-delete');
+});
+$('#ps-del-back').addEventListener('click', () => $('#profile-settings-dialog').classList.remove('show-delete'));
+$('#ps-del-ack').addEventListener('change', (e) => { $('#ps-del-confirm').disabled = !e.target.checked; });
+$('#ps-del-confirm').addEventListener('click', async () => {
+  if (!$('#ps-del-ack').checked) return;
+  const msg = $('#ps-del-msg'); msg.textContent = 'Konto wird gelöscht…';
+  $('#ps-del-confirm').disabled = true;
+  const err = await deleteAccount();
+  if (err) { msg.textContent = err; $('#ps-del-confirm').disabled = false; return; }
+  $('#profile-settings-dialog').close();
+  toast('Konto gelöscht');
 });
 $('#ps-save').addEventListener('click', () => {
   const name = $('#ps-name').value.trim();

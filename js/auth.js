@@ -1,6 +1,6 @@
 // auth.js – Login / Registrierung / Passwort-Reset + Gast-Modus.
 // Steuert das #auth-page-Overlay und hält den aktuellen Nutzer-Status.
-import { getSupabase } from './supabase.js';
+import { getSupabase, SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
 
 const $ = (s) => document.querySelector(s);
 
@@ -74,6 +74,22 @@ export async function changePassword(password) {
   if ((password || '').length < 6) return 'Passwort: mindestens 6 Zeichen.';
   const { error } = await sb.auth.updateUser({ password });
   return error ? error.message : null;
+}
+// Konto endgültig löschen (über Edge-Function mit Service-Role). null = Erfolg.
+export async function deleteAccount() {
+  if (!sb || !currentUser) return 'Nicht angemeldet.';
+  const { data } = await sb.auth.getSession();
+  const token = data && data.session && data.session.access_token;
+  if (!token) return 'Keine Sitzung.';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/delete-account`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) { const t = await res.text(); return 'Fehler beim Löschen: ' + t.slice(0, 120); }
+  } catch (e) { return 'Fehler: ' + (e.message || e); }
+  await signOut();
+  return null;
 }
 // Reset-Link an die eigene E-Mail senden.
 export async function sendPasswordReset() {

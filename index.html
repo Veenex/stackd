@@ -181,7 +181,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Discend · Build 107</p>
+        <p class="hint profile-version">Discend · Build 108</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -568,6 +568,8 @@
 
           <div class="set-section-label">Daten</div>
           <button type="button" id="btn-import-discogs" class="btn ghost set-wide">Discogs-Sammlung importieren</button>
+
+          <button type="button" class="set-row set-delete" id="ps-delete-open">Account löschen</button>
         </div>
 
         <!-- Passwort & Anmeldung (slidet von rechts) -->
@@ -582,6 +584,16 @@
           <p id="ps-auth-msg" class="hint"></p>
           <div class="set-section-label">Zwei-Faktor-Authentifizierung</div>
           <p class="hint">Bald verfügbar.</p>
+        </div>
+
+        <!-- Account löschen (slidet von rechts) -->
+        <div class="set-panel" id="ps-delete-panel">
+          <button type="button" class="set-back" id="ps-del-back">‹ Zurück</button>
+          <div class="set-section-label">Account löschen</div>
+          <p class="hint">Dein Konto und alle Daten (Sammlung, Wishlist, Listen, Bewertungen, Reviews, Likes) werden unwiderruflich gelöscht. Das kann nicht rückgängig gemacht werden.</p>
+          <label class="set-field set-check"><span>Ich habe das zur Kenntnis genommen</span><input type="checkbox" id="ps-del-ack" /></label>
+          <button type="button" id="ps-del-confirm" class="btn set-wide set-danger" disabled>Account endgültig löschen</button>
+          <p id="ps-del-msg" class="hint"></p>
         </div>
       </div>
     </div>

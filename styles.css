@@ -1164,6 +1164,12 @@ body.logged-in .logout-btn { display: block; }
 .set-check input { flex: 0 0 auto; width: auto; }
 .set-back { background: none; border: none; color: var(--rose); font-size: 15px; cursor: pointer; padding: 8px 0; }
 .set-wide { width: 100%; margin-top: 8px; }
+.set-delete { color: var(--danger, #ff6b6b); border-bottom: 1px solid var(--border); margin-top: 8px; }
+.set-danger { background: var(--danger, #c0392b); color: #fff; border: none; }
+.set-danger:disabled { opacity: .45; cursor: default; }
+#ps-delete-panel { transform: translateX(100%); }
+.settings-sheet.show-delete #ps-main { transform: translateX(-100%); }
+.settings-sheet.show-delete #ps-delete-panel { transform: translateX(0); }
 .set-panel .ps-images { display: flex; gap: 8px; }
 .set-panel .ps-images .btn { flex: 1; }
 
