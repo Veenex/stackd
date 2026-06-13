@@ -14,7 +14,7 @@ import {
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
 } from './store.js';
-import { lookupBarcode, fetchTracklist, fetchReleaseInfo, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
+import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, sendPasswordReset, deleteAccount } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 
@@ -548,6 +548,14 @@ async function loadTracklist(item) {
   } catch { /* ignorieren */ }
   if (reqId !== tracklistReq) return; // ein neueres Album wurde geöffnet
   renderAlbumInfo(info);
+  // Fallback: bei spärlicher/fehlender Discogs-Tracklist die vollständige von Apple holen
+  if (!tracks || tracks.length < 2) {
+    try {
+      const it = await fetchItunesTracklist(item.artist, item.title);
+      if (reqId !== tracklistReq) return;
+      if (it && it.length > (tracks ? tracks.length : 0)) tracks = it;
+    } catch { /* ignorieren */ }
+  }
   if (!tracks || !tracks.length) {
     status.textContent = 'Keine Tracklist gefunden.';
     return;
