@@ -278,16 +278,9 @@ export async function fetchCoverCandidates(item) {
   const urls = [];
   const add = (u) => { if (u && !seen.has(u)) { seen.add(u); urls.push(u); } };
 
-  // 1. Discogs: Bilder genau dieser Pressung (oft hochwertige Scans)
-  if (item.source === 'discogs' && item.sourceId) {
-    try {
-      const d = await discogsProxy('release', { id: item.sourceId });
-      (d.images || []).forEach((img) => add(img.uri || img.resource_url));
-    } catch { /* ignorieren */ }
-  }
-
-  // 2. iTunes: mehrere Editionen in hoher Auflösung
   const term = `${item.artist || ''} ${item.title || ''}`.trim();
+
+  // 1. iTunes/Apple: offizielle Cover-Grafiken in hoher Auflösung (saubere Artworks, keine Fotos)
   if (term) {
     try {
       const r = await fetch('https://itunes.apple.com/search?entity=album&limit=12&term=' + encodeURIComponent(term));
@@ -295,6 +288,14 @@ export async function fetchCoverCandidates(item) {
         const d = await r.json();
         (d.results || []).forEach((a) => { if (a.artworkUrl100) add(a.artworkUrl100.replace('100x100bb', '600x600bb')); });
       }
+    } catch { /* ignorieren */ }
+  }
+
+  // 2. Discogs: Bilder genau dieser Pressung (können auch Fotos sein)
+  if (item.source === 'discogs' && item.sourceId) {
+    try {
+      const d = await discogsProxy('release', { id: item.sourceId });
+      (d.images || []).forEach((img) => add(img.uri || img.resource_url));
     } catch { /* ignorieren */ }
   }
 

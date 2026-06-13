@@ -499,10 +499,9 @@ async function addPreviewTo(list) {
   if (!requireAuth()) return;
   if (!previewResult) return;
   const item = { ...previewResult };
-  if (!item.coverUrl) {
-    const c = await fetchCoverArt(item.artist, item.title);
-    if (c) item.coverUrl = c;
-  }
+  // Bevorzugt offizielles Apple/iTunes-Artwork (saubere Grafik statt Foto); Discogs als Fallback.
+  const clean = await fetchCoverArt(item.artist, item.title);
+  if (clean) item.coverUrl = clean;
   addItem(list, {
     ...item,
     rating: detailRating ? detailRating.getValue() : 0,
@@ -833,10 +832,8 @@ function showResult(result) {
 
 async function saveResultTo(list) {
   if (!pendingResult) return;
-  if (!pendingResult.coverUrl) {
-    const c = await fetchCoverArt(pendingResult.artist, pendingResult.title);
-    if (c) pendingResult.coverUrl = c;
-  }
+  const clean = await fetchCoverArt(pendingResult.artist, pendingResult.title);
+  if (clean) pendingResult.coverUrl = clean;
   addItem(list, {
     ...pendingResult,
     note: $('#result-note').value.trim(),
