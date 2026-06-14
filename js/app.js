@@ -345,6 +345,7 @@ function openDetail(list, id) {
 function closeDetail() {
   detailPage.classList.add('hidden');
   detailPage.classList.remove('preview');
+  stopPreview();
   const as = $('#dp-actions'); if (as && as.open) as.close();
   document.body.style.overflow = '';
   editing = null;
@@ -530,10 +531,27 @@ function renderAlbumInfo(info) {
     + (info.notes ? `<p class="info-notes">${escapeHtml(info.notes.slice(0, 400))}${info.notes.length > 400 ? '…' : ''}</p>` : '');
 }
 
+// Audio-Hörprobe (30s) – es spielt immer nur eine.
+let previewAudio = null;
+function stopPreview() {
+  if (previewAudio) { try { previewAudio.pause(); } catch { /* ignorieren */ } previewAudio = null; }
+  document.querySelectorAll('.trk-play.playing').forEach((b) => b.classList.remove('playing'));
+}
+function togglePreview(url, btn) {
+  const wasPlaying = btn.classList.contains('playing');
+  stopPreview();
+  if (wasPlaying) return;
+  previewAudio = new Audio(url);
+  btn.classList.add('playing');
+  previewAudio.play().catch(() => btn.classList.remove('playing'));
+  previewAudio.onended = () => { btn.classList.remove('playing'); previewAudio = null; };
+}
+
 async function loadTracklist(item) {
   const ol = $('#dp-tracklist');
   const status = $('#dp-tracklist-status');
   ol.innerHTML = '';
+  stopPreview();
   renderAlbumInfo(null);
   if (item.source === 'manual' || !item.sourceId) {
     status.textContent = 'Keine Tracklist (manuell hinzugefügt).';
@@ -549,21 +567,41 @@ async function loadTracklist(item) {
   if (reqId !== tracklistReq) return; // ein neueres Album wurde geöffnet
   renderAlbumInfo(info);
   // Fallback: bei spärlicher/fehlender Discogs-Tracklist die vollständige von Apple holen
+  let fromItunes = false;
   if (!tracks || tracks.length < 2) {
     try {
       const it = await fetchItunesTracklist(item.artist, item.title);
       if (reqId !== tracklistReq) return;
-      if (it && it.length > (tracks ? tracks.length : 0)) tracks = it;
+      if (it && it.length > (tracks ? tracks.length : 0)) { tracks = it; fromItunes = true; }
     } catch { /* ignorieren */ }
   }
   if (!tracks || !tracks.length) {
     status.textContent = 'Keine Tracklist gefunden.';
     return;
   }
+  // Hörproben (30s) von Apple anhängen (wenn nicht ohnehin von dort)
+  if (!fromItunes) {
+    try {
+      const its = await fetchItunesTracklist(item.artist, item.title);
+      if (reqId !== tracklistReq) return;
+      if (its && its.length) {
+        const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const map = {}; its.forEach((t) => { if (t.preview) map[norm(t.title)] = t.preview; });
+        tracks.forEach((t) => { if (!t.preview) { const p = map[norm(t.title)]; if (p) t.preview = p; } });
+      }
+    } catch { /* ignorieren */ }
+  }
   status.textContent = '';
-  ol.innerHTML = tracks
-    .map((t) => `<li><span class="trk-pos">${escapeHtml(t.position)}</span><span class="trk-title">${escapeHtml(t.title)}</span><span class="trk-dur">${escapeHtml(t.duration)}</span><button class="trk-like" data-pos="${escapeHtml(t.position)}" aria-label="Song liken">${heartSvg()}</button></li>`)
-    .join('');
+  ol.innerHTML = tracks.map((t, i) => {
+    const play = t.preview
+      ? `<button class="trk-play" data-i="${i}" aria-label="Hörprobe"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>`
+      : '<span class="trk-play-none"></span>';
+    return `<li><span class="trk-pos">${escapeHtml(t.position)}</span>${play}<span class="trk-title">${escapeHtml(t.title)}</span><span class="trk-dur">${escapeHtml(t.duration)}</span><button class="trk-like" data-pos="${escapeHtml(t.position)}" aria-label="Song liken">${heartSvg()}</button></li>`;
+  }).join('');
+  ol.querySelectorAll('.trk-play').forEach((b) => b.addEventListener('click', () => {
+    const t = tracks[+b.dataset.i];
+    if (t && t.preview) togglePreview(t.preview, b);
+  }));
   ol.querySelectorAll('.trk-like').forEach((b) => b.addEventListener('click', async () => {
     if (!requireAuth()) return;
     const t = tracks.find((x) => String(x.position) === b.dataset.pos) || { position: b.dataset.pos };

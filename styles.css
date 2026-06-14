@@ -931,6 +931,10 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .trk-pos { color: var(--muted); min-width: 26px; }
 .trk-title { flex: 1; min-width: 0; }
 .trk-dur { color: var(--muted); font-variant-numeric: tabular-nums; }
+.trk-play { background: none; border: none; color: var(--muted); cursor: pointer; padding: 0; flex: 0 0 auto; align-self: center; display: inline-flex; }
+.trk-play svg { width: 16px; height: 16px; display: block; }
+.trk-play.playing { color: var(--petrol); }
+.trk-play-none { flex: 0 0 16px; }
 .trk-like { background: none; border: none; color: var(--muted); cursor: pointer; padding: 0 0 0 8px; flex: 0 0 auto; align-self: center; display: inline-flex; }
 .trk-like .heart-ico { width: 16px; height: 16px; }
 .trk-like.liked { color: var(--rose); }

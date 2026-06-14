@@ -498,7 +498,7 @@ export async function fetchItunesTracklist(artist, title) {
     const tracks = (sd.results || [])
       .filter((x) => x.wrapperType === 'track' && x.kind === 'song')
       .sort((x, y) => ((x.discNumber || 1) - (y.discNumber || 1)) || ((x.trackNumber || 0) - (y.trackNumber || 0)))
-      .map((x) => ({ position: String(x.trackNumber || ''), title: x.trackName || '', duration: x.trackTimeMillis ? msToTime(x.trackTimeMillis) : '' }));
+      .map((x) => ({ position: String(x.trackNumber || ''), title: x.trackName || '', duration: x.trackTimeMillis ? msToTime(x.trackTimeMillis) : '', preview: x.previewUrl || '' }));
     return tracks.length ? tracks : null;
   } catch { return null; }
 }
