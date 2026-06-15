@@ -14,7 +14,7 @@ import {
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
 } from './store.js';
-import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, discogsSearch, lastfmTopArtists, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
+import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, sendPasswordReset, deleteAccount } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 
@@ -898,7 +898,6 @@ $('#btn-result-close').addEventListener('click', () => resultDialog.close());
 
 // ---------- Datenbank durchsuchen (Lupe) + Vorschläge ----------
 let searchResults = [];
-let trendingCache = null;
 let popularCache = null;
 let friendsFeedCache = [];
 let homeTab = 'alben';        // 'alben' | 'reviews' | 'lists'
@@ -908,10 +907,6 @@ let searchFilter = 'alben';   // 'alben' | 'artist' | 'members' | 'reviews' | 'p
 let reviewSearchCache = [];
 let playlistSearchCache = [];
 let friendsFollowing = new Set();
-
-const SUGG_GENRES = ['Rock', 'Electronic', 'Jazz', 'Hip Hop', 'Funk / Soul', 'Pop', 'Reggae', 'Classical', 'Blues'];
-const SUGG_DECADES = [['60er', '1960-1969'], ['70er', '1970-1979'], ['80er', '1980-1989'], ['90er', '1990-1999'], ['2000er', '2000-2009'], ['2010er', '2010-2019']];
-const DISCOVER_POOL = ['Pink Floyd', 'Daft Punk', 'Miles Davis', 'Fleetwood Mac', 'Kendrick Lamar', 'Radiohead', 'David Bowie', 'Nirvana', 'The Beatles', 'Tame Impala', 'Amy Winehouse', 'Led Zeppelin', 'Bob Marley', 'Arctic Monkeys', 'Kraftwerk', 'Michael Jackson', 'Queen', 'Talking Heads', 'Massive Attack', 'Stevie Wonder'];
 
 // Kategorien mit Cover-Vorschau-Reihen
 const FEATURED = [
@@ -923,58 +918,6 @@ const FEATURED = [
   { label: 'Pop', params: { genre: 'Pop' } },
 ];
 const rowCache = {};
-
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
-}
-
-function chipHtml(label, params) {
-  return `<button class="chip" data-params='${escapeHtml(JSON.stringify(params))}'>${escapeHtml(label)}</button>`;
-}
-
-function collectionArtists() {
-  const counts = {};
-  getList('collection').forEach((i) => { const a = (i.artist || '').trim(); if (a) counts[a] = (counts[a] || 0) + 1; });
-  return Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 6);
-}
-
-function bindChips(container) {
-  container.querySelectorAll('.chip').forEach((el) => {
-    el.addEventListener('click', () => {
-      let params = {};
-      try { params = JSON.parse(el.dataset.params); } catch { /* ignorieren */ }
-      $('#search-db').value = el.textContent.replace(/^Mehr von /, '');
-      runDbSearchWith(params);
-    });
-  });
-}
-
-async function loadTrending() {
-  const block = $('#sugg-trending');
-  if (!block) return;
-  const chipsEl = block.querySelector('.chips');
-  const key = (getSettings().lastfmKey || '').trim();
-  if (!key) {
-    chipsEl.innerHTML = '<span class="hint">Für Trending einen kostenlosen Last.fm-Key unter „Mehr" eintragen.</span>';
-    return;
-  }
-  if (trendingCache) {
-    chipsEl.innerHTML = trendingCache.map((a) => chipHtml(a, { artist: a })).join('');
-    bindChips(block);
-    return;
-  }
-  try {
-    const artists = await lastfmTopArtists(14);
-    if (!artists || !artists.length) { chipsEl.innerHTML = '<span class="hint">Keine Trending-Daten.</span>'; return; }
-    trendingCache = artists;
-    chipsEl.innerHTML = artists.map((a) => chipHtml(a, { artist: a })).join('');
-    bindChips(block);
-  } catch {
-    chipsEl.innerHTML = '<span class="hint">Trending nicht verfügbar – Last.fm-Key prüfen.</span>';
-  }
-}
 
 let browseResults = [];
 const BROWSE_GENRES = ['Rock', 'Electronic', 'Jazz', 'Hip Hop', 'Funk / Soul', 'Pop', 'Reggae', 'Classical', 'Blues', 'Folk, World, & Country', 'Latin', 'Soundtrack'];
@@ -1352,13 +1295,6 @@ $('#manual-form').addEventListener('submit', (e) => {
 });
 
 // ---------- Mein Profil ----------
-function loadSettings() {
-  /* keine clientseitigen API-Einstellungen mehr (Discogs läuft über den Proxy) */
-}
-
-function setSetting(patch) {
-  saveSettings({ ...getSettings(), ...patch });
-}
 
 function fmtEuro(n) {
   return (Number(n) || 0).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
@@ -2447,7 +2383,6 @@ function closeUserProfile() {
 // ---------- Start ----------
 manualRating = createRatingInput($('#manual-rating'), 0);
 $('#manual-rating-clear').addEventListener('click', () => manualRating && manualRating.setValue(0));
-loadSettings();
 switchView('home');
 
 $('#btn-friends-close').addEventListener('click', () => $('#friends-dialog').close());

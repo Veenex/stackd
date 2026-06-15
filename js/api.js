@@ -2,7 +2,6 @@
 // MusicBrainz ist kostenlos und braucht keinen Token; Discogs liefert mehr
 // Vinyl-Details (Pressung, Farbe, Cover), benötigt aber einen Token.
 
-import { getSettings } from './store.js';
 import { SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
 
 const MB_BASE = 'https://musicbrainz.org/ws/2';
@@ -308,18 +307,6 @@ export async function fetchCoverCandidates(item) {
   }
 
   return urls.slice(0, 24);
-}
-
-// Aktuell beliebte Künstler (Trending) via Last.fm. Braucht lastfmKey in Settings.
-export async function lastfmTopArtists(limit = 14) {
-  const key = (getSettings().lastfmKey || '').trim();
-  if (!key) return null;
-  const url = `https://ws.audioscrobbler.com/2.0/?method=chart.gettopartists&api_key=${encodeURIComponent(key)}&format=json&limit=${limit}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Last.fm HTTP ' + res.status);
-  const d = await res.json();
-  if (d.error) throw new Error(d.message || 'Last.fm Fehler');
-  return (d.artists && d.artists.artist ? d.artists.artist : []).map((a) => a.name);
 }
 
 async function safe(fn) {
