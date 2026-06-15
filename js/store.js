@@ -404,7 +404,7 @@ export async function fetchUserPlaylists(userId) {
   const plIds = pls.map((p) => p.id);
   const [{ data: plItems }, { data: items }] = await Promise.all([
     sb.from('playlist_items').select('*').in('playlist_id', plIds),
-    sb.from('items').select('*').eq('user_id', userId),
+    sb.from('public_items').select('*').eq('user_id', userId),
   ]);
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
   return pls.map((p) => ({
@@ -416,7 +416,7 @@ export async function fetchUserPlaylists(userId) {
 // Sammlung/Wishlist eines anderen Nutzers.
 export async function fetchUserItems(userId, list = 'collection') {
   const sb = await cloud(); if (!sb || !userId) return [];
-  const { data } = await sb.from('items').select('*')
+  const { data } = await sb.from('public_items').select('*')
     .eq('user_id', userId).eq('list', list).order('added_at', { ascending: false });
   return (data || []).map(fromRow);
 }
@@ -430,7 +430,7 @@ export async function fetchFriendsFeed(limit = 20) {
   if (!ids.length) return [];
   // Neuzugänge UND Hör-Einträge (Tagebuch) der Gefolgten parallel laden
   const [{ data: items }, { data: plays }] = await Promise.all([
-    sb.from('items').select('*').in('user_id', ids).order('added_at', { ascending: false }).limit(limit),
+    sb.from('public_items').select('*').in('user_id', ids).order('added_at', { ascending: false }).limit(limit),
     sb.from('plays').select('*').in('user_id', ids).order('created_at', { ascending: false }).limit(limit),
   ]);
   const itemRows = items || [];
@@ -439,7 +439,7 @@ export async function fetchFriendsFeed(limit = 20) {
   const playItemIds = [...new Set(playRows.map((p) => p.item_id))];
   const playItems = {};
   if (playItemIds.length) {
-    const { data: pit } = await sb.from('items').select('*').in('id', playItemIds);
+    const { data: pit } = await sb.from('public_items').select('*').in('id', playItemIds);
     (pit || []).forEach((it) => { playItems[it.id] = it; });
   }
   // Profile aller Beteiligten
@@ -480,13 +480,13 @@ export async function fetchReviewsFeed(limit = 30) {
   };
   // 1) Reviews von Gefolgten zuerst
   if (followeeIds.length) {
-    const { data } = await sb.from('items').select('*').in('user_id', followeeIds)
+    const { data } = await sb.from('public_items').select('*').in('user_id', followeeIds)
       .not('review', 'is', null).order('added_at', { ascending: false }).limit(limit);
     await addRows(data);
   }
   // 2) Allgemein neueste Reviews auffüllen (eigene ausgenommen)
   if (out.length < limit) {
-    const { data } = await sb.from('items').select('*')
+    const { data } = await sb.from('public_items').select('*')
       .not('review', 'is', null).order('added_at', { ascending: false }).limit(limit * 2);
     await addRows((data || []).filter((it) => !u || it.user_id !== u));
   }
@@ -507,7 +507,7 @@ export async function fetchFriendsLists(limit = 20) {
   const ownerIds = [...new Set(pls.map((p) => p.user_id))];
   const [{ data: plItems }, { data: items }, { data: profs }] = await Promise.all([
     sb.from('playlist_items').select('*').in('playlist_id', plIds),
-    sb.from('items').select('*').in('user_id', ownerIds),
+    sb.from('public_items').select('*').in('user_id', ownerIds),
     sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ownerIds),
   ]);
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
@@ -523,7 +523,7 @@ export async function searchReviews(q, limit = 30) {
   const sb = await cloud(); if (!sb || !q.trim()) return [];
   const safe = q.trim().replace(/[%_,()\\]/g, ' ').trim();
   if (!safe) return [];
-  const { data } = await sb.from('items').select('*').not('review', 'is', null)
+  const { data } = await sb.from('public_items').select('*').not('review', 'is', null)
     .or(`title.ilike.%${safe}%,artist.ilike.%${safe}%`)
     .order('added_at', { ascending: false }).limit(limit * 2);
   const rows = (data || []).filter((it) => (it.review || '').trim());
@@ -546,7 +546,7 @@ export async function searchPlaylists(q, limit = 30) {
   const ownerIds = [...new Set(pls.map((p) => p.user_id))];
   const [{ data: plItems }, { data: items }, { data: profs }] = await Promise.all([
     sb.from('playlist_items').select('*').in('playlist_id', plIds),
-    sb.from('items').select('*').in('user_id', ownerIds),
+    sb.from('public_items').select('*').in('user_id', ownerIds),
     sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ownerIds),
   ]);
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
@@ -596,7 +596,7 @@ export async function toggleSongLike(album, track) {
 // sonst Pressung/Source, sonst Künstler+Titel). Eine Bewertung pro Nutzer.
 export async function fetchAlbumRatings(item) {
   const sb = await cloud(); if (!sb || !item) return [];
-  let q = sb.from('items').select('rating,user_id').gt('rating', 0);
+  let q = sb.from('public_items').select('rating,user_id').gt('rating', 0);
   if (item.masterId && Number(item.masterId) > 0) q = q.eq('master_id', Number(item.masterId));
   else if (item.sourceId) q = q.eq('source_id', String(item.sourceId));
   else if (item.title) {
@@ -615,7 +615,7 @@ export async function fetchAlbumRatings(item) {
 // Öffentliche Reviews ALLER Nutzer zu einem Album (eine pro Nutzer, neueste zuerst).
 export async function fetchAlbumReviews(item, limit = 30) {
   const sb = await cloud(); if (!sb || !item) return [];
-  let q = sb.from('items').select('user_id,rating,review,added_at').not('review', 'is', null);
+  let q = sb.from('public_items').select('user_id,rating,review,added_at').not('review', 'is', null);
   if (item.masterId && Number(item.masterId) > 0) q = q.eq('master_id', Number(item.masterId));
   else if (item.sourceId) q = q.eq('source_id', String(item.sourceId));
   else if (item.title) {
