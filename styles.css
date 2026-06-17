@@ -1167,6 +1167,10 @@ body.logged-in .logout-btn { display: block; }
 .set-row { display: flex; align-items: center; justify-content: space-between; width: 100%; background: none; border: none; border-top: 1px solid var(--border); padding: 14px 2px; color: var(--text); font-size: 15px; cursor: pointer; text-align: left; }
 .set-row .set-chev { color: var(--muted); }
 .set-signout { color: var(--rose); border-bottom: 1px solid var(--border); }
+.set-lang-row { cursor: default; }
+.set-lang-pills { display: flex; gap: 6px; }
+.set-lang-pill { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; }
+.set-lang-pill.active { background: var(--rose); border-color: var(--rose); color: #fff; }
 .set-section-label { text-transform: uppercase; font-size: 12px; letter-spacing: .05em; color: var(--muted); margin: 20px 0 6px; }
 .set-fields { display: flex; flex-direction: column; }
 .set-field { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); padding: 11px 0; }

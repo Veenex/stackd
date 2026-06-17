@@ -17,6 +17,7 @@ import {
 import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, sendPasswordReset, deleteAccount } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
+import { t as tr, applyI18n, getLang, setLang } from './i18n.js';
 
 // Anzeigename aus dem Supabase-Profil (display_name, sonst username).
 function profileName() {
@@ -28,11 +29,11 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
 const VIEW_TITLES = {
-  home: 'Discend',
-  collection: 'Collection',
-  search: 'Suche',
-  add: 'Hinzufügen',
-  settings: 'Mein Profil',
+  home: 'title.home',
+  collection: 'title.collection',
+  search: 'title.search',
+  add: 'title.add',
+  settings: 'title.profile',
 };
 
 let currentView = 'collection';
@@ -45,9 +46,9 @@ function switchView(view) {
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + view));
   $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === view));
   if (view === 'settings') {
-    $('#view-title').textContent = profileName() || 'Mein Profil';
+    $('#view-title').textContent = profileName() || tr('title.profile');
   } else {
-    $('#view-title').textContent = VIEW_TITLES[view] || '';
+    $('#view-title').textContent = tr(VIEW_TITLES[view] || '');
   }
   $('#header-settings').classList.toggle('hidden', view !== 'settings');
   $('#header-share').classList.toggle('hidden', view !== 'settings');
@@ -174,15 +175,15 @@ function recordItemHtml(item) {
     <li class="tile" data-id="${item.id}">
       ${cover}
       ${meta}
-      <p class="tile-title">${escapeHtml(item.title) || '(ohne Titel)'}</p>
+      <p class="tile-title">${escapeHtml(item.title) || tr('misc.untitled')}</p>
       <p class="tile-artist">${escapeHtml(item.artist) || '(unbekannt)'}</p>
       ${note}
     </li>`;
 }
 
 const EMPTY_TEXT = {
-  collection: 'Noch keine Platten. Scanne einen Barcode oder füge manuell hinzu.',
-  wishlist: 'Deine Wishlist ist leer.',
+  collection: 'empty.collection',
+  wishlist: 'empty.wishlist',
 };
 
 function renderList(list) {
@@ -200,7 +201,7 @@ function renderList(list) {
   ul.innerHTML = items.map(recordItemHtml).join('');
 
   const hint = $(`#empty-${list}`);
-  hint.textContent = getList(list).length === 0 ? EMPTY_TEXT[list] : 'Keine Treffer für Suche/Filter.';
+  hint.textContent = getList(list).length === 0 ? tr(EMPTY_TEXT[list]) : tr('list.noMatches');
   hint.classList.toggle('hidden', items.length > 0);
 
   ul.querySelectorAll('.tile').forEach((el) => {
@@ -274,7 +275,7 @@ async function renderDiscs(item) {
   if (colors.length < 2) return; // nur eine (oder keine) Farbe -> keine Auswahl
 
   wrap.classList.remove('hidden');
-  wrap.innerHTML = '<span class="dp-variants-label">Erhältlich auf</span>' +
+  wrap.innerHTML = `<span class="dp-variants-label">${tr('dp.availableOn')}</span>` +
     colors.map((c, i) =>
       `<button type="button" class="dp-swatch${c === lead ? ' active' : ''}" data-css="${escapeHtml(c.css)}">
         <span class="dot" style="background:${escapeHtml(c.css)}"></span>${escapeHtml(c.name)}
@@ -287,9 +288,9 @@ async function renderDiscs(item) {
 
 function setConditionDisplay(media, sleeve) {
   const parts = [];
-  if (media) parts.push('Media ' + media);
-  if (sleeve) parts.push('Hülle ' + sleeve);
-  $('#dp-condition').textContent = parts.length ? 'Zustand: ' + parts.join('  ·  ') : '';
+  if (media) parts.push(tr('cond.media') + ' ' + media);
+  if (sleeve) parts.push(tr('cond.sleeve') + ' ' + sleeve);
+  $('#dp-condition').textContent = parts.length ? tr('cond.label') + ' ' + parts.join('  ·  ') : '';
 }
 
 function openDetail(list, id) {
@@ -301,7 +302,7 @@ function openDetail(list, id) {
 
   setDetailCover(item.coverUrl);
 
-  $('#dp-title').textContent = item.title || '(ohne Titel)';
+  $('#dp-title').textContent = item.title || tr('misc.untitled');
   $('#dp-artist').textContent = item.artist || '(unbekannt)';
   $('#dp-meta').textContent = [item.year, item.label, item.format].filter(Boolean).join('  ·  ');
 
@@ -327,7 +328,7 @@ function openDetail(list, id) {
   setConditionDisplay(item.mediaCond, item.sleeveCond);
   $('.dp-edit').open = false;
 
-  $('#dp-move').textContent = list === 'collection' ? 'In Wishlist' : 'In Collection';
+  $('#dp-move').textContent = list === 'collection' ? tr('btn.moveToWishlist') : tr('btn.moveToCollection');
 
   $('#dp-play-date').value = new Date().toISOString().slice(0, 10);
   $('#dp-play-note').value = '';
@@ -375,9 +376,9 @@ $('#as-collection').addEventListener('click', () => {
   if (!editing) return;
   if (editing.list === 'wishlist') {
     moveItem('wishlist', 'collection', editing.id); closeDetail();
-    renderList('collection'); renderList('wishlist'); renderCounts(); toast('In Sammlung verschoben');
-  } else if (confirm('Aus der Sammlung entfernen?')) {
-    deleteItem('collection', editing.id); closeDetail(); renderList('collection'); renderCounts(); toast('Entfernt');
+    renderList('collection'); renderList('wishlist'); renderCounts(); toast(tr('toast.movedToCollection'));
+  } else if (confirm(tr('confirm.removeFromCollection'))) {
+    deleteItem('collection', editing.id); closeDetail(); renderList('collection'); renderCounts(); toast(tr('toast.removed'));
   }
 });
 // Toggle „Wishlist": analog.
@@ -387,9 +388,9 @@ $('#as-wishlist').addEventListener('click', () => {
   if (!editing) return;
   if (editing.list === 'collection') {
     moveItem('collection', 'wishlist', editing.id); closeDetail();
-    renderList('collection'); renderList('wishlist'); renderCounts(); toast('In Wishlist verschoben');
-  } else if (confirm('Von der Wishlist entfernen?')) {
-    deleteItem('wishlist', editing.id); closeDetail(); renderList('wishlist'); renderCounts(); toast('Entfernt');
+    renderList('collection'); renderList('wishlist'); renderCounts(); toast(tr('toast.movedToWishlist'));
+  } else if (confirm(tr('confirm.removeFromWishlist'))) {
+    deleteItem('wishlist', editing.id); closeDetail(); renderList('wishlist'); renderCounts(); toast(tr('toast.removed'));
   }
 });
 
@@ -407,16 +408,16 @@ async function shareLink(text) {
   try {
     if (navigator.share) { await navigator.share({ title: 'Discend', text, url }); return; }
     await navigator.clipboard.writeText(text + ' ' + url);
-    toast('Link kopiert');
+    toast(tr('toast.linkCopied'));
   } catch { /* abgebrochen/ignorieren */ }
 }
 function shareProfile() {
-  shareLink(`${profileName() || 'Mein Profil'} auf Discend`);
+  shareLink(`${profileName() || tr('title.profile')} ${tr('share.suffix')}`);
 }
 function shareAlbum() {
   const a = editing ? getList(editing.list).find((i) => i.id === editing.id) : previewResult;
   if (!a) return;
-  shareLink(`${a.artist || ''} – ${a.title || ''} auf Discend`.replace(/^ – /, '').trim());
+  shareLink(`${a.artist || ''} – ${a.title || ''} ${tr('share.suffix')}`.replace(/^ – /, '').trim());
 }
 $('#header-share').addEventListener('click', shareProfile);
 $('#as-share').addEventListener('click', shareAlbum);
@@ -426,7 +427,7 @@ let communityReq = 0;
 async function renderCommunityRating(item) {
   const el = $('#dp-community'); if (!el) return;
   const rq = ++communityReq;
-  el.innerHTML = '<p class="hint">Lade…</p>';
+  el.innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
   let ratings = [];
   try { ratings = await fetchAlbumRatings(item); } catch { /* ignorieren */ }
   if (rq !== communityReq) return;
@@ -450,11 +451,11 @@ let albumReviewsCache = [];
 async function renderAlbumReviews(item) {
   const el = $('#dp-reviews'); if (!el) return;
   const rq = ++reviewsReq;
-  el.innerHTML = '<p class="hint">Lade…</p>';
+  el.innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
   let revs = [];
   try { revs = await fetchAlbumReviews(item); } catch { /* ignorieren */ }
   if (rq !== reviewsReq) return;
-  if (!revs.length) { el.innerHTML = '<p class="hint">Noch keine Reviews zu diesem Album.</p>'; return; }
+  if (!revs.length) { el.innerHTML = `<p class="hint">${tr('reviews.none')}</p>`; return; }
   albumReviewsCache = revs;
   el.innerHTML = revs.map((r, i) => {
     const who = r.by ? (r.by.display_name || r.by.username || '') : '';
@@ -477,7 +478,7 @@ function openPreview(result) {
   previewResult = result;
   detailPage.classList.add('preview');
   setDetailCover(result.coverUrl);
-  $('#dp-title').textContent = result.title || '(ohne Titel)';
+  $('#dp-title').textContent = result.title || tr('misc.untitled');
   $('#dp-artist').textContent = result.artist || '';
   $('#dp-meta').textContent = [result.year, result.label, result.format].filter(Boolean).join('  ·  ');
   setListenLinks(encodeURIComponent(`${result.artist || ''} ${result.title || ''}`.trim()));
@@ -511,7 +512,7 @@ async function addPreviewTo(list) {
     liked: dpLiked,
   });
   closeDetail();
-  toast(list === 'collection' ? 'Zur Collection hinzugefügt' : 'Zur Wishlist hinzugefügt');
+  toast(list === 'collection' ? tr('toast.addedToCollection') : tr('toast.addedToWishlist'));
 }
 
 function renderAlbumInfo(info) {
@@ -519,11 +520,11 @@ function renderAlbumInfo(info) {
   const rows = [];
   if (info) {
     const gs = [...(info.genres || []), ...(info.styles || [])];
-    if (gs.length) rows.push(['Genre', gs.join(', ')]);
-    if (info.labels && info.labels.length) rows.push(['Label', info.labels.map((l) => l.name + (l.catno ? ' · ' + l.catno : '')).join(', ')]);
-    if (info.formats && info.formats.length) rows.push(['Format', info.formats.join(' · ')]);
-    if (info.country) rows.push(['Land', info.country]);
-    if (info.year) rows.push(['Jahr', String(info.year)]);
+    if (gs.length) rows.push([tr('info.genre'), gs.join(', ')]);
+    if (info.labels && info.labels.length) rows.push([tr('field.label'), info.labels.map((l) => l.name + (l.catno ? ' · ' + l.catno : '')).join(', ')]);
+    if (info.formats && info.formats.length) rows.push([tr('field.format'), info.formats.join(' · ')]);
+    if (info.country) rows.push([tr('info.country'), info.country]);
+    if (info.year) rows.push([tr('field.year'), String(info.year)]);
   }
   if (!rows.length) { el.innerHTML = ''; sec.classList.add('hidden'); return; }
   sec.classList.remove('hidden');
@@ -554,11 +555,11 @@ async function loadTracklist(item) {
   stopPreview();
   renderAlbumInfo(null);
   if (item.source === 'manual' || !item.sourceId) {
-    status.textContent = 'Keine Tracklist (manuell hinzugefügt).';
+    status.textContent = tr('track.noneManual');
     return;
   }
   const reqId = ++tracklistReq;
-  status.textContent = 'Lade Tracklist…';
+  status.textContent = tr('track.loading');
   let tracks = null, info = null;
   try {
     if (item.source === 'discogs') { info = await fetchReleaseInfo(item); tracks = info ? info.tracklist : null; }
@@ -576,7 +577,7 @@ async function loadTracklist(item) {
     } catch { /* ignorieren */ }
   }
   if (!tracks || !tracks.length) {
-    status.textContent = 'Keine Tracklist gefunden.';
+    status.textContent = tr('track.notFound');
     return;
   }
   // Hörproben (30s) von Apple anhängen (wenn nicht ohnehin von dort)
@@ -594,9 +595,9 @@ async function loadTracklist(item) {
   status.textContent = '';
   ol.innerHTML = tracks.map((t, i) => {
     const play = t.preview
-      ? `<button class="trk-play" data-i="${i}" aria-label="Hörprobe"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>`
+      ? `<button class="trk-play" data-i="${i}" aria-label="${tr('a11y.preview')}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>`
       : '<span class="trk-play-none"></span>';
-    return `<li><span class="trk-pos">${escapeHtml(t.position)}</span>${play}<span class="trk-title">${escapeHtml(t.title)}</span><span class="trk-dur">${escapeHtml(t.duration)}</span><button class="trk-like" data-pos="${escapeHtml(t.position)}" aria-label="Song liken">${heartSvg()}</button></li>`;
+    return `<li><span class="trk-pos">${escapeHtml(t.position)}</span>${play}<span class="trk-title">${escapeHtml(t.title)}</span><span class="trk-dur">${escapeHtml(t.duration)}</span><button class="trk-like" data-pos="${escapeHtml(t.position)}" aria-label="${tr('a11y.likeSong')}">${heartSvg()}</button></li>`;
   }).join('');
   ol.querySelectorAll('.trk-play').forEach((b) => b.addEventListener('click', () => {
     const t = tracks[+b.dataset.i];
@@ -620,7 +621,7 @@ async function renderDiaryPlays(itemId) {
   const ul = $('#dp-plays'); ul.innerHTML = '';
   let plays = [];
   try { plays = await fetchPlays(itemId); } catch { /* ignorieren */ }
-  if (!plays.length) { ul.innerHTML = '<li class="hint" style="border:none">Noch keine Einträge.</li>'; return; }
+  if (!plays.length) { ul.innerHTML = `<li class="hint" style="border:none">${tr('diary.none')}</li>`; return; }
   ul.innerHTML = plays.map((p) => {
     const d = p.played_on ? new Date(p.played_on).toLocaleDateString('de-DE') : '';
     const note = p.note ? ' – ' + escapeHtml(p.note) : '';
@@ -630,12 +631,12 @@ async function renderDiaryPlays(itemId) {
 }
 $('#dp-play-add').addEventListener('click', async () => {
   if (!requireAuth()) return;
-  if (!editing) { toast('Album erst zur Collection hinzufügen'); return; }
+  if (!editing) { toast(tr('toast.addAlbumFirst')); return; }
   const date = $('#dp-play-date').value || new Date().toISOString().slice(0, 10);
   await addPlay(editing.id, date, $('#dp-play-note').value);
   $('#dp-play-note').value = '';
   renderDiaryPlays(editing.id);
-  toast('Eingetragen');
+  toast(tr('toast.diaryAdded'));
 });
 
 // ---------- Stackd Wrapped (Jahresrückblick) ----------
@@ -643,7 +644,7 @@ async function openWrapped() {
   if (!requireAuth()) return;
   const year = new Date().getFullYear();
   $('#wrapped-title').textContent = 'Discend Wrapped ' + year;
-  $('#wrapped-body').innerHTML = '<p class="hint">Lade…</p>';
+  $('#wrapped-body').innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
   $('#wrapped-dialog').showModal();
   const coll = getList('collection');
   const addedThisYear = coll.filter((i) => new Date(i.addedAt || 0).getFullYear() === year).length;
@@ -659,19 +660,19 @@ async function openWrapped() {
   Object.entries(counts).forEach(([id, n]) => { if (n > mostN) { mostN = n; mostId = id; } });
   const mostItem = mostId ? coll.find((i) => i.id === mostId) : null;
   const cards = [
-    { label: 'Alben hinzugefügt', val: addedThisYear },
-    { label: 'Hör-Einträge', val: playsThisYear.length },
-    { label: 'Alben gesamt', val: coll.length },
-    { label: 'Ø Bewertung', val: avg ? avg.toFixed(1) + ' ♪' : '–' },
+    { label: tr('wrapped.albumsAdded'), val: addedThisYear },
+    { label: tr('wrapped.listenEntries'), val: playsThisYear.length },
+    { label: tr('wrapped.albumsTotal'), val: coll.length },
+    { label: tr('wrapped.avgRating'), val: avg ? avg.toFixed(1) + ' ♪' : '–' },
   ];
   let html = `<div class="wrapped-cards">${cards.map((c) => `<div class="wrapped-card"><span class="wrapped-num">${c.val}</span><span class="wrapped-lbl">${c.label}</span></div>`).join('')}</div>`;
   if (mostItem) {
-    html += `<span class="dp-label wrapped-h">Meistgehört (${mostN}×)</span><button class="wrapped-album" data-id="${mostItem.id}"><div class="chart-cover${mostItem.coverUrl ? '' : ' placeholder'}">${mostItem.coverUrl ? `<img src="${escapeHtml(mostItem.coverUrl)}" alt="" />` : ''}</div><div class="chart-meta"><span class="chart-title">${escapeHtml(mostItem.title || '')}</span><span class="chart-artist">${escapeHtml(mostItem.artist || '')}</span></div></button>`;
+    html += `<span class="dp-label wrapped-h">${tr('wrapped.mostPlayed', { n: mostN })}</span><button class="wrapped-album" data-id="${mostItem.id}"><div class="chart-cover${mostItem.coverUrl ? '' : ' placeholder'}">${mostItem.coverUrl ? `<img src="${escapeHtml(mostItem.coverUrl)}" alt="" />` : ''}</div><div class="chart-meta"><span class="chart-title">${escapeHtml(mostItem.title || '')}</span><span class="chart-artist">${escapeHtml(mostItem.artist || '')}</span></div></button>`;
   }
   if (topRated.length) {
-    html += '<span class="dp-label wrapped-h">Top bewertet</span>' + topRated.map((it) => `<button class="wrapped-row" data-id="${it.id}"><span class="chart-title">${escapeHtml(it.artist || '')} – ${escapeHtml(it.title || '')}</span>${ratingDisplayHtml(it.rating)}</button>`).join('');
+    html += `<span class="dp-label wrapped-h">${tr('wrapped.topRated')}</span>` + topRated.map((it) => `<button class="wrapped-row" data-id="${it.id}"><span class="chart-title">${escapeHtml(it.artist || '')} – ${escapeHtml(it.title || '')}</span>${ratingDisplayHtml(it.rating)}</button>`).join('');
   }
-  if (!coll.length && !playsThisYear.length) html = `<p class="hint">Noch keine Daten für ${year}. Füg Alben hinzu und log, was du hörst!</p>`;
+  if (!coll.length && !playsThisYear.length) html = `<p class="hint">${tr('wrapped.noData', { year })}</p>`;
   // Sammlungswert-Verlauf (heutigen Wert sichern + Verlauf zeichnen)
   try {
     const v = computeCachedValue();
@@ -679,14 +680,14 @@ async function openWrapped() {
     const hist = await fetchValueHistory(getUser().id);
     if (hist.length) {
       const last = hist[hist.length - 1].value;
-      html += '<span class="dp-label wrapped-h">Sammlungswert-Verlauf</span>';
+      html += `<span class="dp-label wrapped-h">${tr('wrapped.valueHistory')}</span>`;
       if (hist.length >= 2) {
         const first = hist[0].value;
         const diff = last - first;
         const diffStr = (diff >= 0 ? '+' : '−') + fmtEuro(Math.abs(diff));
         html += `<div class="vh-wrap">${valueHistorySvg(hist)}<div class="vh-labels"><span>${fmtEuro(first)}</span><span class="vh-diff ${diff >= 0 ? 'up' : 'down'}">${diffStr}</span><span>${fmtEuro(last)}</span></div></div>`;
       } else {
-        html += `<p class="hint">Aktueller Wert: ${fmtEuro(last)}. Der Verlauf wächst ab jetzt – schau in ein paar Tagen wieder rein.</p>`;
+        html += `<p class="hint">${tr('wrapped.currentValue', { v: fmtEuro(last) })}</p>`;
       }
     }
   } catch { /* ignorieren */ }
@@ -721,7 +722,7 @@ async function openCoverPicker() {
   $('#cover-dialog').showModal();
   let urls = [];
   try { urls = await fetchCoverCandidates(item); } catch { /* ignorieren */ }
-  if (!urls.length) { $('#cover-status').textContent = 'Keine Cover gefunden.'; return; }
+  if (!urls.length) { $('#cover-status').textContent = tr('cover.none'); return; }
   $('#cover-status').textContent = '';
   grid.innerHTML = urls
     .map((u) => `<button data-url="${escapeHtml(u)}"><img src="${escapeHtml(u)}" alt="" loading="lazy" onerror="this.parentElement.remove()" /></button>`)
@@ -733,7 +734,7 @@ async function openCoverPicker() {
     $('#dp-edit-cover').value = url;
     renderList(editing.list);
     $('#cover-dialog').close();
-    toast('Cover geändert');
+    toast(tr('toast.coverChanged'));
   }));
 }
 
@@ -758,18 +759,18 @@ $('#dp-save').addEventListener('click', () => {
   });
   closeDetail();
   renderList(list);
-  toast('Gespeichert');
+  toast(tr('toast.saved'));
 });
 
 $('#dp-delete').addEventListener('click', () => {
   if (!editing) return;
-  if (!confirm('Diesen Eintrag wirklich löschen?')) return;
+  if (!confirm(tr('confirm.deleteEntry'))) return;
   const list = editing.list;
   deleteItem(list, editing.id);
   closeDetail();
   renderList(list);
   renderCounts();
-  toast('Gelöscht');
+  toast(tr('toast.deleted'));
 });
 
 $('#dp-move').addEventListener('click', () => {
@@ -781,7 +782,7 @@ $('#dp-move').addEventListener('click', () => {
   renderList('collection');
   renderList('wishlist');
   renderCounts();
-  toast(to === 'wishlist' ? 'In Wishlist verschoben' : 'In Collection verschoben');
+  toast(to === 'wishlist' ? tr('toast.movedToWishlist') : tr('toast.movedToCollection'));
 });
 
 // ---------- Scannen ----------
@@ -793,10 +794,10 @@ function setScanStatus(msg, kind = '') {
 
 $('#btn-start-scan').addEventListener('click', async () => {
   if (!isSupported()) {
-    setScanStatus('Scanner nicht verfügbar – bitte Barcode unten eintippen.', 'error');
+    setScanStatus(tr('scan.unavailable'), 'error');
     return;
   }
-  setScanStatus('Kamera wird gestartet…');
+  setScanStatus(tr('scan.starting'));
   // Vorschau VOR dem Start einblenden, damit die Scanner-Bibliothek die
   // Größe des Bereichs messen kann (sonst nur schwarzer Balken ohne Bild).
   $('#reader').classList.remove('hidden');
@@ -804,7 +805,7 @@ $('#btn-start-scan').addEventListener('click', async () => {
   if (ok) {
     $('#btn-start-scan').classList.add('hidden');
     $('#btn-stop-scan').classList.remove('hidden');
-    setScanStatus('Halte den Barcode in den Rahmen.');
+    setScanStatus(tr('scan.aim'));
   } else {
     $('#reader').classList.add('hidden');
   }
@@ -836,19 +837,19 @@ async function onBarcode(code) {
     $('#btn-start-scan').classList.remove('hidden');
     $('#btn-stop-scan').classList.add('hidden');
   }
-  setScanStatus(`Suche Barcode ${code}…`);
+  setScanStatus(tr('scan.searching', { code }));
   try {
     const result = await lookupBarcode(code);
     if (!result) {
-      setScanStatus('Nichts gefunden. Du kannst die Platte manuell hinzufügen.', 'error');
+      setScanStatus(tr('scan.nothingFound'), 'error');
       // Barcode in manuelles Formular übernehmen
       $('#manual-form').barcode.value = code;
     } else {
-      setScanStatus('Gefunden!', 'ok');
+      setScanStatus(tr('scan.found'), 'ok');
       showResult(result);
     }
   } catch (err) {
-    setScanStatus('Fehler bei der Suche: ' + (err?.message || err) + ' – ggf. manuell hinzufügen.', 'error');
+    setScanStatus(tr('scan.error', { msg: (err?.message || err) }), 'error');
     $('#manual-form').barcode.value = code;
   } finally {
     lookupBusy = false;
@@ -868,7 +869,7 @@ function showResult(result) {
     cover.style.display = 'none';
   }
   $('#result-artist').textContent = result.artist || '(unbekannt)';
-  $('#result-title').textContent = result.title || '(ohne Titel)';
+  $('#result-title').textContent = result.title || tr('misc.untitled');
   const sub = [result.year, result.label, result.format].filter(Boolean).join(' · ');
   $('#result-sub').textContent = sub + (result.source ? `  ·  Quelle: ${result.source}` : '');
   $('#result-note').value = '';
@@ -888,7 +889,7 @@ async function saveResultTo(list) {
   resultDialog.close();
   pendingResult = null;
   renderCounts();
-  toast(list === 'collection' ? 'Zur Collection hinzugefügt' : 'Zur Wishlist hinzugefügt');
+  toast(list === 'collection' ? tr('toast.addedToCollection') : tr('toast.addedToWishlist'));
   setScanStatus('');
 }
 
@@ -922,32 +923,40 @@ const rowCache = {};
 let browseResults = [];
 const BROWSE_GENRES = ['Rock', 'Electronic', 'Jazz', 'Hip Hop', 'Funk / Soul', 'Pop', 'Reggae', 'Classical', 'Blues', 'Folk, World, & Country', 'Latin', 'Soundtrack'];
 const BROWSE_TABS = [
-  { id: 'release', label: 'Release date' },
-  { id: 'genre', label: 'Genre' },
-  { id: 'popular', label: 'Most Popular' },
-  { id: 'rated', label: 'Highest Rated' },
-  { id: 'top500', label: 'Top 500' },
+  { id: 'release', label: 'tab.release' },
+  { id: 'genre', label: 'tab.genre' },
+  { id: 'popular', label: 'tab.popular' },
+  { id: 'rated', label: 'tab.rated' },
+  { id: 'top500', label: 'tab.top500' },
 ];
 const BROWSE_DECADES = [['2020er', '2020-2029'], ['2010er', '2010-2019'], ['2000er', '2000-2009'], ['1990er', '1990-1999'], ['1980er', '1980-1989'], ['1970er', '1970-1979'], ['1960er', '1960-1969'], ['1950er', '1950-1959']];
 
 const INFO_PAGES = [
-  { id: 'impressum', label: 'Impressum' },
-  { id: 'datenschutz', label: 'Datenschutz' },
-  { id: 'faq', label: 'FAQ' },
-  { id: 'kontakt', label: 'Kontakt' },
+  { id: 'impressum', label: 'info.impressum' },
+  { id: 'datenschutz', label: 'info.privacy' },
+  { id: 'faq', label: 'info.faq' },
+  { id: 'kontakt', label: 'info.contact' },
 ];
 const INFO_CONTENT = {
   impressum: {
-    title: 'Impressum',
-    html: `<p><strong>Angaben gemäß § 5 DDG</strong></p>
+    title: { de: 'Impressum', en: 'Legal notice' },
+    html: {
+      de: `<p><strong>Angaben gemäß § 5 DDG</strong></p>
       <p>[Vorname Nachname]<br>[Straße und Hausnummer]<br>[PLZ Ort]<br>Deutschland</p>
       <p><strong>Kontakt</strong><br>E-Mail: [deine-E-Mail-Adresse]</p>
       <p><strong>Verantwortlich für den Inhalt</strong><br>[Vorname Nachname], Anschrift wie oben.</p>
       <p class="info-note">Entwurf – bitte die Platzhalter [&hellip;] durch deine echten Daten ersetzen. Eine ladungsfähige Anschrift ist für öffentlich zugängliche Dienste in Deutschland Pflicht.</p>`,
+      en: `<p><strong>Information pursuant to § 5 DDG (German law)</strong></p>
+      <p>[First name Last name]<br>[Street and number]<br>[Postal code City]<br>Germany</p>
+      <p><strong>Contact</strong><br>Email: [your-email-address]</p>
+      <p><strong>Responsible for content</strong><br>[First name Last name], address as above.</p>
+      <p class="info-note">Draft – please replace the placeholders [&hellip;] with your real data. A valid postal address is mandatory for publicly accessible services in Germany.</p>`,
+    },
   },
   datenschutz: {
-    title: 'Datenschutzerklärung',
-    html: `<h3>1. Verantwortlicher</h3>
+    title: { de: 'Datenschutzerklärung', en: 'Privacy policy' },
+    html: {
+      de: `<h3>1. Verantwortlicher</h3>
       <p>[Vorname Nachname], [Anschrift], E-Mail: [deine-E-Mail-Adresse] (siehe Impressum).</p>
       <h3>2. Welche Daten wir verarbeiten</h3>
       <ul>
@@ -975,50 +984,93 @@ const INFO_CONTENT = {
       <h3>8. Kontakt</h3>
       <p>Bei Fragen: [deine-E-Mail-Adresse].</p>
       <p class="info-note">Entwurf – bitte vor Veröffentlichung fachkundig prüfen lassen und Platzhalter ersetzen.</p>`,
+      en: `<h3>1. Controller</h3>
+      <p>[First name Last name], [address], email: [your-email-address] (see legal notice).</p>
+      <h3>2. What data we process</h3>
+      <ul>
+        <li><strong>Account:</strong> email address, username, encrypted password.</li>
+        <li><strong>Profile:</strong> display name, city, website, bio, profile and banner image (if provided).</li>
+        <li><strong>Content:</strong> collection, wishlist, lists, ratings, public reviews, listening entries, liked songs, favorite albums/songs, optionally imported Discogs data.</li>
+        <li><strong>Technical:</strong> when loading content/images, your IP address and device details are transmitted to the services listed below.</li>
+      </ul>
+      <h3>3. Publicly visible</h3>
+      <p>Your profile (name, bio, city, favorites), your collection/wishlist, ratings and reviews are visible to other users or publicly. You can hide the collection value in the settings.</p>
+      <h3>4. Services / processors</h3>
+      <ul>
+        <li><strong>Supabase</strong> – hosting, database, sign-in (EU region).</li>
+        <li><strong>Resend</strong> – sending confirmation and password emails.</li>
+        <li><strong>Discogs</strong> – fetching album and market value data.</li>
+        <li><strong>Apple/iTunes</strong> – cover artwork and tracklists.</li>
+        <li><strong>Cloudflare</strong> (domain/DNS) and <strong>GitHub Pages</strong> (app delivery).</li>
+      </ul>
+      <h3>5. Purposes & legal basis</h3>
+      <p>Processing to provide the app and your account (Art. 6(1)(b) GDPR) and for functionality and security (lit. f).</p>
+      <h3>6. Storage</h3>
+      <p>Data is stored as long as your account exists. Sign-in tokens are stored locally in your browser. There is no advertising tracking and no advertising cookies.</p>
+      <h3>7. Your rights</h3>
+      <p>You have the right to access, rectification, erasure, restriction, data portability and objection. You can delete your account including all data at any time in the settings under "Delete account". You have the right to lodge a complaint with a data protection supervisory authority.</p>
+      <h3>8. Contact</h3>
+      <p>For questions: [your-email-address].</p>
+      <p class="info-note">Draft – please have it reviewed by a professional before publishing and replace placeholders.</p>`,
+    },
   },
   faq: {
-    title: 'FAQ',
-    html: `<h3>Was ist Discend?</h3><p>Eine App, um deine Musik-/Vinyl-Sammlung zu katalogisieren, zu bewerten, Listen zu führen und Freunden zu folgen.</p>
+    title: { de: 'FAQ', en: 'FAQ' },
+    html: {
+      de: `<h3>Was ist Discend?</h3><p>Eine App, um deine Musik-/Vinyl-Sammlung zu katalogisieren, zu bewerten, Listen zu führen und Freunden zu folgen.</p>
       <h3>Brauche ich ein Konto?</h3><p>Stöbern geht ohne Konto. Zum Sammeln, Bewerten, Liken, Folgen und für Listen brauchst du ein kostenloses Konto.</p>
       <h3>Woher kommen die Album-Daten?</h3><p>Aus Discogs (Alben, Marktwert) sowie Apple/iTunes (Cover, Tracklists).</p>
       <h3>Sind meine Daten öffentlich?</h3><p>Profil, Sammlung, Bewertungen und Reviews sind für andere sichtbar. Den Sammlungswert kannst du verbergen.</p>
       <h3>Wie lösche ich mein Konto?</h3><p>Profil → Einstellungen (Zahnrad) → ganz unten „Account löschen".</p>`,
+      en: `<h3>What is Discend?</h3><p>An app to catalog your music/vinyl collection, rate it, keep lists and follow friends.</p>
+      <h3>Do I need an account?</h3><p>You can browse without an account. To collect, rate, like, follow and keep lists you need a free account.</p>
+      <h3>Where does the album data come from?</h3><p>From Discogs (albums, market value) and Apple/iTunes (covers, tracklists).</p>
+      <h3>Is my data public?</h3><p>Profile, collection, ratings and reviews are visible to others. You can hide the collection value.</p>
+      <h3>How do I delete my account?</h3><p>Profile → Settings (gear) → at the very bottom "Delete account".</p>`,
+    },
   },
   kontakt: {
-    title: 'Kontakt',
-    html: `<p>Fragen, Feedback oder ein Problem entdeckt? Schreib uns:</p>
+    title: { de: 'Kontakt', en: 'Contact' },
+    html: {
+      de: `<p>Fragen, Feedback oder ein Problem entdeckt? Schreib uns:</p>
       <p><a href="mailto:[deine-E-Mail-Adresse]">[deine-E-Mail-Adresse]</a></p>`,
+      en: `<p>Questions, feedback or found a problem? Write to us:</p>
+      <p><a href="mailto:[your-email-address]">[your-email-address]</a></p>`,
+    },
   },
 };
 
 function renderBrowse() {
   const c = $('#browse-content');
   $('#search-status').textContent = '';
-  c.innerHTML = `<ul class="browse-list">${BROWSE_TABS.map((t) => `<li class="browse-row" data-tab="${t.id}"><span>${t.label}</span><span class="chev">›</span></li>`).join('')}</ul>
+  c.innerHTML = `<ul class="browse-list">${BROWSE_TABS.map((t) => `<li class="browse-row" data-tab="${t.id}"><span>${tr(t.label)}</span><span class="chev">›</span></li>`).join('')}</ul>
     <p class="browse-section">Discend.app</p>
-    <ul class="browse-list">${INFO_PAGES.map((p) => `<li class="browse-row" data-info="${p.id}"><span>${p.label}</span><span class="chev">›</span></li>`).join('')}</ul>`;
+    <ul class="browse-list">${INFO_PAGES.map((p) => `<li class="browse-row" data-info="${p.id}"><span>${tr(p.label)}</span><span class="chev">›</span></li>`).join('')}</ul>`;
   c.querySelectorAll('.browse-row[data-tab]').forEach((li) => li.addEventListener('click', () => openBrowseTab(li.dataset.tab)));
   c.querySelectorAll('.browse-row[data-info]').forEach((li) => li.addEventListener('click', () => renderInfoPage(li.dataset.info)));
 }
 
 function renderInfoPage(key) {
   const page = INFO_CONTENT[key]; if (!page) return;
+  const L = getLang();
+  const title = page.title[L] || page.title.en;
+  const html = page.html[L] || page.html.en;
   const c = $('#browse-content');
-  c.innerHTML = `<button class="browse-back" id="browse-back">‹ zurück</button><div class="info-page"><h2>${escapeHtml(page.title)}</h2>${page.html}</div>`;
+  c.innerHTML = `<button class="browse-back" id="browse-back">${tr('btn.backArrow')}</button><div class="info-page"><h2>${escapeHtml(title)}</h2>${html}</div>`;
   $('#browse-back').addEventListener('click', renderBrowse);
 }
 
 function openBrowseTab(name) {
-  if (name === 'release') renderDrillList(BROWSE_DECADES.map(([l, y]) => ({ label: l, params: { year: y } })), 'Erscheinungsjahr');
-  else if (name === 'genre') renderDrillList(BROWSE_GENRES.map((g) => ({ label: g, params: { genre: g } })), 'Genre');
-  else if (name === 'popular') browseCovers({ sort: 'have', sort_order: 'desc', per_page: 60 }, 'Most Popular – meistgesammelt', renderBrowse);
-  else if (name === 'rated') browseCovers({ sort: 'want', sort_order: 'desc', per_page: 60 }, 'Highest Rated – am meisten begehrt', renderBrowse);
-  else if (name === 'top500') browseCovers({ sort: 'have', sort_order: 'desc', per_page: 100, pages: 5 }, 'Top 500 – meistgesammelt', renderBrowse);
+  if (name === 'release') renderDrillList(BROWSE_DECADES.map(([l, y]) => ({ label: getLang() === 'de' ? l : l.replace('er', 's'), params: { year: y } })), tr('browse.releaseYear'));
+  else if (name === 'genre') renderDrillList(BROWSE_GENRES.map((g) => ({ label: g, params: { genre: g } })), tr('browse.genre'));
+  else if (name === 'popular') browseCovers({ sort: 'have', sort_order: 'desc', per_page: 60 }, tr('browse.mostPopular'), renderBrowse);
+  else if (name === 'rated') browseCovers({ sort: 'want', sort_order: 'desc', per_page: 60 }, tr('browse.highestRated'), renderBrowse);
+  else if (name === 'top500') browseCovers({ sort: 'have', sort_order: 'desc', per_page: 100, pages: 5 }, tr('browse.top500'), renderBrowse);
 }
 
 function renderDrillList(items, title) {
   const c = $('#browse-content');
-  c.innerHTML = `<button class="browse-back" id="browse-back">‹ zurück</button><p class="browse-title">${escapeHtml(title)}</p><ul class="browse-list">${items.map((it, i) => `<li class="browse-row" data-i="${i}"><span>${escapeHtml(it.label)}</span><span class="chev">›</span></li>`).join('')}</ul>`;
+  c.innerHTML = `<button class="browse-back" id="browse-back">${tr('btn.backArrow')}</button><p class="browse-title">${escapeHtml(title)}</p><ul class="browse-list">${items.map((it, i) => `<li class="browse-row" data-i="${i}"><span>${escapeHtml(it.label)}</span><span class="chev">›</span></li>`).join('')}</ul>`;
   $('#browse-back').addEventListener('click', renderBrowse);
   c.querySelectorAll('.browse-row[data-i]').forEach((li) => li.addEventListener('click', () => {
     const it = items[+li.dataset.i];
@@ -1042,9 +1094,9 @@ function dedupeAlbums(list) {
 
 async function browseCovers(params, title, backFn) {
   const c = $('#browse-content');
-  const head = (extra) => `${backFn ? '<button class="browse-back" id="browse-back">‹ zurück</button>' : ''}<p class="browse-title">${escapeHtml(title)}</p>${extra}`;
+  const head = (extra) => `${backFn ? `<button class="browse-back" id="browse-back">${tr('btn.backArrow')}</button>` : ''}<p class="browse-title">${escapeHtml(title)}</p>${extra}`;
   const wireBack = () => { if (backFn) { const b = $('#browse-back'); if (b) b.addEventListener('click', backFn); } };
-  c.innerHTML = head('<p class="hint">Lade…</p>');
+  c.innerHTML = head(`<p class="hint">${tr('msg.loading')}</p>`);
   wireBack();
   let res;
   try {
@@ -1068,7 +1120,7 @@ async function browseCovers(params, title, backFn) {
   const withCover = browseResults.filter((r) => r.coverUrl);
   const list = withCover.length ? withCover : browseResults;
   if (!list.length) {
-    c.innerHTML = head('<p class="hint">Nichts gefunden.</p>');
+    c.innerHTML = head(`<p class="hint">${tr('msg.nothingFound')}</p>`);
     wireBack();
     return;
   }
@@ -1090,7 +1142,7 @@ async function loadCategoryRow(elId, label, params) {
   }
   const withCover = results.filter((r) => r.coverUrl);
   const show = (withCover.length >= 5 ? withCover : results).slice(0, 5);
-  if (!show.length) { el.innerHTML = '<span class="hint" style="grid-column:1/-1">Keine Vorschau verfügbar.</span>'; return; }
+  if (!show.length) { el.innerHTML = `<span class="hint" style="grid-column:1/-1">${tr('browse.noPreview')}</span>`; return; }
   el.innerHTML = show.map((r) => {
     const idx = results.indexOf(r);
     return `<button class="cat-cover${r.coverUrl ? '' : ' placeholder'}" data-idx="${idx}">${
@@ -1112,14 +1164,14 @@ function openCategory(label, params) {
 
 function renderSearchResults() {
   const c = $('#browse-content');
-  if (!searchResults.length) { c.innerHTML = ''; $('#search-status').textContent = 'Nichts gefunden.'; return; }
+  if (!searchResults.length) { c.innerHTML = ''; $('#search-status').textContent = tr('msg.nothingFound'); return; }
   $('#search-status').textContent = '';
   c.innerHTML = `<ul class="search-results">${searchResults.map((r, i) => {
     const cover = `<div class="sr-cover${r.coverUrl ? '' : ' placeholder'}">${
       r.coverUrl ? `<img src="${escapeHtml(r.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : ''
     }</div>`;
     const sub = [r.year, r.format].filter(Boolean).join(' · ');
-    return `<li class="search-result" data-idx="${i}">${cover}<div class="sr-info"><p class="sr-title">${escapeHtml(r.title) || '(ohne Titel)'}</p><p class="sr-artist">${escapeHtml(r.artist)}</p><p class="sr-sub">${escapeHtml(sub)}</p></div></li>`;
+    return `<li class="search-result" data-idx="${i}">${cover}<div class="sr-info"><p class="sr-title">${escapeHtml(r.title) || tr('misc.untitled')}</p><p class="sr-artist">${escapeHtml(r.artist)}</p><p class="sr-sub">${escapeHtml(sub)}</p></div></li>`;
   }).join('')}</ul>`;
   c.querySelectorAll('.search-result').forEach((el) => el.addEventListener('click', () => openPreview(searchResults[+el.dataset.idx])));
 }
@@ -1127,29 +1179,29 @@ function renderSearchResults() {
 async function runDbSearchWith(params) {
   if (currentView !== 'search') switchView('search');
   $('#browse-content').innerHTML = '';
-  $('#search-status').textContent = 'Suche…';
+  $('#search-status').textContent = tr('msg.searching');
   try {
     searchResults = dedupeAlbums(await discogsSearch(params));
     renderSearchResults();
   } catch (err) {
-    $('#search-status').textContent = 'Fehler bei der Suche: ' + (err?.message || err);
+    $('#search-status').textContent = tr('msg.searchError', { msg: (err?.message || err) });
   }
 }
 
 const SEARCH_PLACEHOLDERS = {
-  alben: 'Album suchen…', artist: 'Künstler/in suchen…', members: 'Mitglieder suchen…',
-  reviews: 'Reviews suchen…', playlists: 'Playlists suchen…',
+  alben: 'ph.searchAlbum', artist: 'ph.searchArtist', members: 'ph.searchMembers',
+  reviews: 'ph.searchReviews', playlists: 'ph.searchPlaylists',
 };
 const SEARCH_HINTS = {
-  artist: 'Tippe eine Künstler/in.', members: 'Tippe einen Namen oder @username.',
-  reviews: 'Suche Reviews nach Album oder Künstler/in.', playlists: 'Suche Playlists nach Name.',
+  artist: 'hint.searchArtist', members: 'hint.searchMembers',
+  reviews: 'hint.searchReviews', playlists: 'hint.searchPlaylists',
 };
 
 function updateSearchPlaceholder() {
-  const s = $('#search-db'); if (s) s.placeholder = SEARCH_PLACEHOLDERS[searchFilter] || 'Suchen…';
+  const s = $('#search-db'); if (s) s.placeholder = tr(SEARCH_PLACEHOLDERS[searchFilter] || 'ph.searchGeneric');
 }
 function showFilterHint() {
-  $('#browse-content').innerHTML = `<p class="hint">${SEARCH_HINTS[searchFilter] || ''}</p>`;
+  $('#browse-content').innerHTML = `<p class="hint">${SEARCH_HINTS[searchFilter] ? tr(SEARCH_HINTS[searchFilter]) : ''}</p>`;
   $('#search-status').textContent = '';
 }
 function setSearchFilter(f) {
@@ -1213,10 +1265,10 @@ function runSearch() {
 
 async function runMemberSearch(q) {
   const c = $('#browse-content'); $('#search-status').textContent = '';
-  c.innerHTML = '<p class="hint">Suche…</p>';
+  c.innerHTML = `<p class="hint">${tr('msg.searching')}</p>`;
   let users = [];
   try { users = await searchUsers(q); } catch { /* ignorieren */ }
-  if (!users.length) { c.innerHTML = ''; $('#search-status').textContent = 'Niemand gefunden.'; return; }
+  if (!users.length) { c.innerHTML = ''; $('#search-status').textContent = tr('search.nobodyFound'); return; }
   c.innerHTML = '<div class="friends-results">' + users.map((u) => {
     const av = u.avatar_url ? `style="background-image:url('${escapeHtml(u.avatar_url)}')"` : '';
     return `<button class="friend-row" data-id="${u.id}">
@@ -1232,10 +1284,10 @@ async function runMemberSearch(q) {
 
 async function runReviewSearch(q) {
   const c = $('#browse-content'); $('#search-status').textContent = '';
-  c.innerHTML = '<p class="hint">Suche…</p>';
+  c.innerHTML = `<p class="hint">${tr('msg.searching')}</p>`;
   let revs = [];
   try { revs = await searchReviews(q); } catch { /* ignorieren */ }
-  if (!revs.length) { c.innerHTML = ''; $('#search-status').textContent = 'Keine Reviews gefunden.'; return; }
+  if (!revs.length) { c.innerHTML = ''; $('#search-status').textContent = tr('search.noReviews'); return; }
   reviewSearchCache = revs;
   c.innerHTML = '<div class="rev-list">' + revs.map((r, i) => reviewCardHtml(r, i)).join('') + '</div>';
   c.querySelectorAll('.rev-card').forEach((card) => card.addEventListener('click', () => openPreview(reviewSearchCache[+card.dataset.idx])));
@@ -1243,10 +1295,10 @@ async function runReviewSearch(q) {
 
 async function runPlaylistSearch(q) {
   const c = $('#browse-content'); $('#search-status').textContent = '';
-  c.innerHTML = '<p class="hint">Suche…</p>';
+  c.innerHTML = `<p class="hint">${tr('msg.searching')}</p>`;
   let lists = [];
   try { lists = await searchPlaylists(q); } catch { /* ignorieren */ }
-  if (!lists.length) { c.innerHTML = ''; $('#search-status').textContent = 'Keine Playlists gefunden.'; return; }
+  if (!lists.length) { c.innerHTML = ''; $('#search-status').textContent = tr('search.noPlaylists'); return; }
   playlistSearchCache = lists;
   c.innerHTML = '<div class="lists-wrap">' + lists.map((l, i) => listCardHtml(l, i)).join('') + '</div>';
   c.querySelectorAll('.list-card').forEach((card) => card.addEventListener('click', () => {
@@ -1290,7 +1342,7 @@ $('#manual-form').addEventListener('submit', (e) => {
   f.reset();
   if (manualRating) manualRating.setValue(0);
   renderCounts();
-  toast(list === 'collection' ? 'Zur Collection hinzugefügt' : 'Zur Wishlist hinzugefügt');
+  toast(list === 'collection' ? tr('toast.addedToCollection') : tr('toast.addedToWishlist'));
   switchView(list);
 });
 
@@ -1335,7 +1387,7 @@ function renderProfile() {
 function renderRecent() {
   const recent = [...getList('collection')].sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0)).slice(0, 4);
   const el = $('#recent-activity');
-  if (!recent.length) { el.innerHTML = '<span class="hint">Noch nichts hinzugefügt.</span>'; return; }
+  if (!recent.length) { el.innerHTML = `<span class="hint">${tr('profile.nothingAdded')}</span>`; return; }
   el.innerHTML = recent.map((i) => {
     const cov = i.coverUrl
       ? `<img src="${escapeHtml(i.coverUrl)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.remove()" />`
@@ -1374,11 +1426,11 @@ function renderStatRows() {
   const coll = getList('collection');
   const wish = getList('wishlist');
   const rows = [
-    { label: 'Alben', val: coll.length, go: () => switchView('collection') },
-    { label: 'Wishlist', val: wish.length, go: () => setProfileTab('watchlist') },
-    { label: 'Favoriten', val: coll.filter((i) => i.liked).length },
-    { label: 'Bewertet', val: coll.filter((i) => Number(i.rating) > 0).length },
-    { label: 'Notizen', val: coll.filter((i) => (i.note || '').trim()).length },
+    { label: tr('stat.albums'), val: coll.length, go: () => switchView('collection') },
+    { label: tr('stat.wishlist'), val: wish.length, go: () => setProfileTab('watchlist') },
+    { label: tr('lbl.favorites'), val: coll.filter((i) => i.liked).length },
+    { label: tr('stat.rated'), val: coll.filter((i) => Number(i.rating) > 0).length },
+    { label: tr('stat.notes'), val: coll.filter((i) => (i.note || '').trim()).length },
   ];
   const ul = $('#stat-rows');
   ul.innerHTML = rows.map((r, idx) =>
@@ -1395,11 +1447,11 @@ function writePriceCache(c) { try { localStorage.setItem(PRICE_CACHE_KEY, JSON.s
 
 function valueRangeBar(min, max, valued, total, loading) {
   if (!valued && !loading) {
-    return '<p class="hint">Noch keine Marktdaten. Tipp: eigene Preise im Album unter „Details bearbeiten" eintragen.</p>';
+    return `<p class="hint">${tr('value.noMarketData')}</p>`;
   }
-  const note = `Marktwert ca. · automatisch von Discogs · ${valued}/${total} Alben` + (loading ? ' <span class="vr-loading">· aktualisiere…</span>' : '');
+  const note = tr('value.note', { valued, total }) + (loading ? ` <span class="vr-loading">${tr('value.updating')}</span>` : '');
   return `<div class="vr-bar"><span class="vr-fill"></span></div>
-    <div class="vr-labels"><span>${fmtEuro(min)}</span><span class="vr-dash">bis</span><span>${fmtEuro(max)}</span></div>
+    <div class="vr-labels"><span>${fmtEuro(min)}</span><span class="vr-dash">${tr('value.to')}</span><span>${fmtEuro(max)}</span></div>
     <p class="vr-note">${note}</p>`;
 }
 
@@ -1408,7 +1460,7 @@ async function renderValueRange() {
   const setHtml = (h) => els.forEach((e) => { e.innerHTML = h; });
   const coll = getList('collection');
   if (!coll.length) {
-    const pe = document.getElementById('value-range'); if (pe) pe.innerHTML = '<p class="hint">Noch keine Alben in der Sammlung.</p>';
+    const pe = document.getElementById('value-range'); if (pe) pe.innerHTML = `<p class="hint">${tr('value.noAlbums')}</p>`;
     const ce = document.getElementById('value-collection'); if (ce) ce.innerHTML = '';
     return;
   }
@@ -1449,7 +1501,7 @@ let genreLoadReq = 0;
 function renderGenreStats() {
   const el = $('#genre-stats'); if (!el) return;
   const coll = getList('collection');
-  if (!coll.length) { el.innerHTML = '<p class="hint">Noch keine Alben in der Sammlung.</p>'; return; }
+  if (!coll.length) { el.innerHTML = `<p class="hint">${tr('value.noAlbums')}</p>`; return; }
   const counts = {};
   for (const it of coll) {
     const g = (it.genre || '').trim();
@@ -1458,7 +1510,7 @@ function renderGenreStats() {
   const missing = coll.filter((it) => it.source === 'discogs' && it.sourceId && !(it.genre || '').trim());
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
   if (!entries.length) {
-    el.innerHTML = `<p class="hint">${missing.length ? 'Genres werden geladen…' : 'Keine Genre-Daten verfügbar.'}</p>`;
+    el.innerHTML = `<p class="hint">${missing.length ? tr('genre.loading') : tr('genre.none')}</p>`;
   } else {
     const maxN = entries[0][1];
     el.innerHTML = entries.map(([g, n]) => `
@@ -1466,7 +1518,7 @@ function renderGenreStats() {
         <span class="genre-name">${escapeHtml(g)}</span>
         <span class="genre-bar"><span class="genre-fill" style="width:${Math.round((n / maxN) * 100)}%"></span></span>
         <span class="genre-count">${n}</span>
-      </button>`).join('') + (missing.length ? '<p class="hint genre-loading">Weitere Genres werden geladen…</p>' : '');
+      </button>`).join('') + (missing.length ? `<p class="hint genre-loading">${tr('genre.moreLoading')}</p>` : '');
     el.querySelectorAll('.genre-row').forEach((b) => b.addEventListener('click', () => openGenre(b.dataset.genre)));
   }
   if (missing.length) loadGenres(missing);
@@ -1505,13 +1557,13 @@ function dedupeKey(it) {
 async function importDiscogs() {
   if (!requireAuth()) return;
   const def = (getProfile() || {}).username || '';
-  const username = prompt('Discogs-Username (öffentliche Sammlung):', def);
+  const username = prompt(tr('prompt.discogsUser'), def);
   if (username == null) return;
   const u = username.trim(); if (!u) return;
-  toast('Importiere…');
+  toast(tr('toast.importing'));
   let items = [];
-  try { items = await fetchDiscogsCollection(u); } catch { toast('Import fehlgeschlagen'); return; }
-  if (!items.length) { toast('Keine öffentliche Sammlung gefunden'); return; }
+  try { items = await fetchDiscogsCollection(u); } catch { toast(tr('toast.importFailed')); return; }
+  if (!items.length) { toast(tr('toast.noPublicCollection')); return; }
   const have = new Set(getList('collection').map(dedupeKey));
   let added = 0;
   for (const it of items) {
@@ -1522,7 +1574,7 @@ async function importDiscogs() {
     added++;
   }
   renderList('collection'); renderCounts(); renderProfile();
-  toast(`${added} importiert, ${items.length - added} schon vorhanden`);
+  toast(tr('toast.importedSummary', { added, dup: items.length - added }));
 }
 $('#btn-import-discogs').addEventListener('click', importDiscogs);
 
@@ -1571,7 +1623,7 @@ let songPickCache = [];
 function renderFavoriteSongs() {
   const el = $('#profile-songs'); if (!el) return;
   const songs = ((getProfile() || {}).fav_songs || []).filter(Boolean).slice(0, 4);
-  if (!songs.length) { el.innerHTML = '<p class="hint">Noch keine Lieblingssongs gewählt – über das Zahnrad oben bearbeiten.</p>'; return; }
+  if (!songs.length) { el.innerHTML = `<p class="hint">${tr('favsongs.none')}</p>`; return; }
   favSongsCache = songs;
   el.innerHTML = songs.map((s, i) => `<button class="fav-song" data-idx="${i}"><span class="fs-title">${escapeHtml(s.title || '(Song)')}</span><span class="fs-artist">${escapeHtml(s.artist || s.album || '')}</span></button>`).join('');
   el.querySelectorAll('.fav-song').forEach((b) => b.addEventListener('click', () => {
@@ -1605,11 +1657,11 @@ function removeFavSong(slot) {
 }
 async function openSongPicker(slot) {
   const box = $('#song-pick-list');
-  box.innerHTML = '<p class="hint">Lade…</p>';
+  box.innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
   $('#song-dialog').showModal();
   let songs = [];
   try { songs = await fetchMyLikedSongs(50); } catch { /* ignorieren */ }
-  if (!songs.length) { box.innerHTML = '<p class="hint">Du hast noch keine Songs gelikt. Like Songs über das Herz neben den Tracks auf einer Albumseite.</p>'; return; }
+  if (!songs.length) { box.innerHTML = `<p class="hint">${tr('songpicker.none')}</p>`; return; }
   songPickCache = songs;
   box.innerHTML = songs.map((s, i) => `<button class="song-pick-row" data-i="${i}"><span class="fs-title">${escapeHtml(s.title || '(Song)')}</span><span class="fs-artist">${escapeHtml(s.artist || s.album || '')}</span></button>`).join('');
   box.querySelectorAll('.song-pick-row').forEach((b) => b.addEventListener('click', () => {
@@ -1720,6 +1772,7 @@ function openProfileSettings() {
   $('#ps-hide-value').checked = !!p.hide_value;
   renderFavoritesEdit();
   renderFavoriteSongsEdit();
+  $$('.set-lang-pill').forEach((b) => b.classList.toggle('active', b.dataset.lang === getLang()));
   $('#profile-settings-dialog').showModal();
 }
 $('#header-settings').addEventListener('click', openProfileSettings);
@@ -1731,15 +1784,15 @@ $('#ps-auth-open').addEventListener('click', () => {
 });
 $('#ps-auth-back').addEventListener('click', () => $('#profile-settings-dialog').classList.remove('show-auth'));
 $('#ps-pw-save').addEventListener('click', async () => {
-  const msg = $('#ps-auth-msg'); msg.textContent = 'Bitte warten…';
+  const msg = $('#ps-auth-msg'); msg.textContent = tr('msg.pleaseWait');
   const err = await changePassword($('#ps-newpw').value);
-  msg.textContent = err || 'Passwort geändert.';
+  msg.textContent = err || tr('msg.passwordChanged');
   if (!err) $('#ps-newpw').value = '';
 });
 $('#ps-pw-reset').addEventListener('click', async () => {
-  const msg = $('#ps-auth-msg'); msg.textContent = 'Sende…';
+  const msg = $('#ps-auth-msg'); msg.textContent = tr('msg.sending');
   const err = await sendPasswordReset();
-  msg.textContent = err || 'Reset-Link gesendet – schau in dein Postfach.';
+  msg.textContent = err || tr('msg.resetSent');
 });
 $('#ps-delete-open').addEventListener('click', () => {
   $('#ps-del-ack').checked = false; $('#ps-del-confirm').disabled = true; $('#ps-del-msg').textContent = '';
@@ -1749,12 +1802,12 @@ $('#ps-del-back').addEventListener('click', () => $('#profile-settings-dialog').
 $('#ps-del-ack').addEventListener('change', (e) => { $('#ps-del-confirm').disabled = !e.target.checked; });
 $('#ps-del-confirm').addEventListener('click', async () => {
   if (!$('#ps-del-ack').checked) return;
-  const msg = $('#ps-del-msg'); msg.textContent = 'Konto wird gelöscht…';
+  const msg = $('#ps-del-msg'); msg.textContent = tr('msg.deletingAccount');
   $('#ps-del-confirm').disabled = true;
   const err = await deleteAccount();
   if (err) { msg.textContent = err; $('#ps-del-confirm').disabled = false; return; }
   $('#profile-settings-dialog').close();
-  toast('Konto gelöscht');
+  toast(tr('toast.accountDeleted'));
 });
 $('#ps-save').addEventListener('click', () => {
   const name = $('#ps-name').value.trim();
@@ -1765,10 +1818,10 @@ $('#ps-save').addEventListener('click', () => {
     bio: $('#ps-bio').value.trim(),
     hide_value: $('#ps-hide-value').checked,
   });
-  if (currentView === 'settings') $('#view-title').textContent = profileName() || 'Mein Profil';
+  if (currentView === 'settings') $('#view-title').textContent = profileName() || tr('title.profile');
   $('#profile-settings-dialog').close();
   renderProfile();
-  toast('Profil gespeichert');
+  toast(tr('toast.profileSaved'));
 });
 $('#ps-banner-btn').addEventListener('click', () => $('#banner-file').click());
 $('#ps-avatar-btn').addEventListener('click', () => $('#avatar-file').click());
@@ -1803,14 +1856,14 @@ $('#import-file').addEventListener('change', async (e) => {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    if (!confirm('Import überschreibt deine aktuelle Collection & Wishlist. Fortfahren?')) return;
+    if (!confirm(tr('confirm.importOverwrite'))) return;
     importAll(data);
     renderList('collection');
     renderList('wishlist');
     renderCounts();
-    toast('Import erfolgreich');
+    toast(tr('toast.importSuccess'));
   } catch (err) {
-    toast('Import fehlgeschlagen: ' + (err?.message || err));
+    toast(tr('toast.importFailedMsg', { msg: (err?.message || err) }));
   } finally {
     e.target.value = '';
   }
@@ -1848,7 +1901,7 @@ function renderPlaylists() {
   const pls = getPlaylists();
   const c = $('#playlists-container');
   if (!pls.length) {
-    c.innerHTML = '<p class="pl-none">Noch keine Playlists. Lege oben eine an und füge Alben über „+ Playlist" auf der Albumseite hinzu.</p>';
+    c.innerHTML = `<p class="pl-none">${tr('pl.none')}</p>`;
     return;
   }
   const coll = getList('collection');
@@ -1856,15 +1909,15 @@ function renderPlaylists() {
     const albums = p.itemIds.map((id) => coll.find((x) => x.id === id)).filter(Boolean);
     const covers = albums.length
       ? `<div class="playlist-albums">${albums.map((a) => `<button class="pa-cover" data-id="${a.id}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.remove()" />` : ''}</button>`).join('')}</div>`
-      : '<p class="playlist-empty">Noch leer.</p>';
+      : `<p class="playlist-empty">${tr('pl.emptyShort')}</p>`;
     const desc = p.description ? `<p class="pl-desc">${escapeHtml(p.description)}</p>` : '';
-    return `<div class="playlist-item"><div class="playlist-head"><button class="pl-title" data-plopen="${p.id}">${escapeHtml(p.name)}</button><span><span class="pl-count">${albums.length}</span> <button class="playlist-del" data-del="${p.id}">löschen</button></span></div>${desc}${covers}</div>`;
+    return `<div class="playlist-item"><div class="playlist-head"><button class="pl-title" data-plopen="${p.id}">${escapeHtml(p.name)}</button><span><span class="pl-count">${albums.length}</span> <button class="playlist-del" data-del="${p.id}">${tr('btn.deleteSmall')}</button></span></div>${desc}${covers}</div>`;
   }).join('');
   c.querySelectorAll('.pl-title[data-plopen]').forEach((b) => b.addEventListener('click', () => openPlaylistView(b.dataset.plopen)));
   c.querySelectorAll('.pa-cover').forEach((b) => b.addEventListener('click', () => openDetail('collection', b.dataset.id)));
   c.querySelectorAll('.playlist-del').forEach((b) => b.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (confirm('Playlist löschen?')) { deletePlaylist(b.dataset.del); renderPlaylists(); }
+    if (confirm(tr('confirm.deletePlaylist'))) { deletePlaylist(b.dataset.del); renderPlaylists(); }
   }));
 }
 
@@ -1885,7 +1938,7 @@ function renderPlaylistView() {
   const coll = getList('collection');
   const albums = p.itemIds.map((id) => coll.find((x) => x.id === id)).filter(Boolean);
   const list = $('#plv-list');
-  if (!albums.length) { list.innerHTML = '<p class="pl-none">Noch leer. Füge Alben über „+ Playlist" auf einer Albumseite hinzu.</p>'; return; }
+  if (!albums.length) { list.innerHTML = `<p class="pl-none">${tr('pl.empty')}</p>`; return; }
   list.innerHTML = albums.map((a, i) => `
     <div class="plv-row">
       <span class="plv-rank">${i + 1}</span>
@@ -1894,9 +1947,9 @@ function renderPlaylistView() {
         <span class="plv-meta"><span class="chart-title">${escapeHtml(a.title || '')}</span><span class="chart-artist">${escapeHtml(a.artist || '')}</span></span>
       </button>
       <span class="plv-ctrls">
-        <button class="plv-mv" data-up="${a.id}" ${i === 0 ? 'disabled' : ''} aria-label="nach oben">▲</button>
-        <button class="plv-mv" data-down="${a.id}" ${i === albums.length - 1 ? 'disabled' : ''} aria-label="nach unten">▼</button>
-        <button class="plv-rm" data-rm="${a.id}" aria-label="entfernen">×</button>
+        <button class="plv-mv" data-up="${a.id}" ${i === 0 ? 'disabled' : ''} aria-label="${tr('a11y.moveUp')}">▲</button>
+        <button class="plv-mv" data-down="${a.id}" ${i === albums.length - 1 ? 'disabled' : ''} aria-label="${tr('a11y.moveDown')}">▼</button>
+        <button class="plv-rm" data-rm="${a.id}" aria-label="${tr('a11y.remove')}">×</button>
       </span>
     </div>`).join('');
   list.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => { $('#playlist-view-dialog').close(); openDetail('collection', b.dataset.open); }));
@@ -1916,7 +1969,7 @@ $('#btn-create-playlist').addEventListener('click', () => {
   $('#new-playlist-desc').value = '';
   $('#create-playlist-dialog').close();
   renderPlaylists();
-  toast('Playlist angelegt');
+  toast(tr('toast.playlistCreated'));
 });
 $('#new-playlist-name').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); $('#btn-create-playlist').click(); }
@@ -1964,18 +2017,18 @@ function buildBrowseRows(container, prefix) {
 
 function greetingText() {
   const h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'Guten Morgen';
-  if (h >= 12 && h < 18) return 'Hallo';
-  return 'Guten Abend';
+  if (h >= 5 && h < 12) return tr('greet.morning');
+  if (h >= 12 && h < 18) return tr('greet.noon');
+  return tr('greet.evening');
 }
 
 function renderHome() {
   const el = $('#home-content');
   el.innerHTML =
     '<div class="home-tabs">' +
-      '<button class="home-tab" data-htab="alben">Alben</button>' +
-      '<button class="home-tab" data-htab="reviews">Reviews</button>' +
-      '<button class="home-tab" data-htab="lists">Lists</button>' +
+      `<button class="home-tab" data-htab="alben">${tr('htab.albums')}</button>` +
+      `<button class="home-tab" data-htab="reviews">${tr('htab.reviews')}</button>` +
+      `<button class="home-tab" data-htab="lists">${tr('htab.lists')}</button>` +
     '</div>' +
     '<div id="home-tabbody"></div>';
   el.querySelectorAll('.home-tab').forEach((b) => b.addEventListener('click', () => setHomeTab(b.dataset.htab)));
@@ -1996,15 +2049,15 @@ function setHomeTab(tab) {
 function renderHomeAlben(body) {
   body.innerHTML =
     '<div class="home-greet">' +
-      '<button class="home-greet-av" id="home-greet-av" aria-label="Mein Profil"></button>' +
+      `<button class="home-greet-av" id="home-greet-av" aria-label="${tr('a11y.myProfile')}"></button>` +
       '<div class="home-greet-text"><span class="home-greet-hello" id="home-greet-hello"></span></div>' +
-      '<button class="home-bell" id="home-bell" aria-label="Benachrichtigungen">' +
+      `<button class="home-bell" id="home-bell" aria-label="${tr('a11y.notifications')}">` +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9z"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
       '</button>' +
     '</div>' +
-    '<div class="home-section"><span class="dp-label">Popular this week</span><ol id="home-pop-list" class="chart-list"><li class="hint">Lade…</li></ol></div>' +
-    '<div class="home-section"><span class="dp-label">New from friends</span><div id="home-friends" class="home-friends"></div></div>' +
-    `<div class="home-section"><span class="dp-label">Neu erschienen ${new Date().getFullYear()}</span><ol id="home-new-list" class="chart-list"><li class="hint">Lade…</li></ol></div>`;
+    `<div class="home-section"><span class="dp-label">${tr('home.popular')}</span><ol id="home-pop-list" class="chart-list"><li class="hint">${tr('msg.loading')}</li></ol></div>` +
+    `<div class="home-section"><span class="dp-label">${tr('home.newFromFriends')}</span><div id="home-friends" class="home-friends"></div></div>` +
+    `<div class="home-section"><span class="dp-label">${tr('home.newReleases', { year: new Date().getFullYear() })}</span><ol id="home-new-list" class="chart-list"><li class="hint">${tr('msg.loading')}</li></ol></div>`;
 
   // Begrüßung je nach Tageszeit + Profilbild im Dusty-Rose-Rahmen
   const p = getProfile() || {};
@@ -2021,7 +2074,7 @@ function renderHomeAlben(body) {
     gav.innerHTML = '<svg class="avatar-ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
   }
   gav.addEventListener('click', () => { if (requireAuth()) switchView('settings'); });
-  $('#home-bell').addEventListener('click', () => toast('Keine neuen Benachrichtigungen'));
+  $('#home-bell').addEventListener('click', () => toast(tr('toast.noNotifications')));
 
   loadPopularThisWeek();
   renderFriendsRow();
@@ -2030,13 +2083,13 @@ function renderHomeAlben(body) {
 
 // „Reviews" = Reviews von Gefolgten zuerst, danach allgemein neueste.
 async function renderHomeReviews(body) {
-  body.innerHTML = '<div class="rev-list"><p class="hint">Lade…</p></div>';
+  body.innerHTML = `<div class="rev-list"><p class="hint">${tr('msg.loading')}</p></div>`;
   const wrap = body.querySelector('.rev-list');
   let revs = [];
   try { revs = await fetchReviewsFeed(30); } catch { /* ignorieren */ }
   if (!wrap) return;
   if (!revs.length) {
-    wrap.innerHTML = '<div class="home-empty-card">Noch keine Reviews. Folge Leuten oder schreibe selbst eine Review auf einer Album-Seite.</div>';
+    wrap.innerHTML = `<div class="home-empty-card">${tr('home.noReviews')}</div>`;
     return;
   }
   homeReviewsCache = revs;
@@ -2069,18 +2122,18 @@ function listCardHtml(l, i) {
   const who = l.by ? (l.by.display_name || l.by.username || '') : '';
   return `<button class="list-card" data-idx="${i}">
       <div class="ll-covers">${covers || '<div class="ll-cover placeholder"></div>'}</div>
-      <div class="ll-meta"><span class="ll-name">${escapeHtml(l.name || 'Liste')}</span><span class="ll-by">${escapeHtml(who)} · ${l.items.length} Alben</span></div>
+      <div class="ll-meta"><span class="ll-name">${escapeHtml(l.name || tr('list.fallbackName'))}</span><span class="ll-by">${escapeHtml(who)} · ${tr('unit.albumsCount', { n: l.items.length })}</span></div>
     </button>`;
 }
 
 // „Lists" = Playlists von Gefolgten.
 async function renderHomeLists(body) {
   if (!getUser()) {
-    body.innerHTML = '<div class="home-empty-card">Melde dich an, um Listen von Freunden zu sehen. <button id="lists-cta" class="link-btn">Anmelden</button></div>';
+    body.innerHTML = `<div class="home-empty-card">${tr('home.signInLists')} <button id="lists-cta" class="link-btn">${tr('auth.login')}</button></div>`;
     const b = body.querySelector('#lists-cta'); if (b) b.onclick = () => openAuth('login');
     return;
   }
-  body.innerHTML = '<div class="lists-wrap"><p class="hint">Lade…</p></div>';
+  body.innerHTML = `<div class="lists-wrap"><p class="hint">${tr('msg.loading')}</p></div>`;
   const wrap = body.querySelector('.lists-wrap');
   let lists = [];
   try { lists = await fetchFriendsLists(20); } catch { /* ignorieren */ }
@@ -2112,7 +2165,7 @@ async function loadNewReleases() {
   }
   const withCover = res.filter((r) => r.coverUrl);
   const list = (withCover.length >= 10 ? withCover : res).slice(0, 12);
-  if (!list.length) { ol.innerHTML = '<li class="hint">Keine Daten verfügbar.</li>'; return; }
+  if (!list.length) { ol.innerHTML = `<li class="hint">${tr('msg.noData')}</li>`; return; }
   ol.innerHTML = list.map((r) => {
     const idx = res.indexOf(r);
     const cov = r.coverUrl ? `<img src="${escapeHtml(r.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : '';
@@ -2135,7 +2188,7 @@ async function loadPopularThisWeek() {
   }
   const withCover = res.filter((r) => r.coverUrl);
   const list = (withCover.length >= 10 ? withCover : res).slice(0, 10);
-  if (!list.length) { ol.innerHTML = '<li class="hint">Keine Daten verfügbar.</li>'; return; }
+  if (!list.length) { ol.innerHTML = `<li class="hint">${tr('msg.noData')}</li>`; return; }
   ol.innerHTML = list.map((r, i) => {
     const idx = res.indexOf(r);
     const cov = r.coverUrl
@@ -2156,15 +2209,15 @@ async function renderFriendsRow() {
   const el = document.getElementById('home-friends');
   if (!el) return;
   if (!getUser()) {
-    el.innerHTML = '<div class="home-empty-card">Melde dich an, um Freunden zu folgen und ihre Neuzugänge zu sehen. <button id="friends-cta" class="link-btn">Anmelden</button></div>';
+    el.innerHTML = `<div class="home-empty-card">${tr('home.signInFollow')} <button id="friends-cta" class="link-btn">${tr('auth.login')}</button></div>`;
     const b = el.querySelector('#friends-cta'); if (b) b.onclick = () => openAuth('login');
     return;
   }
-  el.innerHTML = '<div class="home-empty-card">Lade…</div>';
+  el.innerHTML = `<div class="home-empty-card">${tr('msg.loading')}</div>`;
   let feed = [];
   try { feed = await fetchFriendsFeed(20); } catch { /* ignorieren */ }
   if (!feed.length) {
-    el.innerHTML = '<div class="home-empty-card">Noch nichts von Freunden. <button id="friends-cta" class="link-btn">Freunde finden</button></div>';
+    el.innerHTML = `<div class="home-empty-card">${tr('home.nothingFriends')} <button id="friends-cta" class="link-btn">${tr('dlg.findFriends')}</button></div>`;
     const b = el.querySelector('#friends-cta'); if (b) b.onclick = goMemberSearch;
     return;
   }
@@ -2172,7 +2225,7 @@ async function renderFriendsRow() {
   el.innerHTML = feed.map((r, i) => {
     const cov = r.coverUrl ? `<img src="${escapeHtml(r.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : '';
     const who = r.by ? (r.by.display_name || r.by.username || '') : '';
-    const action = r.kind === 'play' ? 'gehört' : 'hinzugefügt';
+    const action = r.kind === 'play' ? tr('feed.listened') : tr('feed.added');
     const noteSrc = r.kind === 'play' ? (r.playNote || '') : (r.review || '');
     const rev = noteSrc.trim() ? '<span class="friend-rev">„' + escapeHtml(noteSrc.trim().slice(0, 50)) + (noteSrc.trim().length > 50 ? '…' : '') + '"</span>' : '';
     const stars = Number(r.rating) > 0 ? `<span class="friend-rating">${ratingDisplayHtml(r.rating)}</span>` : '';
@@ -2195,10 +2248,10 @@ async function openActivity(it) {
   cov.innerHTML = it.coverUrl ? `<img src="${escapeHtml(it.coverUrl)}" alt="" />` : '';
   $('#act-name').textContent = it.title || '';
   $('#act-artist').textContent = it.artist || '';
-  let byText = 'von ' + (it.by ? (it.by.display_name || it.by.username || '') : '');
-  if (it.kind === 'play' && it.playedOn) byText += ' · gehört am ' + new Date(it.playedOn).toLocaleDateString('de-DE');
+  let byText = tr('feed.by') + ' ' + (it.by ? (it.by.display_name || it.by.username || '') : '');
+  if (it.kind === 'play' && it.playedOn) byText += ' · ' + tr('feed.listenedOn') + ' ' + new Date(it.playedOn).toLocaleDateString(getLang() === 'de' ? 'de-DE' : 'en-US');
   $('#act-by').textContent = byText;
-  $('#act-rating').innerHTML = Number(it.rating) > 0 ? ratingDisplayHtml(it.rating) : '<span class="hint">Keine Bewertung</span>';
+  $('#act-rating').innerHTML = Number(it.rating) > 0 ? ratingDisplayHtml(it.rating) : `<span class="hint">${tr('stat.noRating')}</span>`;
   const revParts = [];
   if (it.kind === 'play' && (it.playNote || '').trim()) revParts.push('🎧 ' + it.playNote.trim());
   if ((it.review || '').trim()) revParts.push(it.review.trim());
@@ -2206,7 +2259,7 @@ async function openActivity(it) {
   $('#act-review').style.display = revParts.length ? '' : 'none';
   $('#act-like').classList.remove('liked');
   $('#act-like-count').textContent = '…';
-  $('#act-comments').innerHTML = '<p class="hint">Lade…</p>';
+  $('#act-comments').innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
   $('#act-comment-input').value = '';
   $('#activity-dialog').showModal();
   // Likes
@@ -2244,11 +2297,11 @@ async function openFriendsDialog() {
 
 async function runFriendsSearch(q) {
   const box = $('#friends-results');
-  if (!q.trim()) { box.innerHTML = '<p class="hint">Tippe einen Username, um Leute zu finden.</p>'; return; }
-  box.innerHTML = '<p class="hint">Suche…</p>';
+  if (!q.trim()) { box.innerHTML = `<p class="hint">${tr('hint.findPeople')}</p>`; return; }
+  box.innerHTML = `<p class="hint">${tr('msg.searching')}</p>`;
   let users = [];
   try { users = await searchUsers(q); } catch { /* ignorieren */ }
-  if (!users.length) { box.innerHTML = '<p class="hint">Niemand gefunden.</p>'; return; }
+  if (!users.length) { box.innerHTML = `<p class="hint">${tr('search.nobodyFound')}</p>`; return; }
   box.innerHTML = users.map((u) => {
     const av = u.avatar_url ? `style="background-image:url('${escapeHtml(u.avatar_url)}')"` : '';
     return `<button class="friend-row" data-id="${u.id}">
@@ -2267,7 +2320,7 @@ async function runFriendsSearch(q) {
 // ---------- Profil eines anderen Nutzers (mit Folgen/Entfolgen) ----------
 let upCollectionCache = [];
 function setFollowBtn(btn, following) {
-  btn.textContent = following ? 'Entfolgen' : 'Folgen';
+  btn.textContent = following ? tr('btn.unfollow') : tr('btn.follow');
   btn.classList.toggle('ghost', following);
   btn.classList.toggle('primary', !following);
 }
@@ -2324,11 +2377,11 @@ async function openUserProfile(user) {
   const rated = coll.filter((i) => Number(i.rating) > 0);
   const avg = rated.length ? (rated.reduce((s, i) => s + Number(i.rating), 0) / rated.length) : 0;
   $('#up-stats').innerHTML =
-    `<li class="stat-toggle" data-panel="up-collection"><span>Sammlung</span><span class="stat-num">${coll.length}<span class="stat-chev">›</span></span></li>` +
-    `<li class="stat-toggle" data-panel="up-wishlist"><span>Wishlist</span><span class="stat-num">${wish.length}<span class="stat-chev">›</span></span></li>` +
-    `<li><span>Bewertet</span><span class="stat-num">${rated.length}</span></li>` +
-    `<li><span>Ø Bewertung</span><span class="stat-num">${avg ? avg.toFixed(1) + ' ♪' : '–'}</span></li>` +
-    ((!u.hide_value && latestVal > 0) ? `<li><span>Sammlungswert</span><span class="stat-num">${fmtEuro(latestVal)}</span></li>` : '');
+    `<li class="stat-toggle" data-panel="up-collection"><span>${tr('stat.collection')}</span><span class="stat-num">${coll.length}<span class="stat-chev">›</span></span></li>` +
+    `<li class="stat-toggle" data-panel="up-wishlist"><span>${tr('stat.wishlist')}</span><span class="stat-num">${wish.length}<span class="stat-chev">›</span></span></li>` +
+    `<li><span>${tr('stat.rated')}</span><span class="stat-num">${rated.length}</span></li>` +
+    `<li><span>${tr('stat.avgRating')}</span><span class="stat-num">${avg ? avg.toFixed(1) + ' ♪' : '–'}</span></li>` +
+    ((!u.hide_value && latestVal > 0) ? `<li><span>${tr('stat.collectionValue')}</span><span class="stat-num">${fmtEuro(latestVal)}</span></li>` : '');
   $('#up-stats').querySelectorAll('.stat-toggle').forEach((li) => li.addEventListener('click', () => {
     const panel = document.getElementById(li.dataset.panel);
     const nowHidden = panel.classList.toggle('hidden');
@@ -2381,6 +2434,16 @@ function closeUserProfile() {
 }
 
 // ---------- Start ----------
+document.documentElement.lang = getLang();
+applyI18n();
+// Sprach-Umschalter in den Einstellungen
+$$('.set-lang-pill').forEach((b) => b.addEventListener('click', () => {
+  setLang(b.dataset.lang);
+  $$('.set-lang-pill').forEach((x) => x.classList.toggle('active', x.dataset.lang === getLang()));
+}));
+// Bei Sprachwechsel die sichtbare Ansicht neu aufbauen (dynamische Texte)
+document.addEventListener('langchange', () => { switchView(currentView); });
+
 manualRating = createRatingInput($('#manual-rating'), 0);
 $('#manual-rating-clear').addEventListener('click', () => manualRating && manualRating.setValue(0));
 switchView('home');
@@ -2414,7 +2477,7 @@ $('#friends-search').addEventListener('input', (e) => {
 const logoutBtn = document.getElementById('btn-logout');
 if (logoutBtn) logoutBtn.addEventListener('click', async () => {
   await signOut();
-  toast('Abgemeldet');
+  toast(tr('toast.signedOut'));
   switchView('home');
 });
 initAuth({

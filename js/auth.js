@@ -1,6 +1,7 @@
 // auth.js – Login / Registrierung / Passwort-Reset + Gast-Modus.
 // Steuert das #auth-page-Overlay und hält den aktuellen Nutzer-Status.
 import { getSupabase, SUPABASE_URL, SUPABASE_KEY } from './supabase.js';
+import { t as tr } from './i18n.js';
 
 const $ = (s) => document.querySelector(s);
 
@@ -77,7 +78,7 @@ export async function changePassword(password) {
 }
 // Konto endgültig löschen (über Edge-Function mit Service-Role). null = Erfolg.
 export async function deleteAccount() {
-  if (!sb || !currentUser) return 'Nicht angemeldet.';
+  if (!sb || !currentUser) return tr('auth.err.notSignedIn');
   const { data } = await sb.auth.getSession();
   const token = data && data.session && data.session.access_token;
   if (!token) return 'Keine Sitzung.';
@@ -86,14 +87,14 @@ export async function deleteAccount() {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, apikey: SUPABASE_KEY, 'Content-Type': 'application/json' },
     });
-    if (!res.ok) { const t = await res.text(); return 'Fehler beim Löschen: ' + t.slice(0, 120); }
-  } catch (e) { return 'Fehler: ' + (e.message || e); }
+    if (!res.ok) { const t = await res.text(); return tr('auth.err.deleteFailed', { msg: t.slice(0, 120) }); }
+  } catch (e) { return tr('auth.err.generic', { msg: (e.message || e) }); }
   await signOut();
   return null;
 }
 // Reset-Link an die eigene E-Mail senden.
 export async function sendPasswordReset() {
-  if (!sb || !currentUser) return 'Nicht angemeldet.';
+  if (!sb || !currentUser) return tr('auth.err.notSignedIn');
   const { error } = await sb.auth.resetPasswordForEmail(currentUser.email, { redirectTo: location.origin + location.pathname });
   return error ? error.message : null;
 }
@@ -118,8 +119,8 @@ function setMsg(t, type) {
 }
 
 function applyMode() {
-  const titles = { login: 'Willkommen zurück', register: 'Konto erstellen', forgot: 'Passwort zurücksetzen', update: 'Neues Passwort' };
-  if ($('#auth-title')) $('#auth-title').textContent = titles[mode];
+  const titles = { login: 'auth.title.login', register: 'auth.title.register', forgot: 'auth.title.forgot', update: 'auth.title.update' };
+  if ($('#auth-title')) $('#auth-title').textContent = tr(titles[mode]);
   const tabs = $('#auth-tabs');
   if (tabs) tabs.style.display = (mode === 'login' || mode === 'register') ? '' : 'none';
   document.querySelectorAll('.auth-tab').forEach((t) => t.classList.toggle('active', t.dataset.mode === mode));
@@ -128,8 +129,8 @@ function applyMode() {
   show('#auth-email-field', mode !== 'update');
   show('#auth-password-field', mode === 'login' || mode === 'register' || mode === 'update');
   show('#auth-forgot', mode === 'login');
-  const labels = { login: 'Anmelden', register: 'Konto erstellen', forgot: 'Reset-Link senden', update: 'Passwort speichern' };
-  $('#auth-submit').textContent = labels[mode];
+  const labels = { login: 'auth.login', register: 'auth.title.register', forgot: 'auth.label.forgot', update: 'set.savePassword' };
+  $('#auth-submit').textContent = tr(labels[mode]);
   const pw = $('#auth-password');
   if (pw) pw.setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
 }
@@ -145,36 +146,36 @@ function wireUI() {
 
 async function onSubmit(e) {
   e.preventDefault();
-  if (!sb) { setMsg('Backend nicht erreichbar. Bitte später erneut versuchen.', 'error'); return; }
+  if (!sb) { setMsg(tr('auth.err.backend'), 'error'); return; }
   const email = ($('#auth-email').value || '').trim();
   const password = $('#auth-password').value || '';
   const username = ($('#auth-username').value || '').trim();
-  setMsg('Bitte warten…');
+  setMsg(tr('msg.pleaseWait'));
   try {
     if (mode === 'login') {
       const { error } = await sb.auth.signInWithPassword({ email, password });
       if (error) {
-        if (/not confirmed|confirm/i.test(error.message)) return setMsg('Bitte bestätige zuerst den Link in deiner Bestätigungs-E-Mail.', 'error');
-        return setMsg(/invalid login/i.test(error.message) ? 'E-Mail oder Passwort falsch.' : error.message, 'error');
+        if (/not confirmed|confirm/i.test(error.message)) return setMsg(tr('auth.err.notConfirmed'), 'error');
+        return setMsg(/invalid login/i.test(error.message) ? tr('auth.err.invalidLogin') : error.message, 'error');
       }
       closeAuth();
     } else if (mode === 'register') {
-      if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return setMsg('Username: 3–20 Zeichen, nur Buchstaben, Zahlen, _', 'error');
-      if (password.length < 6) return setMsg('Passwort: mindestens 6 Zeichen.', 'error');
-      if (await usernameTaken(username)) return setMsg('Dieser Username ist schon vergeben.', 'error');
+      if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return setMsg(tr('auth.err.usernameRule'), 'error');
+      if (password.length < 6) return setMsg(tr('auth.err.pwMin'), 'error');
+      if (await usernameTaken(username)) return setMsg(tr('auth.err.usernameTaken'), 'error');
       const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username, display_name: username }, emailRedirectTo: location.origin + location.pathname } });
-      if (error) return setMsg(/already|registered|exists/i.test(error.message) ? 'Diese E-Mail ist schon registriert.' : error.message, 'error');
+      if (error) return setMsg(/already|registered|exists/i.test(error.message) ? tr('auth.err.emailRegistered') : error.message, 'error');
       if (data.session) { closeAuth(); }
-      else { setMsg('Fast geschafft! Bestätige den Link in deiner E-Mail, dann anmelden.', 'ok'); mode = 'login'; applyMode(); }
+      else { setMsg(tr('auth.msg.almostDone'), 'ok'); mode = 'login'; applyMode(); }
     } else if (mode === 'forgot') {
       const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
-      if (error) return setMsg('Konnte Mail nicht senden: ' + error.message, 'error');
-      setMsg('Falls die E-Mail existiert, kommt ein Reset-Link. Schau in dein Postfach.', 'ok');
+      if (error) return setMsg(tr('auth.err.mailFailed', { msg: error.message }), 'error');
+      setMsg(tr('auth.msg.resetMaybe'), 'ok');
     } else if (mode === 'update') {
-      if (password.length < 6) return setMsg('Passwort: mindestens 6 Zeichen.', 'error');
+      if (password.length < 6) return setMsg(tr('auth.err.pwMin'), 'error');
       const { error } = await sb.auth.updateUser({ password });
-      if (error) return setMsg('Fehler: ' + error.message, 'error');
-      setMsg('Passwort geändert – du bist angemeldet.', 'ok');
+      if (error) return setMsg(tr('auth.err.generic', { msg: error.message }), 'error');
+      setMsg(tr('auth.msg.passwordChanged'), 'ok');
       setTimeout(closeAuth, 1200);
     }
   } catch (err) {

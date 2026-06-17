@@ -1,0 +1,422 @@
+// i18n.js – einfache Zweisprachigkeit (EN Standard, DE umschaltbar).
+// Statische Texte in index.html tragen data-i18n / data-i18n-ph / data-i18n-title /
+// data-i18n-html. Dynamische Texte im JS nutzen t('key', {vars}).
+
+const LANGS = ['en', 'de'];
+const STORE_KEY = 'discend_lang';
+
+function initialLang() {
+  const saved = localStorage.getItem(STORE_KEY);
+  if (saved && LANGS.includes(saved)) return saved;
+  return 'en'; // Hauptsprache Englisch
+}
+
+let lang = initialLang();
+
+export function getLang() { return lang; }
+
+export function setLang(l) {
+  if (!LANGS.includes(l) || l === lang) return;
+  lang = l;
+  localStorage.setItem(STORE_KEY, l);
+  document.documentElement.lang = l;
+  applyI18n();
+  document.dispatchEvent(new CustomEvent('langchange', { detail: { lang: l } }));
+}
+
+export function t(key, vars) {
+  const entry = DICT[key];
+  let s = entry ? (entry[lang] != null ? entry[lang] : (entry.en != null ? entry.en : key)) : key;
+  if (vars) for (const k in vars) s = s.split('{' + k + '}').join(vars[k]);
+  return s;
+}
+
+// Statische Elemente im DOM übersetzen.
+export function applyI18n(root) {
+  const r = root || document;
+  r.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.getAttribute('data-i18n')); });
+  r.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
+  r.querySelectorAll('[data-i18n-title]').forEach((el) => {
+    const v = t(el.getAttribute('data-i18n-title'));
+    el.setAttribute('title', v);
+    el.setAttribute('aria-label', v);
+  });
+  r.querySelectorAll('[data-i18n-aria]').forEach((el) => { el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria'))); });
+  r.querySelectorAll('[data-i18n-html]').forEach((el) => { el.innerHTML = t(el.getAttribute('data-i18n-html')); });
+}
+
+// ---------- Wörterbuch ----------
+export const DICT = {
+  // Header / Tabbar
+  'title.collection': { en: 'Collection', de: 'Sammlung' },
+  'title.search': { en: 'Search', de: 'Suchen' },
+  'title.add': { en: 'Add', de: 'Hinzufügen' },
+  'title.home': { en: 'Discend', de: 'Discend' },
+  'title.profile': { en: 'My profile', de: 'Mein Profil' },
+  'a11y.profileSettings': { en: 'Profile settings', de: 'Profil-Einstellungen' },
+  'a11y.shareProfile': { en: 'Share profile', de: 'Profil teilen' },
+  'a11y.share': { en: 'Share', de: 'Teilen' },
+  'a11y.home': { en: 'Home', de: 'Start' },
+  'a11y.searchDb': { en: 'Search', de: 'Datenbank durchsuchen' },
+  'a11y.add': { en: 'Add', de: 'Hinzufügen' },
+  'a11y.myProfile': { en: 'My profile', de: 'Mein Profil' },
+  'a11y.close': { en: 'Close', de: 'Schließen' },
+  'a11y.back': { en: 'Back', de: 'Zurück' },
+  'a11y.edit': { en: 'Edit', de: 'Bearbeiten' },
+  'a11y.favOnly': { en: 'Favorites only', de: 'Nur Favoriten' },
+  'a11y.like': { en: 'Like', de: 'Gefällt mir' },
+  'a11y.scanCam': { en: 'Scan with camera', de: 'Mit Kamera scannen' },
+  'a11y.newPlaylist': { en: 'New playlist', de: 'Neue Playlist' },
+
+  // Suche / Sortierung / Filter
+  'ph.searchCollection': { en: 'Search (artist, title, note…)', de: 'Suchen (Künstler, Titel, Notiz…)' },
+  'ph.searchAlbum': { en: 'Search album…', de: 'Album suchen…' },
+  'ph.searchWishlist': { en: 'Search wishlist…', de: 'Wishlist durchsuchen…' },
+  'ph.searchUsername': { en: 'Search username…', de: 'Username suchen…' },
+  'sort.artist': { en: 'Artist A–Z', de: 'Künstler A–Z' },
+  'sort.title': { en: 'Title A–Z', de: 'Titel A–Z' },
+  'sort.rating': { en: 'Rating', de: 'Bewertung' },
+  'sort.year': { en: 'Year', de: 'Jahr' },
+  'sort.added': { en: 'Recently added', de: 'Zuletzt hinzugefügt' },
+  'btn.all': { en: 'all', de: 'alle' },
+  'btn.cancel': { en: 'Cancel', de: 'Cancel' },
+  'sf.albums': { en: 'Albums', de: 'Alben' },
+  'sf.artist': { en: 'Artist', de: 'Künstler/in' },
+  'sf.members': { en: 'Members', de: 'Members' },
+  'sf.reviews': { en: 'Reviews', de: 'Reviews' },
+  'sf.playlists': { en: 'Playlists', de: 'Playlists' },
+  'empty.collection': { en: 'No records yet. Scan a barcode or add one manually.', de: 'Noch keine Platten. Scanne einen Barcode oder füge manuell hinzu.' },
+  'empty.wishlist': { en: 'Your wishlist is empty.', de: 'Deine Wishlist ist leer.' },
+
+  // Hinzufügen
+  'add.stopCam': { en: 'Stop camera', de: 'Kamera stoppen' },
+  'ph.barcode': { en: 'Barcode number (EAN)', de: 'Barcode-Nummer (EAN)' },
+  'btn.search': { en: 'Search', de: 'Suchen' },
+  'add.orManual': { en: 'or enter manually', de: 'oder manuell eingeben' },
+  'field.artist': { en: 'Artist', de: 'Künstler' },
+  'field.title': { en: 'Title', de: 'Titel' },
+  'field.year': { en: 'Year', de: 'Jahr' },
+  'field.label': { en: 'Label', de: 'Label' },
+  'field.format': { en: 'Format', de: 'Format' },
+  'ph.format': { en: 'e.g. Vinyl, LP, Album', de: 'z. B. Vinyl, LP, Album' },
+  'field.barcode': { en: 'Barcode', de: 'Barcode' },
+  'field.coverUrl': { en: 'Cover URL', de: 'Cover-URL' },
+  'ph.optional': { en: 'optional', de: 'optional' },
+  'field.price': { en: 'Purchase price (€)', de: 'Kaufpreis (€)' },
+  'field.note': { en: 'Note', de: 'Notiz' },
+  'ph.noteExample': { en: 'e.g. limited edition', de: 'z. B. limited Edition' },
+  'field.rating': { en: 'Rating', de: 'Bewertung' },
+  'btn.reset': { en: 'reset', de: 'zurücksetzen' },
+  'add.addTo': { en: 'Add to', de: 'Hinzufügen zu' },
+  'list.collection': { en: 'Collection', de: 'Collection' },
+  'list.wishlist': { en: 'Wishlist', de: 'Wishlist' },
+  'btn.save': { en: 'Save', de: 'Speichern' },
+
+  // Profil
+  'ptab.profile': { en: 'Profile', de: 'Profil' },
+  'ptab.playlist': { en: 'Playlist', de: 'Playlist' },
+  'ptab.watchlist': { en: 'Wishlist', de: 'Wishlist' },
+  'lbl.favorites': { en: 'Favorites', de: 'Favoriten' },
+  'lbl.favSongs': { en: 'Favorite songs', de: 'Lieblingssongs' },
+  'lbl.recentAdded': { en: 'Recently added', de: 'Zuletzt hinzugefügt' },
+  'lbl.collectionValue': { en: 'Collection value (market estimate)', de: 'Sammlungswert (Marktschätzung)' },
+  'lbl.yourGenres': { en: 'Your genres', de: 'Deine Genres' },
+  'btn.wrapped': { en: '📊 Discend Wrapped', de: '📊 Discend Wrapped' },
+  'sum.backup': { en: 'Backup', de: 'Backup' },
+  'btn.exportData': { en: 'Export data (JSON)', de: 'Daten exportieren (JSON)' },
+  'btn.importData': { en: 'Import data', de: 'Daten importieren' },
+  'hint.backup': { en: 'Back up your collection as a JSON file (e.g. to transfer it).', de: 'Sichere deine Sammlung als JSON-Datei (z. B. zum Übertragen).' },
+  'btn.signOut': { en: 'Sign out', de: 'Abmelden' },
+  'pl.yourPlaylists': { en: 'Your playlists', de: 'Deine Playlists' },
+
+  // Auth
+  'auth.welcomeBack': { en: 'Welcome back', de: 'Willkommen zurück' },
+  'auth.createAccount': { en: 'Create account', de: 'Konto erstellen' },
+  'auth.login': { en: 'Sign in', de: 'Anmelden' },
+  'auth.register': { en: 'Sign up', de: 'Registrieren' },
+  'auth.username': { en: 'Username', de: 'Username' },
+  'ph.usernameExample': { en: 'e.g. vinyljonas', de: 'z. B. vinyljonas' },
+  'auth.email': { en: 'Email', de: 'E-Mail' },
+  'ph.emailExample': { en: 'you@example.com', de: 'du@beispiel.de' },
+  'auth.password': { en: 'Password', de: 'Passwort' },
+  'ph.min6': { en: 'at least 6 characters', de: 'mindestens 6 Zeichen' },
+  'auth.forgot': { en: 'Forgot password?', de: 'Passwort vergessen?' },
+  'auth.guest': { en: 'Continue as guest', de: 'Als Gast weiterstöbern' },
+
+  // Albumdetail
+  'dp.changeCover': { en: 'Change cover', de: 'Cover ändern' },
+  'lbl.ratings': { en: 'Ratings', de: 'Bewertungen' },
+  'lbl.info': { en: 'Info', de: 'Infos' },
+  'lbl.tracklist': { en: 'Tracklist', de: 'Tracklist' },
+  'lbl.reviews': { en: 'Reviews', de: 'Reviews' },
+  'as.collection': { en: 'Collection', de: 'Sammlung' },
+  'as.liked': { en: 'Liked', de: 'Liked' },
+  'as.wishlist': { en: 'Wishlist', de: 'Wishlist' },
+  'dp.reviewPublic': { en: 'Review (public)', de: 'Review (öffentlich)' },
+  'ph.reviewPublic': { en: 'What do you think of this album? (visible to friends)', de: 'Was denkst du über das Album? (für Freunde sichtbar)' },
+  'dp.notePrivate': { en: 'Note (private)', de: 'Notiz (privat)' },
+  'btn.addPlaylist': { en: '+ Playlist', de: '+ Playlist' },
+  'btn.toWishlist': { en: 'To wishlist', de: 'Zur Wishlist' },
+  'btn.toCollection': { en: 'To collection', de: 'Zur Collection' },
+  'lbl.diary': { en: 'Diary (listened on)', de: 'Tagebuch (gehört am)' },
+  'ph.noteOptional': { en: 'Note (optional)', de: 'Notiz (optional)' },
+  'btn.diaryAdd': { en: 'Add', de: 'Eintragen' },
+  'sum.editDetails': { en: 'Edit details', de: 'Details bearbeiten' },
+  'field.mediaCond': { en: 'Record condition (media)', de: 'Zustand Platte (Media)' },
+  'field.sleeveCond': { en: 'Sleeve condition (sleeve)', de: 'Zustand Hülle (Sleeve)' },
+  'btn.delete': { en: 'Delete', de: 'Löschen' },
+  'btn.done': { en: 'Done', de: 'Fertig' },
+
+  // Weitere Profile / Dialoge
+  'btn.follow': { en: 'Follow', de: 'Folgen' },
+  'btn.following': { en: 'Following', de: 'Folge ich' },
+  'lbl.stats': { en: 'Stats', de: 'Statistiken' },
+  'lbl.playlists': { en: 'Playlists', de: 'Playlists' },
+  'dlg.findFriends': { en: 'Find friends', de: 'Freunde finden' },
+  'dlg.activity': { en: 'Activity', de: 'Aktivität' },
+  'lbl.comments': { en: 'Comments', de: 'Kommentare' },
+  'ph.writeComment': { en: 'Write a comment…', de: 'Kommentar schreiben…' },
+  'btn.send': { en: 'Send', de: 'Senden' },
+  'dlg.wrapped': { en: 'Discend Wrapped', de: 'Discend Wrapped' },
+
+  // Einstellungs-Sheet
+  'set.title': { en: 'Settings', de: 'Einstellungen' },
+  'set.save': { en: 'Save', de: 'Speichern' },
+  'set.signedInAs': { en: 'Signed in as', de: 'Angemeldet als' },
+  'set.passwordAuth': { en: 'Password & sign-in', de: 'Passwort & Anmeldung' },
+  'set.language': { en: 'Language', de: 'Sprache' },
+  'lang.english': { en: 'English', de: 'Englisch' },
+  'lang.german': { en: 'German', de: 'Deutsch' },
+  'set.profile': { en: 'Profile', de: 'Profil' },
+  'set.name': { en: 'Name', de: 'Name' },
+  'ph.yourName': { en: 'Your name', de: 'Dein Name' },
+  'set.city': { en: 'City', de: 'Ort' },
+  'ph.cityExample': { en: 'e.g. Cologne', de: 'z. B. Köln' },
+  'set.website': { en: 'Website', de: 'Website' },
+  'set.bio': { en: 'Bio', de: 'Bio' },
+  'ph.bio': { en: 'About you or your collection', de: 'Über dich oder deine Sammlung' },
+  'set.hideValue': { en: 'Hide collection value', de: 'Sammlungswert verbergen' },
+  'set.favAlbums': { en: 'Favorite albums', de: 'Lieblingsalben' },
+  'set.favSongs': { en: 'Favorite songs', de: 'Lieblingssongs' },
+  'set.imageBanner': { en: 'Profile picture & banner', de: 'Profilbild & Banner' },
+  'set.changeAvatar': { en: 'Change profile picture', de: 'Profilbild ändern' },
+  'set.changeBanner': { en: 'Change banner', de: 'Banner ändern' },
+  'set.data': { en: 'Data', de: 'Daten' },
+  'set.importDiscogs': { en: 'Import Discogs collection', de: 'Discogs-Sammlung importieren' },
+  'set.deleteAccount': { en: 'Delete account', de: 'Account löschen' },
+  'set.back': { en: '‹ Back', de: '‹ Zurück' },
+  'set.changePassword': { en: 'Change password', de: 'Passwort ändern' },
+  'set.newPassword': { en: 'New password', de: 'Neues Passwort' },
+  'set.savePassword': { en: 'Save password', de: 'Passwort speichern' },
+  'set.sendReset': { en: 'Send reset link by email', de: 'Reset-Link per E-Mail senden' },
+  'set.twoFactor': { en: 'Two-factor authentication', de: 'Zwei-Faktor-Authentifizierung' },
+  'set.comingSoon': { en: 'Coming soon.', de: 'Bald verfügbar.' },
+  'set.deleteWarning': { en: 'Your account and all data (collection, wishlist, lists, ratings, reviews, likes) will be permanently deleted. This cannot be undone.', de: 'Dein Konto und alle Daten (Sammlung, Wishlist, Listen, Bewertungen, Reviews, Likes) werden unwiderruflich gelöscht. Das kann nicht rückgängig gemacht werden.' },
+  'set.deleteAck': { en: 'I acknowledge this', de: 'Ich habe das zur Kenntnis genommen' },
+  'set.deleteConfirm': { en: 'Permanently delete account', de: 'Account endgültig löschen' },
+
+  // Playlist-/Auswahl-Dialoge
+  'dlg.newPlaylist': { en: 'New playlist', de: 'Neue Playlist' },
+  'ph.playlistName': { en: 'Playlist name', de: 'Name der Playlist' },
+  'ph.descOptional': { en: 'Description (optional)', de: 'Beschreibung (optional)' },
+  'btn.create': { en: 'Create', de: 'Anlegen' },
+  'dlg.addToPlaylist': { en: 'Add to playlist', de: 'Zu Playlist hinzufügen' },
+  'ph.newPlaylist': { en: 'New playlist…', de: 'Neue Playlist…' },
+  'dlg.chooseFav': { en: 'Choose favorite', de: 'Favorit wählen' },
+  'dlg.chooseFavSong': { en: 'Choose favorite song', de: 'Lieblingssong wählen' },
+  'dlg.chooseCover': { en: 'Choose cover', de: 'Cover wählen' },
+
+  // Toasts / Bestätigungen
+  'toast.movedToCollection': { en: 'Moved to collection', de: 'In Sammlung verschoben' },
+  'toast.movedToWishlist': { en: 'Moved to wishlist', de: 'In Wishlist verschoben' },
+  'toast.removed': { en: 'Removed', de: 'Entfernt' },
+  'toast.deleted': { en: 'Deleted', de: 'Gelöscht' },
+  'toast.saved': { en: 'Saved', de: 'Gespeichert' },
+  'toast.linkCopied': { en: 'Link copied', de: 'Link kopiert' },
+  'toast.addedToCollection': { en: 'Added to collection', de: 'Zur Collection hinzugefügt' },
+  'toast.addedToWishlist': { en: 'Added to wishlist', de: 'Zur Wishlist hinzugefügt' },
+  'toast.addAlbumFirst': { en: 'Add the album to your collection first', de: 'Album erst zur Collection hinzufügen' },
+  'toast.diaryAdded': { en: 'Added', de: 'Eingetragen' },
+  'toast.coverChanged': { en: 'Cover changed', de: 'Cover geändert' },
+  'toast.importing': { en: 'Importing…', de: 'Importiere…' },
+  'toast.importFailed': { en: 'Import failed', de: 'Import fehlgeschlagen' },
+  'toast.importFailedMsg': { en: 'Import failed: {msg}', de: 'Import fehlgeschlagen: {msg}' },
+  'toast.noPublicCollection': { en: 'No public collection found', de: 'Keine öffentliche Sammlung gefunden' },
+  'toast.importedSummary': { en: '{added} imported, {dup} already present', de: '{added} importiert, {dup} schon vorhanden' },
+  'toast.importSuccess': { en: 'Import successful', de: 'Import erfolgreich' },
+  'toast.accountDeleted': { en: 'Account deleted', de: 'Konto gelöscht' },
+  'toast.profileSaved': { en: 'Profile saved', de: 'Profil gespeichert' },
+  'toast.playlistCreated': { en: 'Playlist created', de: 'Playlist angelegt' },
+  'toast.noNotifications': { en: 'No new notifications', de: 'Keine neuen Benachrichtigungen' },
+  'toast.signedOut': { en: 'Signed out', de: 'Abgemeldet' },
+  'confirm.removeFromCollection': { en: 'Remove from collection?', de: 'Aus der Sammlung entfernen?' },
+  'confirm.removeFromWishlist': { en: 'Remove from wishlist?', de: 'Von der Wishlist entfernen?' },
+  'confirm.deleteEntry': { en: 'Really delete this entry?', de: 'Diesen Eintrag wirklich löschen?' },
+  'confirm.importOverwrite': { en: 'Import overwrites your current collection & wishlist. Continue?', de: 'Import überschreibt deine aktuelle Collection & Wishlist. Fortfahren?' },
+  'confirm.deletePlaylist': { en: 'Delete playlist?', de: 'Playlist löschen?' },
+  'prompt.discogsUser': { en: 'Discogs username (public collection):', de: 'Discogs-Username (öffentliche Sammlung):' },
+  'msg.deletingAccount': { en: 'Deleting account…', de: 'Konto wird gelöscht…' },
+  'msg.pleaseWait': { en: 'Please wait…', de: 'Bitte warten…' },
+  'msg.passwordChanged': { en: 'Password changed.', de: 'Passwort geändert.' },
+  'msg.sending': { en: 'Sending…', de: 'Sende…' },
+  'msg.resetSent': { en: 'Reset link sent – check your inbox.', de: 'Reset-Link gesendet – schau in dein Postfach.' },
+
+  // Allgemeine Status-/Leertexte
+  'msg.loading': { en: 'Loading…', de: 'Lade…' },
+  'msg.nothingFound': { en: 'Nothing found.', de: 'Nichts gefunden.' },
+  'msg.noData': { en: 'No data available.', de: 'Keine Daten verfügbar.' },
+  'list.noMatches': { en: 'No matches for search/filter.', de: 'Keine Treffer für Suche/Filter.' },
+  'search.nobodyFound': { en: 'Nobody found.', de: 'Niemand gefunden.' },
+  'search.noReviews': { en: 'No reviews found.', de: 'Keine Reviews gefunden.' },
+  'search.noPlaylists': { en: 'No playlists found.', de: 'Keine Playlists gefunden.' },
+
+  // Albumdetail dynamisch
+  'dp.availableOn': { en: 'Available on', de: 'Erhältlich auf' },
+  'cond.label': { en: 'Condition:', de: 'Zustand:' },
+  'cond.media': { en: 'Media', de: 'Media' },
+  'cond.sleeve': { en: 'Sleeve', de: 'Hülle' },
+  'track.noneManual': { en: 'No tracklist (added manually).', de: 'Keine Tracklist (manuell hinzugefügt).' },
+  'track.loading': { en: 'Loading tracklist…', de: 'Lade Tracklist…' },
+  'track.notFound': { en: 'No tracklist found.', de: 'Keine Tracklist gefunden.' },
+  'a11y.preview': { en: 'Preview', de: 'Hörprobe' },
+  'a11y.likeSong': { en: 'Like song', de: 'Song liken' },
+  'reviews.none': { en: 'No reviews for this album yet.', de: 'Noch keine Reviews zu diesem Album.' },
+  'cover.none': { en: 'No covers found.', de: 'Keine Cover gefunden.' },
+  'diary.none': { en: 'No entries yet.', de: 'Noch keine Einträge.' },
+
+  // Wrapped
+  'wrapped.albumsAdded': { en: 'Albums added', de: 'Alben hinzugefügt' },
+  'wrapped.listenEntries': { en: 'Listening entries', de: 'Hör-Einträge' },
+  'wrapped.albumsTotal': { en: 'Albums total', de: 'Alben gesamt' },
+  'wrapped.avgRating': { en: 'Avg rating', de: 'Ø Bewertung' },
+  'wrapped.mostPlayed': { en: 'Most played ({n}×)', de: 'Meistgehört ({n}×)' },
+  'wrapped.topRated': { en: 'Top rated', de: 'Top bewertet' },
+  'wrapped.noData': { en: 'No data for {year} yet. Add albums and log what you listen to!', de: 'Noch keine Daten für {year}. Füg Alben hinzu und log, was du hörst!' },
+  'wrapped.valueHistory': { en: 'Collection value history', de: 'Sammlungswert-Verlauf' },
+  'wrapped.currentValue': { en: 'Current value: {v}. History grows from here – check back in a few days.', de: 'Aktueller Wert: {v}. Der Verlauf wächst ab jetzt – schau in ein paar Tagen wieder rein.' },
+
+  // Scan
+  'scan.unavailable': { en: 'Scanner unavailable – please type the barcode below.', de: 'Scanner nicht verfügbar – bitte Barcode unten eintippen.' },
+  'scan.nothingFound': { en: 'Nothing found. You can add the record manually.', de: 'Nichts gefunden. Du kannst die Platte manuell hinzufügen.' },
+  'scan.error': { en: 'Search error: {msg} – add manually if needed.', de: 'Fehler bei der Suche: {msg} – ggf. manuell hinzufügen.' },
+  'scan.starting': { en: 'Starting camera…', de: 'Kamera wird gestartet…' },
+  'scan.aim': { en: 'Hold the barcode inside the frame.', de: 'Halte den Barcode in den Rahmen.' },
+  'scan.searching': { en: 'Searching barcode {code}…', de: 'Suche Barcode {code}…' },
+  'scan.found': { en: 'Found!', de: 'Gefunden!' },
+
+  // Browse / Profil dynamisch
+  'btn.backArrow': { en: '‹ back', de: '‹ zurück' },
+  'browse.noPreview': { en: 'No preview available.', de: 'Keine Vorschau verfügbar.' },
+  'profile.nothingAdded': { en: 'Nothing added yet.', de: 'Noch nichts hinzugefügt.' },
+  'genre.loading': { en: 'Genres loading…', de: 'Genres werden geladen…' },
+  'genre.none': { en: 'No genre data available.', de: 'Keine Genre-Daten verfügbar.' },
+  'genre.moreLoading': { en: 'More genres loading…', de: 'Weitere Genres werden geladen…' },
+  'favsongs.none': { en: 'No favorite songs selected yet – edit via the gear icon above.', de: 'Noch keine Lieblingssongs gewählt – über das Zahnrad oben bearbeiten.' },
+  'songpicker.none': { en: "You haven't liked any songs yet. Like songs via the heart next to the tracks on an album page.", de: 'Du hast noch keine Songs gelikt. Like Songs über das Herz neben den Tracks auf einer Albumseite.' },
+  'value.noAlbums': { en: 'No albums in your collection yet.', de: 'Noch keine Alben in der Sammlung.' },
+  'value.note': { en: 'Market value approx. · automatic from Discogs · {valued}/{total} albums', de: 'Marktwert ca. · automatisch von Discogs · {valued}/{total} Alben' },
+  'value.updating': { en: '· updating…', de: '· aktualisiere…' },
+  'value.noMarketData': { en: 'No market data yet. Tip: enter your own prices in the album under "Edit details".', de: 'Noch keine Marktdaten. Tipp: eigene Preise im Album unter „Details bearbeiten" eintragen.' },
+  'value.to': { en: 'to', de: 'bis' },
+  'stat.notes': { en: 'Notes', de: 'Notizen' },
+
+  // Statistiken
+  'stat.albums': { en: 'Albums', de: 'Alben' },
+  'stat.rated': { en: 'Rated', de: 'Bewertet' },
+  'stat.avgRating': { en: 'Avg rating', de: 'Ø Bewertung' },
+  'stat.collection': { en: 'Collection', de: 'Sammlung' },
+  'stat.wishlist': { en: 'Wishlist', de: 'Wishlist' },
+  'stat.collectionValue': { en: 'Collection value', de: 'Sammlungswert' },
+  'stat.noRating': { en: 'No rating', de: 'Keine Bewertung' },
+
+  // Playlists
+  'pl.none': { en: 'No playlists yet. Create one above and add albums via "+ Playlist" on an album page.', de: 'Noch keine Playlists. Lege oben eine an und füge Alben über „+ Playlist" auf der Albumseite hinzu.' },
+  'pl.empty': { en: 'Empty. Add albums via "+ Playlist" on an album page.', de: 'Noch leer. Füge Alben über „+ Playlist" auf einer Albumseite hinzu.' },
+  'pl.emptyShort': { en: 'Empty.', de: 'Noch leer.' },
+  'btn.deleteSmall': { en: 'delete', de: 'löschen' },
+  'a11y.moveUp': { en: 'move up', de: 'nach oben' },
+  'a11y.moveDown': { en: 'move down', de: 'nach unten' },
+  'a11y.remove': { en: 'remove', de: 'entfernen' },
+
+  // Startseite
+  'greet.morning': { en: 'Good morning', de: 'Guten Morgen' },
+  'greet.noon': { en: 'Hello', de: 'Hallo' },
+  'greet.evening': { en: 'Good evening', de: 'Guten Abend' },
+  'htab.albums': { en: 'Albums', de: 'Alben' },
+  'htab.reviews': { en: 'Reviews', de: 'Reviews' },
+  'htab.lists': { en: 'Lists', de: 'Lists' },
+  'home.popular': { en: 'Popular this week', de: 'Beliebt diese Woche' },
+  'home.newReleases': { en: 'New releases {year}', de: 'Neu erschienen {year}' },
+  'home.newFromFriends': { en: 'New from friends', de: 'Neu von Freunden' },
+  'a11y.notifications': { en: 'Notifications', de: 'Benachrichtigungen' },
+  'home.noReviews': { en: 'No reviews yet. Follow people or write a review on an album page.', de: 'Noch keine Reviews. Folge Leuten oder schreibe selbst eine Review auf einer Album-Seite.' },
+  'home.signInFollow': { en: 'Sign in to follow friends and see their new additions.', de: 'Melde dich an, um Freunden zu folgen und ihre Neuzugänge zu sehen.' },
+  'home.signInLists': { en: 'Sign in to see lists from friends.', de: 'Melde dich an, um Listen von Freunden zu sehen.' },
+  'home.nothingFriends': { en: 'Nothing from friends yet.', de: 'Noch nichts von Freunden.' },
+  'list.fallbackName': { en: 'List', de: 'Liste' },
+  'unit.albumsCount': { en: '{n} albums', de: '{n} Alben' },
+
+  // Feed / Aktivität
+  'feed.listened': { en: 'listened', de: 'gehört' },
+  'feed.added': { en: 'added', de: 'hinzugefügt' },
+  'feed.by': { en: 'by', de: 'von' },
+  'feed.listenedOn': { en: 'listened on', de: 'gehört am' },
+
+  // Folgen
+  'btn.unfollow': { en: 'Unfollow', de: 'Entfolgen' },
+  'hint.findPeople': { en: 'Type a username to find people.', de: 'Tippe einen Username, um Leute zu finden.' },
+  'btn.moveToWishlist': { en: 'To wishlist', de: 'In Wishlist' },
+  'btn.moveToCollection': { en: 'To collection', de: 'In Collection' },
+  'share.suffix': { en: 'on Discend', de: 'auf Discend' },
+
+  // Suche – Platzhalter/Hinweise & Browse-Titel
+  'ph.searchGeneric': { en: 'Search…', de: 'Suchen…' },
+  'ph.searchArtist': { en: 'Search artist…', de: 'Künstler/in suchen…' },
+  'ph.searchMembers': { en: 'Search members…', de: 'Mitglieder suchen…' },
+  'ph.searchReviews': { en: 'Search reviews…', de: 'Reviews suchen…' },
+  'ph.searchPlaylists': { en: 'Search playlists…', de: 'Playlists suchen…' },
+  'hint.searchArtist': { en: 'Type an artist.', de: 'Tippe eine Künstler/in.' },
+  'hint.searchMembers': { en: 'Type a name or @username.', de: 'Tippe einen Namen oder @username.' },
+  'hint.searchReviews': { en: 'Search reviews by album or artist.', de: 'Suche Reviews nach Album oder Künstler/in.' },
+  'hint.searchPlaylists': { en: 'Search playlists by name.', de: 'Suche Playlists nach Name.' },
+  'msg.searching': { en: 'Searching…', de: 'Suche…' },
+  'msg.searchError': { en: 'Search error: {msg}', de: 'Fehler bei der Suche: {msg}' },
+  'misc.untitled': { en: '(untitled)', de: '(ohne Titel)' },
+  'browse.releaseYear': { en: 'Release year', de: 'Erscheinungsjahr' },
+  'browse.genre': { en: 'Genre', de: 'Genre' },
+  'browse.mostPopular': { en: 'Most Popular', de: 'Beliebt – meistgesammelt' },
+  'browse.highestRated': { en: 'Highest Rated', de: 'Am meisten begehrt' },
+  'browse.top500': { en: 'Top 500', de: 'Top 500 – meistgesammelt' },
+  'tab.release': { en: 'Release date', de: 'Erscheinungsdatum' },
+  'tab.genre': { en: 'Genre', de: 'Genre' },
+  'tab.popular': { en: 'Most Popular', de: 'Beliebteste' },
+  'tab.rated': { en: 'Highest Rated', de: 'Bestbewertet' },
+  'tab.top500': { en: 'Top 500', de: 'Top 500' },
+  'info.impressum': { en: 'Legal notice', de: 'Impressum' },
+  'info.privacy': { en: 'Privacy policy', de: 'Datenschutz' },
+  'info.faq': { en: 'FAQ', de: 'FAQ' },
+  'info.contact': { en: 'Contact', de: 'Kontakt' },
+  'info.genre': { en: 'Genre', de: 'Genre' },
+  'info.country': { en: 'Country', de: 'Land' },
+
+  // Auth (auth.js)
+  'auth.title.login': { en: 'Welcome back', de: 'Willkommen zurück' },
+  'auth.title.register': { en: 'Create account', de: 'Konto erstellen' },
+  'auth.title.forgot': { en: 'Reset password', de: 'Passwort zurücksetzen' },
+  'auth.title.update': { en: 'New password', de: 'Neues Passwort' },
+  'auth.err.deleteFailed': { en: 'Deletion failed: {msg}', de: 'Fehler beim Löschen: {msg}' },
+  'auth.err.backend': { en: 'Backend unreachable. Please try again later.', de: 'Backend nicht erreichbar. Bitte später erneut versuchen.' },
+  'auth.err.notConfirmed': { en: 'Please confirm the link in your confirmation email first.', de: 'Bitte bestätige zuerst den Link in deiner Bestätigungs-E-Mail.' },
+  'auth.msg.almostDone': { en: 'Almost there! Confirm the link in your email, then sign in.', de: 'Fast geschafft! Bestätige den Link in deiner E-Mail, dann anmelden.' },
+  'auth.msg.passwordChanged': { en: 'Password changed – you are signed in.', de: 'Passwort geändert – du bist angemeldet.' },
+  'auth.label.forgot': { en: 'Send reset link', de: 'Reset-Link senden' },
+  'auth.err.generic': { en: 'Error: {msg}', de: 'Fehler: {msg}' },
+  'auth.err.notSignedIn': { en: 'Not signed in.', de: 'Nicht angemeldet.' },
+  'auth.err.invalidLogin': { en: 'Email or password incorrect.', de: 'E-Mail oder Passwort falsch.' },
+  'auth.err.usernameRule': { en: 'Username: 3–20 characters, only letters, numbers, _', de: 'Username: 3–20 Zeichen, nur Buchstaben, Zahlen, _' },
+  'auth.err.pwMin': { en: 'Password: at least 6 characters.', de: 'Passwort: mindestens 6 Zeichen.' },
+  'auth.err.usernameTaken': { en: 'This username is already taken.', de: 'Dieser Username ist schon vergeben.' },
+  'auth.err.emailRegistered': { en: 'This email is already registered.', de: 'Diese E-Mail ist schon registriert.' },
+  'auth.err.mailFailed': { en: 'Could not send email: {msg}', de: 'Konnte Mail nicht senden: {msg}' },
+  'auth.msg.resetMaybe': { en: 'If the email exists, a reset link is on its way. Check your inbox.', de: 'Falls die E-Mail existiert, kommt ein Reset-Link. Schau in dein Postfach.' },
+};

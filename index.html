@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -16,12 +16,12 @@
 </head>
 <body>
   <header class="app-header">
-    <button id="header-settings" class="header-gear hidden" aria-label="Profil-Einstellungen">
+    <button id="header-settings" class="header-gear hidden" data-i18n-aria="a11y.profileSettings" aria-label="Profile settings">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
     <h1 id="view-title">Collection</h1>
     <div class="header-actions">
-      <button id="header-share" class="header-share hidden" aria-label="Profil teilen" title="Teilen">
+      <button id="header-share" class="header-share hidden" data-i18n-title="a11y.share" aria-label="Share">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
       </button>
       <span id="count-badge" class="badge"></span>
@@ -37,39 +37,39 @@
     <!-- Sammlung -->
     <section id="view-collection" class="view">
       <div class="toolbar">
-        <input type="search" id="search-collection" class="search" placeholder="Suchen (Künstler, Titel, Notiz…)" />
+        <input type="search" id="search-collection" class="search" data-i18n-ph="ph.searchCollection" placeholder="Search (artist, title, note…)" />
         <select id="sort-collection" class="sort">
-          <option value="artist">Künstler A–Z</option>
-          <option value="title">Titel A–Z</option>
-          <option value="rating">Bewertung</option>
-          <option value="year">Jahr</option>
-          <option value="added">Zuletzt hinzugefügt</option>
+          <option value="artist" data-i18n="sort.artist">Artist A–Z</option>
+          <option value="title" data-i18n="sort.title">Title A–Z</option>
+          <option value="rating" data-i18n="sort.rating">Rating</option>
+          <option value="year" data-i18n="sort.year">Year</option>
+          <option value="added" data-i18n="sort.added">Recently added</option>
         </select>
       </div>
       <div class="filterbar">
-        <button id="fav-collection" class="filter-toggle" aria-label="Nur Favoriten" title="Nur Favoriten">
+        <button id="fav-collection" class="filter-toggle" data-i18n-title="a11y.favOnly" aria-label="Favorites only">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/></svg>
         </button>
         <div id="ratingfilter-collection" class="rating-filter"></div>
-        <button id="ratingclear-collection" class="link-btn rating-clear-btn">alle</button>
+        <button id="ratingclear-collection" class="link-btn rating-clear-btn" data-i18n="btn.all">all</button>
       </div>
       <div id="value-collection" class="value-range value-collection"></div>
       <ul id="list-collection" class="record-list"></ul>
-      <p id="empty-collection" class="empty-hint hidden">Noch keine Platten. Scanne einen Barcode oder füge manuell hinzu.</p>
+      <p id="empty-collection" class="empty-hint hidden" data-i18n="empty.collection">No records yet. Scan a barcode or add one manually.</p>
     </section>
 
     <!-- Datenbank durchsuchen -->
     <section id="view-search" class="view">
       <div class="toolbar">
-        <input type="search" id="search-db" class="search" placeholder="Album suchen…" enterkeyhint="search" />
-        <button id="search-cancel" class="link-btn search-cancel hidden">Cancel</button>
+        <input type="search" id="search-db" class="search" data-i18n-ph="ph.searchAlbum" placeholder="Search album…" enterkeyhint="search" />
+        <button id="search-cancel" class="link-btn search-cancel hidden" data-i18n="btn.cancel">Cancel</button>
       </div>
       <div id="search-filters" class="search-filters hidden">
-        <button class="sfilter active" data-sf="alben">Alben</button>
-        <button class="sfilter" data-sf="artist">Künstler/in</button>
-        <button class="sfilter" data-sf="members">Members</button>
-        <button class="sfilter" data-sf="reviews">Reviews</button>
-        <button class="sfilter" data-sf="playlists">Playlists</button>
+        <button class="sfilter active" data-sf="alben" data-i18n="sf.albums">Albums</button>
+        <button class="sfilter" data-sf="artist" data-i18n="sf.artist">Artist</button>
+        <button class="sfilter" data-sf="members" data-i18n="sf.members">Members</button>
+        <button class="sfilter" data-sf="reviews" data-i18n="sf.reviews">Reviews</button>
+        <button class="sfilter" data-sf="playlists" data-i18n="sf.playlists">Playlists</button>
       </div>
       <div id="browse-content"></div>
       <p id="search-status" class="empty-hint"></p>
@@ -81,38 +81,38 @@
     <section id="view-add" class="view">
       <div class="scan-area">
         <div id="reader" class="hidden"></div>
-        <button id="btn-stop-scan" class="btn ghost hidden">Kamera stoppen</button>
+        <button id="btn-stop-scan" class="btn ghost hidden" data-i18n="add.stopCam">Stop camera</button>
         <div class="manual-barcode">
-          <input type="text" id="manual-barcode" inputmode="numeric" placeholder="Barcode-Nummer (EAN)" />
-          <button id="btn-start-scan" class="icon-scan-btn" aria-label="Mit Kamera scannen" title="Mit Kamera scannen">
+          <input type="text" id="manual-barcode" inputmode="numeric" data-i18n-ph="ph.barcode" placeholder="Barcode number (EAN)" />
+          <button id="btn-start-scan" class="icon-scan-btn" data-i18n-title="a11y.scanCam" aria-label="Scan with camera">
             <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="5" width="1.6" height="14" rx=".3"/><rect x="6.2" y="5" width="1" height="14" rx=".3"/><rect x="8.6" y="5" width="2.1" height="14" rx=".3"/><rect x="12.2" y="5" width="1" height="14" rx=".3"/><rect x="14.6" y="5" width="1.6" height="14" rx=".3"/><rect x="17.8" y="5" width="1" height="14" rx=".3"/><rect x="20.2" y="5" width="1.4" height="14" rx=".3"/></svg>
           </button>
-          <button id="btn-lookup-barcode" class="btn">Suchen</button>
+          <button id="btn-lookup-barcode" class="btn" data-i18n="btn.search">Search</button>
         </div>
         <p id="scan-status" class="scan-status"></p>
       </div>
-      <div class="add-divider"><span>oder manuell eingeben</span></div>
+      <div class="add-divider"><span data-i18n="add.orManual">or enter manually</span></div>
       <form id="manual-form" class="form">
-        <label>Künstler<input type="text" name="artist" required /></label>
-        <label>Titel<input type="text" name="title" required /></label>
-        <label>Jahr<input type="text" name="year" inputmode="numeric" /></label>
-        <label>Label<input type="text" name="label" /></label>
-        <label>Format<input type="text" name="format" placeholder="z. B. Vinyl, LP, Album" /></label>
-        <label>Barcode<input type="text" name="barcode" inputmode="numeric" /></label>
-        <label>Cover-URL<input type="url" name="coverUrl" placeholder="optional" /></label>
-        <label>Kaufpreis (€)<input type="number" name="price" step="0.01" inputmode="decimal" placeholder="optional" /></label>
-        <label>Notiz<textarea name="note" rows="3" placeholder="z. B. limited Edition"></textarea></label>
+        <label><span data-i18n="field.artist">Artist</span><input type="text" name="artist" required /></label>
+        <label><span data-i18n="field.title">Title</span><input type="text" name="title" required /></label>
+        <label><span data-i18n="field.year">Year</span><input type="text" name="year" inputmode="numeric" /></label>
+        <label><span data-i18n="field.label">Label</span><input type="text" name="label" /></label>
+        <label><span data-i18n="field.format">Format</span><input type="text" name="format" data-i18n-ph="ph.format" placeholder="e.g. Vinyl, LP, Album" /></label>
+        <label><span data-i18n="field.barcode">Barcode</span><input type="text" name="barcode" inputmode="numeric" /></label>
+        <label><span data-i18n="field.coverUrl">Cover URL</span><input type="url" name="coverUrl" data-i18n-ph="ph.optional" placeholder="optional" /></label>
+        <label><span data-i18n="field.price">Purchase price (€)</span><input type="number" name="price" step="0.01" inputmode="decimal" data-i18n-ph="ph.optional" placeholder="optional" /></label>
+        <label><span data-i18n="field.note">Note</span><textarea name="note" rows="3" data-i18n-ph="ph.noteExample" placeholder="e.g. limited edition"></textarea></label>
         <div class="rating-row">
-          <span class="rating-row-label">Bewertung</span>
+          <span class="rating-row-label" data-i18n="field.rating">Rating</span>
           <div id="manual-rating"></div>
-          <button type="button" id="manual-rating-clear" class="link-btn">zurücksetzen</button>
+          <button type="button" id="manual-rating-clear" class="link-btn" data-i18n="btn.reset">reset</button>
         </div>
         <fieldset class="target-pick">
-          <legend>Hinzufügen zu</legend>
-          <label class="radio"><input type="radio" name="list" value="collection" checked /> Collection</label>
-          <label class="radio"><input type="radio" name="list" value="wishlist" /> Wishlist</label>
+          <legend data-i18n="add.addTo">Add to</legend>
+          <label class="radio"><input type="radio" name="list" value="collection" checked /> <span data-i18n="list.collection">Collection</span></label>
+          <label class="radio"><input type="radio" name="list" value="wishlist" /> <span data-i18n="list.wishlist">Wishlist</span></label>
         </fieldset>
-        <button type="submit" class="btn primary">Speichern</button>
+        <button type="submit" class="btn primary" data-i18n="btn.save">Save</button>
       </form>
     </section>
 
@@ -120,9 +120,9 @@
     <section id="view-settings" class="view">
       <div class="profile">
         <div class="profile-tabs">
-          <button class="ptab active" data-ptab="profile">Profil</button>
-          <button class="ptab" data-ptab="playlist">Playlist</button>
-          <button class="ptab" data-ptab="watchlist">Wishlist</button>
+          <button class="ptab active" data-ptab="profile" data-i18n="ptab.profile">Profile</button>
+          <button class="ptab" data-ptab="playlist" data-i18n="ptab.playlist">Playlist</button>
+          <button class="ptab" data-ptab="watchlist" data-i18n="ptab.watchlist">Wishlist</button>
         </div>
 
         <div id="ptab-profile" class="ptab-panel active">
@@ -138,17 +138,17 @@
         <p class="profile-bio-display" id="profile-bio-display"></p>
 
         <div class="profile-section">
-          <span class="dp-label">Favoriten</span>
+          <span class="dp-label" data-i18n="lbl.favorites">Favorites</span>
           <div id="profile-favorites" class="fav-slots"></div>
         </div>
 
         <div class="profile-section">
-          <span class="dp-label">Lieblingssongs</span>
+          <span class="dp-label" data-i18n="lbl.favSongs">Favorite songs</span>
           <div id="profile-songs" class="fav-songs"></div>
         </div>
 
         <div class="profile-section">
-          <span class="dp-label">Zuletzt hinzugefügt</span>
+          <span class="dp-label" data-i18n="lbl.recentAdded">Recently added</span>
           <div id="recent-activity" class="recent-row"></div>
         </div>
 
@@ -159,59 +159,59 @@
         <ul class="stat-rows" id="stat-rows"></ul>
 
         <div class="profile-section">
-          <span class="dp-label">Sammlungswert (Marktschätzung)</span>
+          <span class="dp-label" data-i18n="lbl.collectionValue">Collection value (market estimate)</span>
           <div id="value-range" class="value-range"></div>
         </div>
 
         <div class="profile-section">
-          <span class="dp-label">Deine Genres</span>
+          <span class="dp-label" data-i18n="lbl.yourGenres">Your genres</span>
           <div id="genre-stats"></div>
         </div>
 
-        <button id="btn-wrapped" class="btn ghost wrapped-btn">📊 Discend Wrapped</button>
+        <button id="btn-wrapped" class="btn ghost wrapped-btn" data-i18n="btn.wrapped">📊 Discend Wrapped</button>
 
         <details class="profile-settings">
-          <summary>Backup</summary>
+          <summary data-i18n="sum.backup">Backup</summary>
           <div class="form">
-            <button id="btn-export" class="btn">Daten exportieren (JSON)</button>
-            <label class="btn import-label">Daten importieren
+            <button id="btn-export" class="btn" data-i18n="btn.exportData">Export data (JSON)</button>
+            <label class="btn import-label" data-i18n="btn.importData">Import data
               <input type="file" id="import-file" accept="application/json" hidden />
             </label>
-            <p class="hint">Sichere deine Sammlung als JSON-Datei (z. B. zum Übertragen).</p>
+            <p class="hint" data-i18n="hint.backup">Back up your collection as a JSON file (e.g. to transfer it).</p>
           </div>
         </details>
-        <button id="btn-logout" class="btn ghost logout-btn">Abmelden</button>
-        <p class="hint profile-version">Discend · Build 114</p>
+        <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
+        <p class="hint profile-version">Discend · Build 115</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
           <div class="pl-header">
-            <span class="pl-header-title">Deine Playlists</span>
-            <button id="btn-new-playlist" class="pl-add-btn" aria-label="Neue Playlist">+</button>
+            <span class="pl-header-title" data-i18n="pl.yourPlaylists">Your playlists</span>
+            <button id="btn-new-playlist" class="pl-add-btn" data-i18n-aria="a11y.newPlaylist" aria-label="New playlist">+</button>
           </div>
           <div id="playlists-container"></div>
         </div>
 
         <div id="ptab-watchlist" class="ptab-panel">
           <div class="toolbar">
-            <input type="search" id="search-wishlist" class="search" placeholder="Wishlist durchsuchen…" />
+            <input type="search" id="search-wishlist" class="search" data-i18n-ph="ph.searchWishlist" placeholder="Search wishlist…" />
             <select id="sort-wishlist" class="sort">
-              <option value="artist">Künstler A–Z</option>
-              <option value="title">Titel A–Z</option>
-              <option value="rating">Bewertung</option>
-              <option value="year">Jahr</option>
-              <option value="added">Zuletzt hinzugefügt</option>
+              <option value="artist" data-i18n="sort.artist">Artist A–Z</option>
+              <option value="title" data-i18n="sort.title">Title A–Z</option>
+              <option value="rating" data-i18n="sort.rating">Rating</option>
+              <option value="year" data-i18n="sort.year">Year</option>
+              <option value="added" data-i18n="sort.added">Recently added</option>
             </select>
           </div>
           <div class="filterbar">
-            <button id="fav-wishlist" class="filter-toggle" aria-label="Nur Favoriten" title="Nur Favoriten">
+            <button id="fav-wishlist" class="filter-toggle" data-i18n-title="a11y.favOnly" aria-label="Favorites only">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/></svg>
             </button>
             <div id="ratingfilter-wishlist" class="rating-filter"></div>
-            <button id="ratingclear-wishlist" class="link-btn rating-clear-btn">alle</button>
+            <button id="ratingclear-wishlist" class="link-btn rating-clear-btn" data-i18n="btn.all">all</button>
           </div>
           <ul id="list-wishlist" class="record-list"></ul>
-          <p id="empty-wishlist" class="empty-hint hidden">Deine Wishlist ist leer.</p>
+          <p id="empty-wishlist" class="empty-hint hidden" data-i18n="empty.wishlist">Your wishlist is empty.</p>
         </div>
       </div>
     </section>
@@ -220,37 +220,37 @@
   <!-- Login / Registrierung / Passwort-Reset (Vollbild-Overlay) -->
   <section id="auth-page" class="auth-page hidden">
     <div class="auth-card">
-      <button id="auth-close" class="auth-close" aria-label="Schließen">×</button>
+      <button id="auth-close" class="auth-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       <img class="auth-logo" src="icons/icon.svg?v=63" alt="Discend" />
-      <h2 id="auth-title" class="auth-title">Willkommen zurück</h2>
+      <h2 id="auth-title" class="auth-title" data-i18n="auth.welcomeBack">Welcome back</h2>
       <div id="auth-tabs" class="auth-tabs">
-        <button type="button" class="auth-tab active" data-mode="login">Anmelden</button>
-        <button type="button" class="auth-tab" data-mode="register">Registrieren</button>
+        <button type="button" class="auth-tab active" data-mode="login" data-i18n="auth.login">Sign in</button>
+        <button type="button" class="auth-tab" data-mode="register" data-i18n="auth.register">Sign up</button>
       </div>
       <form id="auth-form" class="auth-form" novalidate>
         <p id="auth-msg" class="auth-msg"></p>
-        <label id="auth-username-field" class="auth-field">Username
-          <input id="auth-username" type="text" autocomplete="username" placeholder="z. B. vinyljonas" />
+        <label id="auth-username-field" class="auth-field"><span data-i18n="auth.username">Username</span>
+          <input id="auth-username" type="text" autocomplete="username" data-i18n-ph="ph.usernameExample" placeholder="e.g. vinyljonas" />
         </label>
-        <label id="auth-email-field" class="auth-field">E-Mail
-          <input id="auth-email" type="email" autocomplete="email" placeholder="du@beispiel.de" />
+        <label id="auth-email-field" class="auth-field"><span data-i18n="auth.email">Email</span>
+          <input id="auth-email" type="email" autocomplete="email" data-i18n-ph="ph.emailExample" placeholder="you@example.com" />
         </label>
-        <label id="auth-password-field" class="auth-field">Passwort
-          <input id="auth-password" type="password" autocomplete="current-password" placeholder="mindestens 6 Zeichen" />
+        <label id="auth-password-field" class="auth-field"><span data-i18n="auth.password">Password</span>
+          <input id="auth-password" type="password" autocomplete="current-password" data-i18n-ph="ph.min6" placeholder="at least 6 characters" />
         </label>
-        <button type="submit" id="auth-submit" class="btn primary auth-submit">Anmelden</button>
-        <button type="button" id="auth-forgot" class="link-btn auth-forgot">Passwort vergessen?</button>
+        <button type="submit" id="auth-submit" class="btn primary auth-submit" data-i18n="auth.login">Sign in</button>
+        <button type="button" id="auth-forgot" class="link-btn auth-forgot" data-i18n="auth.forgot">Forgot password?</button>
       </form>
-      <button type="button" id="auth-guest" class="link-btn auth-guest">Als Gast weiterstöbern</button>
+      <button type="button" id="auth-guest" class="link-btn auth-guest" data-i18n="auth.guest">Continue as guest</button>
     </div>
   </section>
 
   <!-- Album-Detailseite (Vollbild) -->
   <section id="detail-page" class="detail-page hidden">
     <header class="detail-bar">
-      <button id="detail-back" class="icon-btn" aria-label="Zurück">‹</button>
+      <button id="detail-back" class="icon-btn" data-i18n-aria="a11y.back" aria-label="Back">‹</button>
       <div class="detail-bar-actions">
-        <button id="dp-menu" class="icon-btn" aria-label="Bearbeiten" title="Bearbeiten">
+        <button id="dp-menu" class="icon-btn" data-i18n-title="a11y.edit" aria-label="Edit">
           <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
         </button>
       </div>
@@ -260,7 +260,7 @@
         <div class="dp-cover-wrap">
           <div class="dp-cover" id="dp-cover"></div>
         </div>
-        <button id="dp-newcover" class="link-btn dp-newcover">Cover ändern</button>
+        <button id="dp-newcover" class="link-btn dp-newcover" data-i18n="dp.changeCover">Change cover</button>
         <h2 class="dp-title" id="dp-title"></h2>
         <p class="dp-artist" id="dp-artist"></p>
         <p class="dp-meta" id="dp-meta"></p>
@@ -274,23 +274,23 @@
       </div>
 
       <div class="dp-section" id="dp-community-section">
-        <span class="dp-label">Bewertungen</span>
+        <span class="dp-label" data-i18n="lbl.ratings">Ratings</span>
         <div id="dp-community"></div>
       </div>
 
       <div class="dp-section hidden" id="dp-info-section">
-        <span class="dp-label">Infos</span>
+        <span class="dp-label" data-i18n="lbl.info">Info</span>
         <div id="dp-info"></div>
       </div>
 
       <div class="dp-section">
-        <span class="dp-label">Tracklist</span>
+        <span class="dp-label" data-i18n="lbl.tracklist">Tracklist</span>
         <ol id="dp-tracklist" class="dp-tracklist"></ol>
         <p id="dp-tracklist-status" class="hint"></p>
       </div>
 
       <div class="dp-section" id="dp-reviews-section">
-        <span class="dp-label">Reviews</span>
+        <span class="dp-label" data-i18n="lbl.reviews">Reviews</span>
         <div id="dp-reviews"></div>
       </div>
 
@@ -301,67 +301,67 @@
         <div class="as-toggles">
           <button type="button" class="as-toggle" id="as-collection">
             <span class="as-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/></svg></span>
-            <span class="as-lbl">Sammlung</span>
+            <span class="as-lbl" data-i18n="as.collection">Collection</span>
           </button>
-          <button type="button" class="as-toggle" id="dp-like" aria-label="Gefällt mir">
+          <button type="button" class="as-toggle" id="dp-like" data-i18n-aria="a11y.like" aria-label="Like">
             <span class="as-ico"><svg class="heart-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/></svg></span>
-            <span class="as-lbl">Liked</span>
+            <span class="as-lbl" data-i18n="as.liked">Liked</span>
           </button>
           <button type="button" class="as-toggle" id="as-wishlist">
             <span class="as-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg></span>
-            <span class="as-lbl">Wishlist</span>
+            <span class="as-lbl" data-i18n="as.wishlist">Wishlist</span>
           </button>
         </div>
 
         <div class="as-rated">
-          <span class="dp-label">Bewertung</span>
+          <span class="dp-label" data-i18n="field.rating">Rating</span>
           <div class="rating-row">
             <div id="dp-rating"></div>
-            <button type="button" id="dp-rating-clear" class="link-btn">zurücksetzen</button>
+            <button type="button" id="dp-rating-clear" class="link-btn" data-i18n="btn.reset">reset</button>
           </div>
         </div>
 
       <div class="dp-section">
-        <span class="dp-label">Review (öffentlich)</span>
-        <textarea id="dp-review" rows="3" placeholder="Was denkst du über das Album? (für Freunde sichtbar)"></textarea>
+        <span class="dp-label" data-i18n="dp.reviewPublic">Review (public)</span>
+        <textarea id="dp-review" rows="3" data-i18n-ph="ph.reviewPublic" placeholder="What do you think of this album? (visible to friends)"></textarea>
       </div>
 
       <div class="dp-section">
-        <span class="dp-label">Notiz (privat)</span>
-        <textarea id="dp-note" rows="3" placeholder="z. B. limited Edition"></textarea>
+        <span class="dp-label" data-i18n="dp.notePrivate">Note (private)</span>
+        <textarea id="dp-note" rows="3" data-i18n-ph="ph.noteExample" placeholder="e.g. limited edition"></textarea>
         <div class="dp-save-row">
-          <button type="button" id="dp-add-playlist" class="btn ghost dp-save">+ Playlist</button>
-          <button id="dp-save" class="btn ghost dp-save">Speichern</button>
+          <button type="button" id="dp-add-playlist" class="btn ghost dp-save" data-i18n="btn.addPlaylist">+ Playlist</button>
+          <button id="dp-save" class="btn ghost dp-save" data-i18n="btn.save">Save</button>
         </div>
       </div>
 
       <div class="dp-section dp-preview-actions" id="dp-preview-actions">
-        <button type="button" id="dp-add-wishlist" class="btn ghost">Zur Wishlist</button>
-        <button type="button" id="dp-add-collection" class="btn primary">Zur Collection</button>
+        <button type="button" id="dp-add-wishlist" class="btn ghost" data-i18n="btn.toWishlist">To wishlist</button>
+        <button type="button" id="dp-add-collection" class="btn primary" data-i18n="btn.toCollection">To collection</button>
       </div>
 
       <div class="dp-section" id="dp-diary-section">
-        <span class="dp-label">Tagebuch (gehört am)</span>
+        <span class="dp-label" data-i18n="lbl.diary">Diary (listened on)</span>
         <div class="dp-diary-add">
           <input type="date" id="dp-play-date" />
-          <input type="text" id="dp-play-note" placeholder="Notiz (optional)" />
-          <button type="button" id="dp-play-add" class="btn ghost">Eintragen</button>
+          <input type="text" id="dp-play-note" data-i18n-ph="ph.noteOptional" placeholder="Note (optional)" />
+          <button type="button" id="dp-play-add" class="btn ghost" data-i18n="btn.diaryAdd">Add</button>
         </div>
         <ul id="dp-plays" class="dp-plays"></ul>
       </div>
 
       <details class="dp-edit">
-        <summary>Details bearbeiten</summary>
+        <summary data-i18n="sum.editDetails">Edit details</summary>
         <div class="form">
-          <label>Künstler<input type="text" id="dp-edit-artist" /></label>
-          <label>Titel<input type="text" id="dp-edit-title" /></label>
-          <label>Jahr<input type="text" id="dp-edit-year" inputmode="numeric" /></label>
-          <label>Label<input type="text" id="dp-edit-label" /></label>
-          <label>Format<input type="text" id="dp-edit-format" /></label>
-          <label>Barcode<input type="text" id="dp-edit-barcode" inputmode="numeric" /></label>
-          <label>Cover-URL<input type="url" id="dp-edit-cover" /></label>
-          <label>Kaufpreis (€)<input type="number" id="dp-edit-price" step="0.01" inputmode="decimal" /></label>
-          <label>Zustand Platte (Media)
+          <label><span data-i18n="field.artist">Artist</span><input type="text" id="dp-edit-artist" /></label>
+          <label><span data-i18n="field.title">Title</span><input type="text" id="dp-edit-title" /></label>
+          <label><span data-i18n="field.year">Year</span><input type="text" id="dp-edit-year" inputmode="numeric" /></label>
+          <label><span data-i18n="field.label">Label</span><input type="text" id="dp-edit-label" /></label>
+          <label><span data-i18n="field.format">Format</span><input type="text" id="dp-edit-format" /></label>
+          <label><span data-i18n="field.barcode">Barcode</span><input type="text" id="dp-edit-barcode" inputmode="numeric" /></label>
+          <label><span data-i18n="field.coverUrl">Cover URL</span><input type="url" id="dp-edit-cover" /></label>
+          <label><span data-i18n="field.price">Purchase price (€)</span><input type="number" id="dp-edit-price" step="0.01" inputmode="decimal" /></label>
+          <label><span data-i18n="field.mediaCond">Record condition (media)</span>
             <select id="dp-edit-media">
               <option value="">—</option>
               <option>Mint (M)</option>
@@ -374,7 +374,7 @@
               <option>Poor (P)</option>
             </select>
           </label>
-          <label>Zustand Hülle (Sleeve)
+          <label><span data-i18n="field.sleeveCond">Sleeve condition (sleeve)</span>
             <select id="dp-edit-sleeve">
               <option value="">—</option>
               <option>Mint (M)</option>
@@ -392,12 +392,12 @@
         </div>
       </details>
 
-        <button type="button" id="as-share" class="as-row">Teilen</button>
+        <button type="button" id="as-share" class="as-row" data-i18n="a11y.share">Share</button>
         <div class="dp-save-row dp-owner-actions">
           <button id="dp-move" class="btn ghost"></button>
-          <button id="dp-delete" class="btn ghost danger-text">Löschen</button>
+          <button id="dp-delete" class="btn ghost danger-text" data-i18n="btn.delete">Delete</button>
         </div>
-        <button type="button" id="as-done" class="as-done">Fertig</button>
+        <button type="button" id="as-done" class="as-done" data-i18n="btn.done">Done</button>
       </div><!-- /.as-sheet -->
       </dialog>
 
@@ -416,24 +416,24 @@
         </div>
       </div>
       <div class="rating-row">
-        <span class="rating-row-label">Bewertung</span>
+        <span class="rating-row-label" data-i18n="field.rating">Rating</span>
         <div id="result-rating"></div>
       </div>
-      <label class="detail-note-label">Notiz
-        <textarea id="result-note" rows="2" placeholder="z. B. limited Edition"></textarea>
+      <label class="detail-note-label"><span data-i18n="field.note">Note</span>
+        <textarea id="result-note" rows="2" data-i18n-ph="ph.noteExample" placeholder="e.g. limited edition"></textarea>
       </label>
       <div class="detail-actions">
-        <button type="button" id="btn-result-wishlist" class="btn ghost">Zur Wishlist</button>
-        <button type="button" id="btn-result-collection" class="btn primary">Zur Collection</button>
+        <button type="button" id="btn-result-wishlist" class="btn ghost" data-i18n="btn.toWishlist">To wishlist</button>
+        <button type="button" id="btn-result-collection" class="btn primary" data-i18n="btn.toCollection">To collection</button>
       </div>
-      <button type="button" id="btn-result-close" class="dialog-close" aria-label="Schließen">×</button>
+      <button type="button" id="btn-result-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
     </div>
   </dialog>
 
   <!-- Profil eines anderen Nutzers -->
   <section id="user-page" class="detail-page hidden">
     <header class="detail-bar">
-      <button id="user-back" class="icon-btn" aria-label="Zurück">‹</button>
+      <button id="user-back" class="icon-btn" data-i18n-aria="a11y.back" aria-label="Back">‹</button>
     </header>
     <div class="detail-scroll" id="user-scroll">
       <div class="profile-banner" id="up-banner"></div>
@@ -442,19 +442,19 @@
       <p class="up-handle" id="up-handle"></p>
       <p class="profile-meta-line up-center" id="up-meta"></p>
       <p class="profile-bio-display up-center" id="up-bio"></p>
-      <button id="up-follow" class="btn primary up-follow">Folgen</button>
+      <button id="up-follow" class="btn primary up-follow" data-i18n="btn.follow">Follow</button>
       <div class="profile-section">
-        <span class="dp-label">Favoriten</span>
+        <span class="dp-label" data-i18n="lbl.favorites">Favorites</span>
         <div id="up-favorites" class="fav-slots"></div>
       </div>
       <div class="profile-section">
-        <span class="dp-label">Statistiken</span>
+        <span class="dp-label" data-i18n="lbl.stats">Stats</span>
         <ul class="stat-rows" id="up-stats"></ul>
         <div id="up-collection" class="cat-covers uptab-panel hidden"></div>
         <div id="up-wishlist" class="cat-covers uptab-panel hidden"></div>
       </div>
       <div class="profile-section" id="up-lists-section" hidden>
-        <span class="dp-label">Playlists</span>
+        <span class="dp-label" data-i18n="lbl.playlists">Playlists</span>
         <div id="up-lists"></div>
       </div>
     </div>
@@ -463,10 +463,10 @@
   <dialog id="friends-dialog" class="dialog">
     <div class="friends-pick">
       <div class="friends-head">
-        <span>Freunde finden</span>
-        <button id="btn-friends-close" class="dialog-close" aria-label="Schließen">×</button>
+        <span data-i18n="dlg.findFriends">Find friends</span>
+        <button id="btn-friends-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
-      <input type="search" id="friends-search" class="search" placeholder="Username suchen…" autocomplete="off" />
+      <input type="search" id="friends-search" class="search" data-i18n-ph="ph.searchUsername" placeholder="Search username…" autocomplete="off" />
       <div id="friends-results" class="friends-results"></div>
     </div>
   </dialog>
@@ -474,8 +474,8 @@
   <dialog id="activity-dialog" class="dialog">
     <div class="activity-sheet">
       <div class="friends-head">
-        <span>Aktivität</span>
-        <button id="btn-activity-close" class="dialog-close" aria-label="Schließen">×</button>
+        <span data-i18n="dlg.activity">Activity</span>
+        <button id="btn-activity-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <button id="act-album" class="activity-album">
         <div class="chart-cover" id="act-cover"></div>
@@ -488,16 +488,16 @@
       <div id="act-rating" class="act-rating"></div>
       <p id="act-review" class="act-review"></p>
       <div class="act-actions">
-        <button id="act-like" class="like-btn" aria-label="Gefällt mir">
+        <button id="act-like" class="like-btn" data-i18n-aria="a11y.like" aria-label="Like">
           <svg class="heart-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/></svg>
         </button>
         <span id="act-like-count" class="act-like-count">0</span>
       </div>
-      <span class="dp-label act-comments-label">Kommentare</span>
+      <span class="dp-label act-comments-label" data-i18n="lbl.comments">Comments</span>
       <div id="act-comments" class="act-comments"></div>
       <div class="act-comment-add">
-        <input type="text" id="act-comment-input" placeholder="Kommentar schreiben…" autocomplete="off" />
-        <button id="act-comment-send" class="btn primary">Senden</button>
+        <input type="text" id="act-comment-input" data-i18n-ph="ph.writeComment" placeholder="Write a comment…" autocomplete="off" />
+        <button id="act-comment-send" class="btn primary" data-i18n="btn.send">Send</button>
       </div>
     </div>
   </dialog>
@@ -505,27 +505,27 @@
   <dialog id="wrapped-dialog" class="dialog">
     <div class="wrapped-sheet">
       <div class="friends-head">
-        <span id="wrapped-title">Discend Wrapped</span>
-        <button id="btn-wrapped-close" class="dialog-close" aria-label="Schließen">×</button>
+        <span id="wrapped-title" data-i18n="dlg.wrapped">Discend Wrapped</span>
+        <button id="btn-wrapped-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <div id="wrapped-body"></div>
     </div>
   </dialog>
 
   <nav class="tabbar">
-    <button class="tab active" data-view="home" aria-label="Start">
+    <button class="tab active" data-view="home" data-i18n-aria="a11y.home" aria-label="Home">
       <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.2 12 4l9 7.2"/><path d="M5.5 9.8V20h13V9.8"/></svg>
     </button>
-    <button class="tab" data-view="search" aria-label="Datenbank durchsuchen">
+    <button class="tab" data-view="search" data-i18n-aria="a11y.searchDb" aria-label="Search">
       <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
     </button>
-    <button class="tab" data-view="add" aria-label="Hinzufügen">
+    <button class="tab" data-view="add" data-i18n-aria="a11y.add" aria-label="Add">
       <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
     </button>
-    <button class="tab" data-view="collection" aria-label="Collection">
+    <button class="tab" data-view="collection" data-i18n-aria="title.collection" aria-label="Collection">
       <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="0.6" fill="currentColor" stroke="none"/></svg>
     </button>
-    <button class="tab" data-view="settings" aria-label="Mein Profil">
+    <button class="tab" data-view="settings" data-i18n-aria="a11y.myProfile" aria-label="My profile">
       <svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>
     </button>
   </nav>
@@ -534,65 +534,74 @@
   <dialog id="profile-settings-dialog" class="settings-sheet">
     <div class="set-wrap">
       <div class="set-bar">
-        <button type="button" id="ps-cancel" class="set-cancel">Cancel</button>
-        <span class="set-title">Settings</span>
-        <button type="button" id="ps-save" class="set-save">Save</button>
+        <button type="button" id="ps-cancel" class="set-cancel" data-i18n="btn.cancel">Cancel</button>
+        <span class="set-title" data-i18n="set.title">Settings</span>
+        <button type="button" id="ps-save" class="set-save" data-i18n="set.save">Save</button>
       </div>
       <div class="set-body">
         <!-- Haupt-Panel -->
         <div class="set-panel" id="ps-main">
-          <div class="set-signed">Angemeldet als <strong id="ps-signed-name"></strong></div>
-          <button type="button" class="set-row set-row-nav" id="ps-auth-open"><span>Passwort &amp; Anmeldung</span><span class="set-chev">›</span></button>
-          <button type="button" class="set-row set-signout" id="ps-signout">Abmelden</button>
+          <div class="set-signed"><span data-i18n="set.signedInAs">Signed in as</span> <strong id="ps-signed-name"></strong></div>
+          <button type="button" class="set-row set-row-nav" id="ps-auth-open"><span data-i18n="set.passwordAuth">Password &amp; sign-in</span><span class="set-chev">›</span></button>
 
-          <div class="set-section-label">Profil</div>
-          <div class="set-fields">
-            <label class="set-field"><span>Name</span><input type="text" id="ps-name" placeholder="Dein Name" /></label>
-            <label class="set-field"><span>E-Mail</span><input type="email" id="ps-email" readonly /></label>
-            <label class="set-field"><span>Ort</span><input type="text" id="ps-location" placeholder="z. B. Köln" /></label>
-            <label class="set-field"><span>Website</span><input type="url" id="ps-website" placeholder="https://…" /></label>
-            <label class="set-field set-field-bio"><span>Bio</span><textarea id="ps-bio" rows="3" placeholder="Über dich oder deine Sammlung"></textarea></label>
-            <label class="set-field set-check"><span>Sammlungswert verbergen</span><input type="checkbox" id="ps-hide-value" /></label>
+          <div class="set-row set-lang-row">
+            <span data-i18n="set.language">Language</span>
+            <div class="set-lang-pills">
+              <button type="button" class="set-lang-pill" data-lang="en" data-i18n="lang.english">English</button>
+              <button type="button" class="set-lang-pill" data-lang="de" data-i18n="lang.german">German</button>
+            </div>
           </div>
 
-          <div class="set-section-label">Lieblingsalben</div>
+          <button type="button" class="set-row set-signout" id="ps-signout" data-i18n="btn.signOut">Sign out</button>
+
+          <div class="set-section-label" data-i18n="set.profile">Profile</div>
+          <div class="set-fields">
+            <label class="set-field"><span data-i18n="set.name">Name</span><input type="text" id="ps-name" data-i18n-ph="ph.yourName" placeholder="Your name" /></label>
+            <label class="set-field"><span data-i18n="auth.email">Email</span><input type="email" id="ps-email" readonly /></label>
+            <label class="set-field"><span data-i18n="set.city">City</span><input type="text" id="ps-location" data-i18n-ph="ph.cityExample" placeholder="e.g. Cologne" /></label>
+            <label class="set-field"><span data-i18n="set.website">Website</span><input type="url" id="ps-website" placeholder="https://…" /></label>
+            <label class="set-field set-field-bio"><span data-i18n="set.bio">Bio</span><textarea id="ps-bio" rows="3" data-i18n-ph="ph.bio" placeholder="About you or your collection"></textarea></label>
+            <label class="set-field set-check"><span data-i18n="set.hideValue">Hide collection value</span><input type="checkbox" id="ps-hide-value" /></label>
+          </div>
+
+          <div class="set-section-label" data-i18n="set.favAlbums">Favorite albums</div>
           <div id="ps-favorites" class="fav-slots"></div>
-          <div class="set-section-label">Lieblingssongs</div>
+          <div class="set-section-label" data-i18n="set.favSongs">Favorite songs</div>
           <div id="ps-songs" class="fav-songs-edit"></div>
 
-          <div class="set-section-label">Profilbild &amp; Banner</div>
+          <div class="set-section-label" data-i18n="set.imageBanner">Profile picture &amp; banner</div>
           <div class="ps-images">
-            <button type="button" id="ps-avatar-btn" class="btn">Profilbild ändern</button>
-            <button type="button" id="ps-banner-btn" class="btn">Banner ändern</button>
+            <button type="button" id="ps-avatar-btn" class="btn" data-i18n="set.changeAvatar">Change profile picture</button>
+            <button type="button" id="ps-banner-btn" class="btn" data-i18n="set.changeBanner">Change banner</button>
           </div>
 
-          <div class="set-section-label">Daten</div>
-          <button type="button" id="btn-import-discogs" class="btn ghost set-wide">Discogs-Sammlung importieren</button>
+          <div class="set-section-label" data-i18n="set.data">Data</div>
+          <button type="button" id="btn-import-discogs" class="btn ghost set-wide" data-i18n="set.importDiscogs">Import Discogs collection</button>
 
-          <button type="button" class="set-row set-delete" id="ps-delete-open">Account löschen</button>
+          <button type="button" class="set-row set-delete" id="ps-delete-open" data-i18n="set.deleteAccount">Delete account</button>
         </div>
 
         <!-- Passwort & Anmeldung (slidet von rechts) -->
         <div class="set-panel" id="ps-auth-panel">
-          <button type="button" class="set-back" id="ps-auth-back">‹ Zurück</button>
-          <div class="set-section-label">Passwort ändern</div>
+          <button type="button" class="set-back" id="ps-auth-back" data-i18n="set.back">‹ Back</button>
+          <div class="set-section-label" data-i18n="set.changePassword">Change password</div>
           <div class="set-fields">
-            <label class="set-field"><span>Neues Passwort</span><input type="password" id="ps-newpw" placeholder="mind. 6 Zeichen" autocomplete="new-password" /></label>
+            <label class="set-field"><span data-i18n="set.newPassword">New password</span><input type="password" id="ps-newpw" data-i18n-ph="ph.min6" placeholder="at least 6 characters" autocomplete="new-password" /></label>
           </div>
-          <button type="button" id="ps-pw-save" class="btn primary set-wide">Passwort speichern</button>
-          <button type="button" id="ps-pw-reset" class="btn ghost set-wide">Reset-Link per E-Mail senden</button>
+          <button type="button" id="ps-pw-save" class="btn primary set-wide" data-i18n="set.savePassword">Save password</button>
+          <button type="button" id="ps-pw-reset" class="btn ghost set-wide" data-i18n="set.sendReset">Send reset link by email</button>
           <p id="ps-auth-msg" class="hint"></p>
-          <div class="set-section-label">Zwei-Faktor-Authentifizierung</div>
-          <p class="hint">Bald verfügbar.</p>
+          <div class="set-section-label" data-i18n="set.twoFactor">Two-factor authentication</div>
+          <p class="hint" data-i18n="set.comingSoon">Coming soon.</p>
         </div>
 
         <!-- Account löschen (slidet von rechts) -->
         <div class="set-panel" id="ps-delete-panel">
-          <button type="button" class="set-back" id="ps-del-back">‹ Zurück</button>
-          <div class="set-section-label">Account löschen</div>
-          <p class="hint">Dein Konto und alle Daten (Sammlung, Wishlist, Listen, Bewertungen, Reviews, Likes) werden unwiderruflich gelöscht. Das kann nicht rückgängig gemacht werden.</p>
-          <label class="set-field set-check"><span>Ich habe das zur Kenntnis genommen</span><input type="checkbox" id="ps-del-ack" /></label>
-          <button type="button" id="ps-del-confirm" class="btn set-wide set-danger" disabled>Account endgültig löschen</button>
+          <button type="button" class="set-back" id="ps-del-back" data-i18n="set.back">‹ Back</button>
+          <div class="set-section-label" data-i18n="set.deleteAccount">Delete account</div>
+          <p class="hint" data-i18n="set.deleteWarning">Your account and all data (collection, wishlist, lists, ratings, reviews, likes) will be permanently deleted. This cannot be undone.</p>
+          <label class="set-field set-check"><span data-i18n="set.deleteAck">I acknowledge this</span><input type="checkbox" id="ps-del-ack" /></label>
+          <button type="button" id="ps-del-confirm" class="btn set-wide set-danger" disabled data-i18n="set.deleteConfirm">Permanently delete account</button>
           <p id="ps-del-msg" class="hint"></p>
         </div>
       </div>
@@ -603,13 +612,13 @@
   <dialog id="create-playlist-dialog">
     <div class="cover-pick">
       <div class="cover-pick-head">
-        <span>Neue Playlist</span>
-        <button type="button" id="btn-create-pl-close" class="dialog-close" aria-label="Schließen">×</button>
+        <span data-i18n="dlg.newPlaylist">New playlist</span>
+        <button type="button" id="btn-create-pl-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <div class="pl-create">
-        <input type="text" id="new-playlist-name" placeholder="Name der Playlist" />
-        <textarea id="new-playlist-desc" rows="2" placeholder="Beschreibung (optional)"></textarea>
-        <button id="btn-create-playlist" class="btn primary">Anlegen</button>
+        <input type="text" id="new-playlist-name" data-i18n-ph="ph.playlistName" placeholder="Playlist name" />
+        <textarea id="new-playlist-desc" rows="2" data-i18n-ph="ph.descOptional" placeholder="Description (optional)"></textarea>
+        <button id="btn-create-playlist" class="btn primary" data-i18n="btn.create">Create</button>
       </div>
     </div>
   </dialog>
@@ -618,12 +627,12 @@
   <dialog id="playlist-dialog">
     <div class="cover-pick">
       <div class="cover-pick-head">
-        <span>Zu Playlist hinzufügen</span>
-        <button type="button" id="btn-playlist-close" class="dialog-close" aria-label="Schließen">×</button>
+        <span data-i18n="dlg.addToPlaylist">Add to playlist</span>
+        <button type="button" id="btn-playlist-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <div id="playlist-choice" class="playlist-choice"></div>
       <div class="pl-create">
-        <input type="text" id="pl-dialog-new" placeholder="Neue Playlist…" />
+        <input type="text" id="pl-dialog-new" data-i18n-ph="ph.newPlaylist" placeholder="New playlist…" />
         <button id="btn-pl-dialog-create" class="btn">+</button>
       </div>
     </div>
@@ -634,7 +643,7 @@
     <div class="wrapped-sheet">
       <div class="friends-head">
         <span id="plv-title"></span>
-        <button type="button" id="btn-plv-close" class="dialog-close" aria-label="Schließen">×</button>
+        <button type="button" id="btn-plv-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <p id="plv-desc" class="pl-desc"></p>
       <div id="plv-list"></div>
@@ -645,8 +654,8 @@
   <dialog id="fav-dialog">
     <div class="cover-pick">
       <div class="cover-pick-head">
-        <span>Favorit wählen</span>
-        <button type="button" id="btn-fav-close" class="dialog-close" aria-label="Schließen">×</button>
+        <span data-i18n="dlg.chooseFav">Choose favorite</span>
+        <button type="button" id="btn-fav-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <div id="fav-pick-grid" class="cover-grid"></div>
       <p id="fav-pick-status" class="hint"></p>
@@ -657,8 +666,8 @@
   <dialog id="song-dialog">
     <div class="cover-pick">
       <div class="cover-pick-head">
-        <span>Lieblingssong wählen</span>
-        <button type="button" id="btn-song-close" class="dialog-close" aria-label="Schließen">×</button>
+        <span data-i18n="dlg.chooseFavSong">Choose favorite song</span>
+        <button type="button" id="btn-song-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <div id="song-pick-list" class="song-pick-list"></div>
     </div>
@@ -668,8 +677,8 @@
   <dialog id="cover-dialog">
     <div class="cover-pick">
       <div class="cover-pick-head">
-        <span>Cover wählen</span>
-        <button type="button" id="btn-cover-close" class="dialog-close" aria-label="Schließen">×</button>
+        <span data-i18n="dlg.chooseCover">Choose cover</span>
+        <button type="button" id="btn-cover-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <div id="cover-grid" class="cover-grid"></div>
       <p id="cover-status" class="hint"></p>
