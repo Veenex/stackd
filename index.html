@@ -51,7 +51,6 @@
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/></svg>
         </button>
         <div id="ratingfilter-collection" class="rating-filter"></div>
-        <button id="ratingclear-collection" class="link-btn rating-clear-btn" data-i18n="btn.all">all</button>
       </div>
       <div id="value-collection" class="value-range value-collection"></div>
       <ul id="list-collection" class="record-list"></ul>
@@ -181,7 +180,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 115</p>
+        <p class="hint profile-version">Discend · Build 116</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -208,7 +207,6 @@
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/></svg>
             </button>
             <div id="ratingfilter-wishlist" class="rating-filter"></div>
-            <button id="ratingclear-wishlist" class="link-btn rating-clear-btn" data-i18n="btn.all">all</button>
           </div>
           <ul id="list-wishlist" class="record-list"></ul>
           <p id="empty-wishlist" class="empty-hint hidden" data-i18n="empty.wishlist">Your wishlist is empty.</p>
@@ -544,13 +542,7 @@
           <div class="set-signed"><span data-i18n="set.signedInAs">Signed in as</span> <strong id="ps-signed-name"></strong></div>
           <button type="button" class="set-row set-row-nav" id="ps-auth-open"><span data-i18n="set.passwordAuth">Password &amp; sign-in</span><span class="set-chev">›</span></button>
 
-          <div class="set-row set-lang-row">
-            <span data-i18n="set.language">Language</span>
-            <div class="set-lang-pills">
-              <button type="button" class="set-lang-pill" data-lang="en" data-i18n="lang.english">English</button>
-              <button type="button" class="set-lang-pill" data-lang="de" data-i18n="lang.german">German</button>
-            </div>
-          </div>
+          <button type="button" class="set-row set-row-nav" id="ps-lang-open"><span data-i18n="set.language">Language</span><span class="set-chev">›</span></button>
 
           <button type="button" class="set-row set-signout" id="ps-signout" data-i18n="btn.signOut">Sign out</button>
 
@@ -593,6 +585,14 @@
           <p id="ps-auth-msg" class="hint"></p>
           <div class="set-section-label" data-i18n="set.twoFactor">Two-factor authentication</div>
           <p class="hint" data-i18n="set.comingSoon">Coming soon.</p>
+        </div>
+
+        <!-- Sprache (slidet von rechts) -->
+        <div class="set-panel" id="ps-lang-panel">
+          <button type="button" class="set-back" id="ps-lang-back" data-i18n="set.back">‹ Back</button>
+          <div class="set-section-label" data-i18n="set.language">Language</div>
+          <button type="button" class="set-row set-lang-opt" data-lang="en"><span data-i18n="lang.english">English</span><span class="set-lang-check">✓</span></button>
+          <button type="button" class="set-row set-lang-opt" data-lang="de"><span data-i18n="lang.german">German</span><span class="set-lang-check">✓</span></button>
         </div>
 
         <!-- Account löschen (slidet von rechts) -->

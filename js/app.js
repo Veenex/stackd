@@ -234,7 +234,6 @@ const ratingFilterWidget = {};
     ratingFilter[list] = v;
     renderList(list);
   });
-  $(`#ratingclear-${list}`).addEventListener('click', () => ratingFilterWidget[list].setValue(0));
 });
 
 // ---------- Album-Detailseite ----------
@@ -1761,7 +1760,7 @@ function downscaleImage(file, maxW, quality) {
 
 function openProfileSettings() {
   const p = getProfile() || {};
-  $('#profile-settings-dialog').classList.remove('show-auth', 'show-delete');
+  $('#profile-settings-dialog').classList.remove('show-auth', 'show-delete', 'show-lang');
   $('#ps-signed-name').textContent = p.display_name || p.username || '';
   $('#ps-name').value = p.display_name || p.username || '';
   $('#ps-email').value = (getUser() && getUser().email) || '';
@@ -1772,7 +1771,7 @@ function openProfileSettings() {
   $('#ps-hide-value').checked = !!p.hide_value;
   renderFavoritesEdit();
   renderFavoriteSongsEdit();
-  $$('.set-lang-pill').forEach((b) => b.classList.toggle('active', b.dataset.lang === getLang()));
+  $$('.set-lang-opt').forEach((b) => b.classList.toggle('active', b.dataset.lang === getLang()));
   $('#profile-settings-dialog').showModal();
 }
 $('#header-settings').addEventListener('click', openProfileSettings);
@@ -2436,10 +2435,12 @@ function closeUserProfile() {
 // ---------- Start ----------
 document.documentElement.lang = getLang();
 applyI18n();
-// Sprach-Umschalter in den Einstellungen
-$$('.set-lang-pill').forEach((b) => b.addEventListener('click', () => {
+// Sprach-Menü in den Einstellungen (slidet wie „Passwort & Anmeldung")
+$('#ps-lang-open').addEventListener('click', () => $('#profile-settings-dialog').classList.add('show-lang'));
+$('#ps-lang-back').addEventListener('click', () => $('#profile-settings-dialog').classList.remove('show-lang'));
+$$('.set-lang-opt').forEach((b) => b.addEventListener('click', () => {
   setLang(b.dataset.lang);
-  $$('.set-lang-pill').forEach((x) => x.classList.toggle('active', x.dataset.lang === getLang()));
+  $$('.set-lang-opt').forEach((x) => x.classList.toggle('active', x.dataset.lang === getLang()));
 }));
 // Bei Sprachwechsel die sichtbare Ansicht neu aufbauen (dynamische Texte)
 document.addEventListener('langchange', () => { switchView(currentView); });
