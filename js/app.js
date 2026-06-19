@@ -100,6 +100,14 @@ function escapeHtml(s) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// ---------- Skeleton-Loader (Platzhalter beim Laden) ----------
+const rep = (n, fn) => Array.from({ length: n }, (_, i) => fn(i)).join('');
+const skelCharts = (n = 6) => rep(n, () => '<div class="skel-chart"><span class="skel skel-cover"></span><span class="skel skel-line sk-80"></span><span class="skel skel-line sk-60"></span></div>');
+const skelRevs = (n = 4) => rep(n, () => '<div class="skel-rev"><span class="skel skel-cover"></span><div class="skel-body"><span class="skel skel-line sk-80"></span><span class="skel skel-line sk-40"></span><span class="skel skel-line"></span></div></div>');
+const skelLists = (n = 4) => rep(n, () => '<div class="skel-listrow"><span class="skel skel-cover"></span><div class="skel-body"><span class="skel skel-line sk-60"></span><span class="skel skel-line sk-40"></span></div></div>');
+const skelGrid = (n = 12) => `<div class="browse-grid">${rep(n, () => '<span class="skel skel-grid-cell"></span>')}</div>`;
+const skelSearchResults = (n = 6) => `<ul class="search-results">${rep(n, () => '<li class="skel-sr"><span class="skel skel-cover"></span><div class="skel-body"><span class="skel skel-line sk-80"></span><span class="skel skel-line sk-40"></span></div></li>')}</ul>`;
+
 // ---------- Bewertung mit Musiknoten (0,5–5) ----------
 const NOTE_PATH = 'M19.952 1.651a.75.75 0 0 1 .298.599V16.303a3 3 0 0 1-2.176 2.884l-1.32.377a2.553 2.553 0 1 1-1.403-4.909l2.311-.66a1.5 1.5 0 0 0 1.088-1.442V6.994l-9 2.572v9.737a3 3 0 0 1-2.176 2.884l-1.32.377a2.553 2.553 0 1 1-1.402-4.909l2.31-.66a1.5 1.5 0 0 0 1.088-1.442V5.25a.75.75 0 0 1 .544-.721l10.5-3a.75.75 0 0 1 .658.122Z';
 const noteSvg = () => `<svg viewBox="0 0 24 24" fill="currentColor"><path d="${NOTE_PATH}"/></svg>`;
@@ -426,11 +434,11 @@ let communityReq = 0;
 async function renderCommunityRating(item) {
   const el = $('#dp-community'); if (!el) return;
   const rq = ++communityReq;
-  el.innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
+  el.innerHTML = '<span class="skel" style="display:block;height:58px;border-radius:10px"></span>';
   let ratings = [];
   try { ratings = await fetchAlbumRatings(item); } catch { /* ignorieren */ }
   if (rq !== communityReq) return;
-  if (!ratings.length) { el.innerHTML = '<p class="hint">Noch keine Bewertungen. Sei die/der Erste!</p>'; return; }
+  if (!ratings.length) { el.innerHTML = `<p class="hint">${tr('community.none')}</p>`; return; }
   const buckets = new Array(10).fill(0); // 0=0,5 … 9=5,0
   ratings.forEach((r) => { const i = Math.round(r * 2) - 1; if (i >= 0 && i < 10) buckets[i]++; });
   const maxN = Math.max(...buckets, 1);
@@ -441,7 +449,7 @@ async function renderCommunityRating(item) {
       <div class="cr-bars">${bars}</div>
       <div class="cr-side"><span class="cr-avg">${avg.toFixed(1)}</span><span class="cr-stars">${ratingDisplayHtml(Math.round(avg * 2) / 2)}</span></div>
     </div>
-    <p class="cr-count">${ratings.length} ${ratings.length === 1 ? 'Bewertung' : 'Bewertungen'}</p>`;
+    <p class="cr-count">${ratings.length} ${ratings.length === 1 ? tr('unit.rating') : tr('unit.ratings')}</p>`;
 }
 
 // Öffentliche Reviews aller Nutzer unter dem Album.
@@ -450,7 +458,7 @@ let albumReviewsCache = [];
 async function renderAlbumReviews(item) {
   const el = $('#dp-reviews'); if (!el) return;
   const rq = ++reviewsReq;
-  el.innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
+  el.innerHTML = skelRevs(2);
   let revs = [];
   try { revs = await fetchAlbumReviews(item); } catch { /* ignorieren */ }
   if (rq !== reviewsReq) return;
@@ -1095,7 +1103,7 @@ async function browseCovers(params, title, backFn) {
   const c = $('#browse-content');
   const head = (extra) => `${backFn ? `<button class="browse-back" id="browse-back">${tr('btn.backArrow')}</button>` : ''}<p class="browse-title">${escapeHtml(title)}</p>${extra}`;
   const wireBack = () => { if (backFn) { const b = $('#browse-back'); if (b) b.addEventListener('click', backFn); } };
-  c.innerHTML = head(`<p class="hint">${tr('msg.loading')}</p>`);
+  c.innerHTML = head(skelGrid());
   wireBack();
   let res;
   try {
@@ -1177,8 +1185,8 @@ function renderSearchResults() {
 
 async function runDbSearchWith(params) {
   if (currentView !== 'search') switchView('search');
-  $('#browse-content').innerHTML = '';
-  $('#search-status').textContent = tr('msg.searching');
+  $('#browse-content').innerHTML = skelSearchResults();
+  $('#search-status').textContent = '';
   try {
     searchResults = dedupeAlbums(await discogsSearch(params));
     renderSearchResults();
@@ -1264,7 +1272,7 @@ function runSearch() {
 
 async function runMemberSearch(q) {
   const c = $('#browse-content'); $('#search-status').textContent = '';
-  c.innerHTML = `<p class="hint">${tr('msg.searching')}</p>`;
+  c.innerHTML = `<div class="lists-wrap">${skelLists()}</div>`;
   let users = [];
   try { users = await searchUsers(q); } catch { /* ignorieren */ }
   if (!users.length) { c.innerHTML = ''; $('#search-status').textContent = tr('search.nobodyFound'); return; }
@@ -1283,7 +1291,7 @@ async function runMemberSearch(q) {
 
 async function runReviewSearch(q) {
   const c = $('#browse-content'); $('#search-status').textContent = '';
-  c.innerHTML = `<p class="hint">${tr('msg.searching')}</p>`;
+  c.innerHTML = `<div class="rev-list">${skelRevs()}</div>`;
   let revs = [];
   try { revs = await searchReviews(q); } catch { /* ignorieren */ }
   if (!revs.length) { c.innerHTML = ''; $('#search-status').textContent = tr('search.noReviews'); return; }
@@ -1294,7 +1302,7 @@ async function runReviewSearch(q) {
 
 async function runPlaylistSearch(q) {
   const c = $('#browse-content'); $('#search-status').textContent = '';
-  c.innerHTML = `<p class="hint">${tr('msg.searching')}</p>`;
+  c.innerHTML = `<div class="lists-wrap">${skelLists()}</div>`;
   let lists = [];
   try { lists = await searchPlaylists(q); } catch { /* ignorieren */ }
   if (!lists.length) { c.innerHTML = ''; $('#search-status').textContent = tr('search.noPlaylists'); return; }
@@ -2054,9 +2062,9 @@ function renderHomeAlben(body) {
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9z"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
       '</button>' +
     '</div>' +
-    `<div class="home-section"><span class="dp-label">${tr('home.popular')}</span><ol id="home-pop-list" class="chart-list"><li class="hint">${tr('msg.loading')}</li></ol></div>` +
+    `<div class="home-section"><span class="dp-label">${tr('home.popular')}</span><ol id="home-pop-list" class="chart-list">${skelCharts()}</ol></div>` +
     `<div class="home-section"><span class="dp-label">${tr('home.newFromFriends')}</span><div id="home-friends" class="home-friends"></div></div>` +
-    `<div class="home-section"><span class="dp-label">${tr('home.newReleases', { year: new Date().getFullYear() })}</span><ol id="home-new-list" class="chart-list"><li class="hint">${tr('msg.loading')}</li></ol></div>`;
+    `<div class="home-section"><span class="dp-label">${tr('home.newReleases', { year: new Date().getFullYear() })}</span><ol id="home-new-list" class="chart-list">${skelCharts()}</ol></div>`;
 
   // Begrüßung je nach Tageszeit + Profilbild im Dusty-Rose-Rahmen
   const p = getProfile() || {};
@@ -2082,7 +2090,7 @@ function renderHomeAlben(body) {
 
 // „Reviews" = Reviews von Gefolgten zuerst, danach allgemein neueste.
 async function renderHomeReviews(body) {
-  body.innerHTML = `<div class="rev-list"><p class="hint">${tr('msg.loading')}</p></div>`;
+  body.innerHTML = `<div class="rev-list">${skelRevs()}</div>`;
   const wrap = body.querySelector('.rev-list');
   let revs = [];
   try { revs = await fetchReviewsFeed(30); } catch { /* ignorieren */ }
@@ -2132,7 +2140,7 @@ async function renderHomeLists(body) {
     const b = body.querySelector('#lists-cta'); if (b) b.onclick = () => openAuth('login');
     return;
   }
-  body.innerHTML = `<div class="lists-wrap"><p class="hint">${tr('msg.loading')}</p></div>`;
+  body.innerHTML = `<div class="lists-wrap">${skelLists()}</div>`;
   const wrap = body.querySelector('.lists-wrap');
   let lists = [];
   try { lists = await fetchFriendsLists(20); } catch { /* ignorieren */ }
@@ -2212,7 +2220,7 @@ async function renderFriendsRow() {
     const b = el.querySelector('#friends-cta'); if (b) b.onclick = () => openAuth('login');
     return;
   }
-  el.innerHTML = `<div class="home-empty-card">${tr('msg.loading')}</div>`;
+  el.innerHTML = skelCharts(5);
   let feed = [];
   try { feed = await fetchFriendsFeed(20); } catch { /* ignorieren */ }
   if (!feed.length) {

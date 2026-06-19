@@ -281,6 +281,9 @@ export const DICT = {
   'a11y.preview': { en: 'Preview', de: 'Hörprobe' },
   'a11y.likeSong': { en: 'Like song', de: 'Song liken' },
   'reviews.none': { en: 'No reviews for this album yet.', de: 'Noch keine Reviews zu diesem Album.' },
+  'community.none': { en: 'No ratings yet. Be the first!', de: 'Noch keine Bewertungen. Sei die/der Erste!' },
+  'unit.rating': { en: 'rating', de: 'Bewertung' },
+  'unit.ratings': { en: 'ratings', de: 'Bewertungen' },
   'cover.none': { en: 'No covers found.', de: 'Keine Cover gefunden.' },
   'diary.none': { en: 'No entries yet.', de: 'Noch keine Einträge.' },
 
