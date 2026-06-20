@@ -135,6 +135,15 @@ function dismissOnboard() {
   const el = document.getElementById('onboard'); if (el) el.remove();
 }
 
+// Kleine „Pop"-Animation auf dem Herz-Icon, wenn ein Like aktiviert wird.
+function popHeart(scopeEl) {
+  const ic = scopeEl && scopeEl.querySelector('svg');
+  if (!ic) return;
+  ic.classList.remove('heart-pop'); void ic.offsetWidth; // Reflow → Animation neu starten
+  ic.classList.add('heart-pop');
+  ic.addEventListener('animationend', () => ic.classList.remove('heart-pop'), { once: true });
+}
+
 // ---------- Bewertung mit Musiknoten (0,5–5) ----------
 const NOTE_PATH = 'M19.952 1.651a.75.75 0 0 1 .298.599V16.303a3 3 0 0 1-2.176 2.884l-1.32.377a2.553 2.553 0 1 1-1.403-4.909l2.311-.66a1.5 1.5 0 0 0 1.088-1.442V6.994l-9 2.572v9.737a3 3 0 0 1-2.176 2.884l-1.32.377a2.553 2.553 0 1 1-1.402-4.909l2.31-.66a1.5 1.5 0 0 0 1.088-1.442V5.25a.75.75 0 0 1 .544-.721l10.5-3a.75.75 0 0 1 .658.122Z';
 const noteSvg = () => `<svg viewBox="0 0 24 24" fill="currentColor"><path d="${NOTE_PATH}"/></svg>`;
@@ -288,6 +297,11 @@ function setDetailCover(url) {
   cover.innerHTML = url
     ? `<img src="${escapeHtml(url)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.remove();" />`
     : '';
+  const heroBg = $('#dp-hero-bg');
+  if (heroBg) {
+    heroBg.style.backgroundImage = url ? `url("${url}")` : '';
+    heroBg.classList.toggle('has-bg', !!url);
+  }
 }
 
 // Farbe der herausschauenden Vinyl-Scheibe setzen
@@ -645,7 +659,7 @@ async function loadTracklist(item) {
     if (!requireAuth()) return;
     const t = tracks.find((x) => String(x.position) === b.dataset.pos) || { position: b.dataset.pos };
     const res = await toggleSongLike(item, t);
-    if (res !== null) b.classList.toggle('liked', res);
+    if (res !== null) { b.classList.toggle('liked', res); if (res) popHeart(b); }
   }));
   // Gelikte Songs nicht-blockierend nachladen und markieren.
   fetchSongLikes(item.sourceId).then((likes) => {
@@ -741,6 +755,7 @@ $('#dp-like').addEventListener('click', () => {
   if (!requireAuth()) return; // Gäste: erst anmelden
   dpLiked = !dpLiked;
   $('#dp-like').classList.toggle('liked', dpLiked);
+  if (dpLiked) popHeart($('#dp-like'));
   if (editing) updateItem(editing.list, editing.id, { liked: dpLiked }); // sofort speichern
 });
 
@@ -2502,6 +2517,7 @@ $('#act-like').addEventListener('click', async () => {
   const res = await toggleActivityLike(activityItem.id);
   if (res === null) return;
   $('#act-like').classList.toggle('liked', res);
+  if (res) popHeart($('#act-like'));
   try { const li = await fetchLikeInfo(activityItem.id); $('#act-like-count').textContent = li.count; } catch { /* ignorieren */ }
 });
 $('#act-comment-send').addEventListener('click', async () => {

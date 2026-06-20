@@ -173,6 +173,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 .onboard-step span:last-child { color: var(--text); font-size: 14.5px; line-height: 1.35; }
 .onboard-cta { width: 100%; }
 
+/* ---------- Like-Animation ---------- */
+@keyframes heart-pop { 0% { transform: scale(1); } 35% { transform: scale(1.4); } 70% { transform: scale(.88); } 100% { transform: scale(1); } }
+.heart-pop { animation: heart-pop .4s ease; transform-origin: center; }
+
 /* Bewertung mit Musiknoten */
 .note-slot { position: relative; display: inline-block; line-height: 0; }
 .note-empty { display: block; color: #3b4658; }
@@ -477,7 +481,20 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
   padding: 18px 16px calc(80px + var(--safe-bottom));
   -webkit-overflow-scrolling: touch;
 }
-.dp-hero { text-align: center; }
+.dp-hero { position: relative; text-align: center; }
+.dp-hero > *:not(.dp-hero-bg) { position: relative; z-index: 1; }
+.dp-hero-bg {
+  position: absolute; top: -18px; left: -16px; right: -16px; height: 340px;
+  background-size: cover; background-position: center;
+  filter: blur(40px) saturate(1.6); opacity: 0;
+  transform: scale(1.15); z-index: 0; pointer-events: none;
+  transition: opacity .4s ease;
+}
+.dp-hero-bg.has-bg { opacity: .5; }
+.dp-hero-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(20,24,28,.2) 0%, var(--bg) 90%);
+}
 .dp-cover-wrap {
   position: relative;
   width: min(78%, 320px);
