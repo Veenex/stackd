@@ -11,6 +11,10 @@ let currentProfile = null;
 let onChangeCb = null;
 let mode = 'login'; // 'login' | 'register' | 'forgot' | 'update'
 
+// Reset-Link FRÜH erkennen – bevor der Supabase-Client die URL verarbeitet und leert.
+const RECOVERY_LINK = typeof location !== 'undefined'
+  && /type=recovery/.test((location.hash || '') + '&' + (location.search || ''));
+
 export function getUser() { return currentUser; }
 export function getProfile() { return currentProfile; }
 
@@ -38,6 +42,8 @@ export async function initAuth({ onChange } = {}) {
   }
   const { data } = await sb.auth.getSession();
   await setSession(data.session);
+  // Reset-Link: zuverlässig „Neues Passwort"-Fenster öffnen (Event kann zu früh feuern).
+  if (RECOVERY_LINK && currentUser) openAuth('update');
   sb.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') openAuth('update');
     await setSession(session);
