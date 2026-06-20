@@ -108,6 +108,33 @@ const skelLists = (n = 4) => rep(n, () => '<div class="skel-listrow"><span class
 const skelGrid = (n = 12) => `<div class="browse-grid">${rep(n, () => '<span class="skel skel-grid-cell"></span>')}</div>`;
 const skelSearchResults = (n = 6) => `<ul class="search-results">${rep(n, () => '<li class="skel-sr"><span class="skel skel-cover"></span><div class="skel-body"><span class="skel skel-line sk-80"></span><span class="skel skel-line sk-40"></span></div></li>')}</ul>`;
 
+// ---------- Einheitlicher Empty State ----------
+const ES_DISC = '<span class="es-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4"/></svg></span>';
+function emptyState({ icon = ES_DISC, title = '', text = '', ctaLabel = '', ctaAttr = '' } = {}) {
+  return `<div class="empty-state">${icon}`
+    + (title ? `<p class="es-title">${escapeHtml(title)}</p>` : '')
+    + (text ? `<p class="es-text">${escapeHtml(text)}</p>` : '')
+    + (ctaLabel ? `<button class="btn primary es-cta" ${ctaAttr}>${escapeHtml(ctaLabel)}</button>` : '')
+    + '</div>';
+}
+
+// ---------- Onboarding (einmalige Willkommens-Karte) ----------
+const ONBOARD_KEY = 'discend_onboarded';
+function onboardCardHtml() {
+  if (localStorage.getItem(ONBOARD_KEY)) return '';
+  const step = (n, txt) => `<div class="onboard-step"><span class="onboard-num">${n}</span><span>${escapeHtml(txt)}</span></div>`;
+  return `<div class="onboard" id="onboard">
+      <button class="onboard-x" id="onboard-x" aria-label="${tr('a11y.close')}">×</button>
+      <p class="onboard-title">${escapeHtml(tr('onboard.title'))}</p>
+      <div class="onboard-steps">${step(1, tr('onboard.step1'))}${step(2, tr('onboard.step2'))}${step(3, tr('onboard.step3'))}</div>
+      <button class="btn primary onboard-cta" id="onboard-go">${escapeHtml(tr('onboard.cta'))}</button>
+    </div>`;
+}
+function dismissOnboard() {
+  try { localStorage.setItem(ONBOARD_KEY, '1'); } catch { /* voll */ }
+  const el = document.getElementById('onboard'); if (el) el.remove();
+}
+
 // ---------- Bewertung mit Musiknoten (0,5–5) ----------
 const NOTE_PATH = 'M19.952 1.651a.75.75 0 0 1 .298.599V16.303a3 3 0 0 1-2.176 2.884l-1.32.377a2.553 2.553 0 1 1-1.403-4.909l2.311-.66a1.5 1.5 0 0 0 1.088-1.442V6.994l-9 2.572v9.737a3 3 0 0 1-2.176 2.884l-1.32.377a2.553 2.553 0 1 1-1.402-4.909l2.31-.66a1.5 1.5 0 0 0 1.088-1.442V5.25a.75.75 0 0 1 .544-.721l10.5-3a.75.75 0 0 1 .658.122Z';
 const noteSvg = () => `<svg viewBox="0 0 24 24" fill="currentColor"><path d="${NOTE_PATH}"/></svg>`;
@@ -189,10 +216,6 @@ function recordItemHtml(item) {
     </li>`;
 }
 
-const EMPTY_TEXT = {
-  collection: 'empty.collection',
-  wishlist: 'empty.wishlist',
-};
 
 function renderList(list) {
   const query = $(`#search-${list}`).value;
@@ -209,7 +232,15 @@ function renderList(list) {
   ul.innerHTML = items.map(recordItemHtml).join('');
 
   const hint = $(`#empty-${list}`);
-  hint.textContent = getList(list).length === 0 ? tr(EMPTY_TEXT[list]) : tr('list.noMatches');
+  if (getList(list).length === 0) {
+    hint.innerHTML = list === 'collection'
+      ? emptyState({ title: tr('empty.collectionTitle'), text: tr('empty.collectionText'), ctaLabel: tr('empty.collectionCta'), ctaAttr: 'data-go="add"' })
+      : emptyState({ title: tr('empty.wishlistTitle'), text: tr('empty.wishlistText'), ctaLabel: tr('empty.wishlistCta'), ctaAttr: 'data-go="search"' });
+    const cta = hint.querySelector('.es-cta');
+    if (cta) cta.onclick = () => switchView(cta.dataset.go);
+  } else {
+    hint.innerHTML = `<p class="es-text">${escapeHtml(tr('list.noMatches'))}</p>`;
+  }
   hint.classList.toggle('hidden', items.length > 0);
 
   ul.querySelectorAll('.tile').forEach((el) => {
@@ -1908,7 +1939,7 @@ function renderPlaylists() {
   const pls = getPlaylists();
   const c = $('#playlists-container');
   if (!pls.length) {
-    c.innerHTML = `<p class="pl-none">${tr('pl.none')}</p>`;
+    c.innerHTML = emptyState({ title: tr('empty.playlistsTitle'), text: tr('empty.playlistsText') });
     return;
   }
   const coll = getList('collection');
@@ -2055,6 +2086,7 @@ function setHomeTab(tab) {
 // „Alben" = die normale Startseite (Begrüßung + Charts + Neuzugänge).
 function renderHomeAlben(body) {
   body.innerHTML =
+    onboardCardHtml() +
     '<div class="home-greet">' +
       `<button class="home-greet-av" id="home-greet-av" aria-label="${tr('a11y.myProfile')}"></button>` +
       '<div class="home-greet-text"><span class="home-greet-hello" id="home-greet-hello"></span></div>' +
@@ -2082,6 +2114,10 @@ function renderHomeAlben(body) {
   }
   gav.addEventListener('click', () => { if (requireAuth()) switchView('settings'); });
   $('#home-bell').addEventListener('click', () => toast(tr('toast.noNotifications')));
+  if ($('#onboard')) {
+    $('#onboard-x').addEventListener('click', dismissOnboard);
+    $('#onboard-go').addEventListener('click', dismissOnboard);
+  }
 
   loadPopularThisWeek();
   renderFriendsRow();
@@ -2096,7 +2132,7 @@ async function renderHomeReviews(body) {
   try { revs = await fetchReviewsFeed(30); } catch { /* ignorieren */ }
   if (!wrap) return;
   if (!revs.length) {
-    wrap.innerHTML = `<div class="home-empty-card">${tr('home.noReviews')}</div>`;
+    wrap.innerHTML = emptyState({ title: tr('empty.reviewsTitle'), text: tr('home.noReviews') });
     return;
   }
   homeReviewsCache = revs;
@@ -2136,7 +2172,7 @@ function listCardHtml(l, i) {
 // „Lists" = Playlists von Gefolgten.
 async function renderHomeLists(body) {
   if (!getUser()) {
-    body.innerHTML = `<div class="home-empty-card">${tr('home.signInLists')} <button id="lists-cta" class="link-btn">${tr('auth.login')}</button></div>`;
+    body.innerHTML = emptyState({ title: tr('empty.listsTitle'), text: tr('home.signInLists'), ctaLabel: tr('auth.login'), ctaAttr: 'id="lists-cta"' });
     const b = body.querySelector('#lists-cta'); if (b) b.onclick = () => openAuth('login');
     return;
   }
@@ -2146,7 +2182,7 @@ async function renderHomeLists(body) {
   try { lists = await fetchFriendsLists(20); } catch { /* ignorieren */ }
   if (!wrap) return;
   if (!lists.length) {
-    wrap.innerHTML = '<div class="home-empty-card">Noch keine Listen von Freunden. <button id="lists-cta" class="link-btn">Freunde finden</button></div>';
+    wrap.innerHTML = emptyState({ title: tr('empty.listsTitle'), text: tr('home.noFriendLists'), ctaLabel: tr('dlg.findFriends'), ctaAttr: 'id="lists-cta"' });
     const b = wrap.querySelector('#lists-cta'); if (b) b.onclick = goMemberSearch;
     return;
   }

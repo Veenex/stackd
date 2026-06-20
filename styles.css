@@ -155,6 +155,24 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 
 .empty-hint { color: var(--muted); text-align: center; margin-top: 48px; line-height: 1.5; padding: 0 24px; }
 
+/* ---------- Einheitliche Empty States ---------- */
+.empty-state { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 40px 24px; color: var(--muted); }
+.empty-state .es-ico { width: 48px; height: 48px; color: var(--border); margin-bottom: 2px; }
+.empty-state .es-ico svg { width: 100%; height: 100%; }
+.empty-state .es-title { margin: 0; color: var(--text); font-weight: 700; font-size: 16px; }
+.empty-state .es-text { margin: 0; font-size: 13.5px; line-height: 1.5; max-width: 320px; }
+.empty-state .es-cta { margin-top: 8px; min-width: 180px; }
+
+/* ---------- Onboarding-Karte (Erststart) ---------- */
+.onboard { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 16px 16px; margin: 4px 0 18px; }
+.onboard-title { margin: 0 0 14px; font-weight: 700; font-size: 17px; color: var(--text); }
+.onboard-x { position: absolute; top: 10px; right: 12px; background: none; border: none; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; }
+.onboard-steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.onboard-step { display: flex; align-items: center; gap: 12px; }
+.onboard-num { flex: 0 0 auto; width: 28px; height: 28px; border-radius: 50%; background: var(--rose); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+.onboard-step span:last-child { color: var(--text); font-size: 14.5px; line-height: 1.35; }
+.onboard-cta { width: 100%; }
+
 /* Bewertung mit Musiknoten */
 .note-slot { position: relative; display: inline-block; line-height: 0; }
 .note-empty { display: block; color: #3b4658; }
