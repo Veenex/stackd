@@ -413,6 +413,7 @@ export const DICT = {
   'tab.top500': { en: 'Top 500', de: 'Top 500' },
   'info.impressum': { en: 'Legal notice', de: 'Impressum' },
   'info.privacy': { en: 'Privacy policy', de: 'Datenschutz' },
+  'info.terms': { en: 'Terms of Use', de: 'Nutzungsbedingungen' },
   'info.faq': { en: 'FAQ', de: 'FAQ' },
   'info.contact': { en: 'Contact', de: 'Kontakt' },
   'info.genre': { en: 'Genre', de: 'Genre' },

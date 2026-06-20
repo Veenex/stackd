@@ -987,6 +987,7 @@ const BROWSE_DECADES = [['2020er', '2020-2029'], ['2010er', '2010-2019'], ['2000
 const INFO_PAGES = [
   { id: 'impressum', label: 'info.impressum' },
   { id: 'datenschutz', label: 'info.privacy' },
+  { id: 'agb', label: 'info.terms' },
   { id: 'faq', label: 'info.faq' },
   { id: 'kontakt', label: 'info.contact' },
 ];
@@ -995,22 +996,22 @@ const INFO_CONTENT = {
     title: { de: 'Impressum', en: 'Legal notice' },
     html: {
       de: `<p><strong>Angaben gemäß § 5 DDG</strong></p>
-      <p>[Vorname Nachname]<br>[Straße und Hausnummer]<br>[PLZ Ort]<br>Deutschland</p>
-      <p><strong>Kontakt</strong><br>E-Mail: [deine-E-Mail-Adresse]</p>
-      <p><strong>Verantwortlich für den Inhalt</strong><br>[Vorname Nachname], Anschrift wie oben.</p>
-      <p class="info-note">Entwurf – bitte die Platzhalter [&hellip;] durch deine echten Daten ersetzen. Eine ladungsfähige Anschrift ist für öffentlich zugängliche Dienste in Deutschland Pflicht.</p>`,
+      <p>Jan Simelka<br>Am Krüzweg 64<br>44879 Bochum<br>Deutschland</p>
+      <p><strong>Kontakt</strong><br>E-Mail: j.simelka@protonmail.com</p>
+      <p><strong>Verantwortlich für den Inhalt</strong><br>Jan Simelka, Anschrift wie oben.</p>
+      <p>Discend ist ein privat betriebenes, nicht-kommerzielles Projekt.</p>`,
       en: `<p><strong>Information pursuant to § 5 DDG (German law)</strong></p>
-      <p>[First name Last name]<br>[Street and number]<br>[Postal code City]<br>Germany</p>
-      <p><strong>Contact</strong><br>Email: [your-email-address]</p>
-      <p><strong>Responsible for content</strong><br>[First name Last name], address as above.</p>
-      <p class="info-note">Draft – please replace the placeholders [&hellip;] with your real data. A valid postal address is mandatory for publicly accessible services in Germany.</p>`,
+      <p>Jan Simelka<br>Am Krüzweg 64<br>44879 Bochum<br>Germany</p>
+      <p><strong>Contact</strong><br>Email: j.simelka@protonmail.com</p>
+      <p><strong>Responsible for content</strong><br>Jan Simelka, address as above.</p>
+      <p>Discend is a privately operated, non-commercial project.</p>`,
     },
   },
   datenschutz: {
     title: { de: 'Datenschutzerklärung', en: 'Privacy policy' },
     html: {
       de: `<h3>1. Verantwortlicher</h3>
-      <p>[Vorname Nachname], [Anschrift], E-Mail: [deine-E-Mail-Adresse] (siehe Impressum).</p>
+      <p>Jan Simelka, Am Krüzweg 64, 44879 Bochum, E-Mail: j.simelka@protonmail.com (siehe Impressum).</p>
       <h3>2. Welche Daten wir verarbeiten</h3>
       <ul>
         <li><strong>Konto:</strong> E-Mail-Adresse, Username, verschlüsseltes Passwort.</li>
@@ -1035,10 +1036,10 @@ const INFO_CONTENT = {
       <h3>7. Deine Rechte</h3>
       <p>Du hast Recht auf Auskunft, Berichtigung, Löschung, Einschränkung, Datenübertragbarkeit und Widerspruch. Dein Konto inkl. aller Daten kannst du jederzeit in den Einstellungen unter „Account löschen" selbst löschen. Es besteht ein Beschwerderecht bei einer Datenschutz-Aufsichtsbehörde.</p>
       <h3>8. Kontakt</h3>
-      <p>Bei Fragen: [deine-E-Mail-Adresse].</p>
-      <p class="info-note">Entwurf – bitte vor Veröffentlichung fachkundig prüfen lassen und Platzhalter ersetzen.</p>`,
+      <p>Bei Fragen: j.simelka@protonmail.com.</p>
+      <p class="info-note">Entwurf – für den vollständigen rechtlichen Rahmen vor dem öffentlichen Launch fachkundig prüfen lassen.</p>`,
       en: `<h3>1. Controller</h3>
-      <p>[First name Last name], [address], email: [your-email-address] (see legal notice).</p>
+      <p>Jan Simelka, Am Krüzweg 64, 44879 Bochum, Germany, email: j.simelka@protonmail.com (see legal notice).</p>
       <h3>2. What data we process</h3>
       <ul>
         <li><strong>Account:</strong> email address, username, encrypted password.</li>
@@ -1063,8 +1064,109 @@ const INFO_CONTENT = {
       <h3>7. Your rights</h3>
       <p>You have the right to access, rectification, erasure, restriction, data portability and objection. You can delete your account including all data at any time in the settings under "Delete account". You have the right to lodge a complaint with a data protection supervisory authority.</p>
       <h3>8. Contact</h3>
-      <p>For questions: [your-email-address].</p>
-      <p class="info-note">Draft – please have it reviewed by a professional before publishing and replace placeholders.</p>`,
+      <p>For questions: j.simelka@protonmail.com.</p>
+      <p class="info-note">Draft – please have it professionally reviewed before the public launch.</p>`,
+    },
+  },
+  agb: {
+    title: { de: 'Nutzungsbedingungen', en: 'Terms of Use' },
+    html: {
+      de: `<h3>1. Geltungsbereich und Anbieter</h3>
+      <p>Diese Nutzungsbedingungen regeln die Nutzung der App und Website Discend („Dienst"), bereitgestellt von Jan Simelka, Am Krüzweg 64, 44879 Bochum (siehe Impressum). Mit der Registrierung oder Nutzung des Dienstes erkennst du diese Bedingungen an.</p>
+      <h3>2. Leistung</h3>
+      <p>Discend ist ein kostenloser Dienst zum Katalogisieren und Bewerten von Musik-/Vinyl-Sammlungen, zum Führen von Listen und zum Folgen anderer Nutzer. Es besteht kein Anspruch auf einen bestimmten Funktionsumfang, eine bestimmte Verfügbarkeit oder den dauerhaften Fortbestand. Der Dienst kann jederzeit geändert, eingeschränkt oder eingestellt werden.</p>
+      <h3>3. Registrierung und Konto</h3>
+      <ul>
+        <li>Für bestimmte Funktionen ist ein kostenloses Konto nötig; deine Angaben müssen wahrheitsgemäß sein.</li>
+        <li>Du hältst deine Zugangsdaten geheim und haftest für Aktivitäten unter deinem Konto.</li>
+        <li>Du musst mindestens 16 Jahre alt sein oder die Zustimmung der Erziehungsberechtigten haben.</li>
+        <li>Pro Person ist grundsätzlich ein Konto vorgesehen.</li>
+      </ul>
+      <h3>4. Nutzerinhalte und Rechte</h3>
+      <p>„Nutzerinhalte" sind alle von dir eingestellten Inhalte (z. B. Reviews, Notizen, Listen, Profilangaben, Bilder). Du behältst deine Rechte daran und räumst dem Anbieter ein einfaches, auf den Betrieb des Dienstes beschränktes Recht ein, deine Inhalte zu speichern, zu verarbeiten und im Rahmen des Dienstes anderen bzw. öffentlich anzuzeigen. Du sicherst zu, die nötigen Rechte zu haben und keine Rechte Dritter (Urheber-, Marken-, Persönlichkeitsrechte) zu verletzen.</p>
+      <h3>5. Verhaltensregeln</h3>
+      <p>Untersagt sind insbesondere:</p>
+      <ul>
+        <li>rechtswidrige, beleidigende, diffamierende, diskriminierende, gewaltverherrlichende, jugendgefährdende oder pornografische Inhalte;</li>
+        <li>Belästigung, Bedrohung oder Mobbing anderer;</li>
+        <li>Spam, Werbung oder massenhaftes/automatisiertes Verhalten;</li>
+        <li>das Verletzen fremder Rechte;</li>
+        <li>Schadsoftware sowie das Stören oder Umgehen der Sicherheit des Dienstes;</li>
+        <li>das Vortäuschen einer fremden Identität.</li>
+      </ul>
+      <h3>6. Moderation</h3>
+      <p>Der Anbieter darf Inhalte, die gegen diese Bedingungen oder geltendes Recht verstoßen, entfernen und Konten verwarnen, vorübergehend oder dauerhaft sperren. Eine lückenlose Überwachung aller Inhalte findet nicht statt; gemeldeten Verstößen wird jedoch nachgegangen.</p>
+      <h3>7. Verfügbarkeit</h3>
+      <p>Der Dienst wird „wie verfügbar" bereitgestellt. Wartungen, Störungen oder Ausfälle können auftreten; eine bestimmte Verfügbarkeit wird nicht garantiert.</p>
+      <h3>8. Haftung</h3>
+      <ul>
+        <li>Unbeschränkte Haftung bei Vorsatz und grober Fahrlässigkeit sowie bei Verletzung von Leben, Körper oder Gesundheit.</li>
+        <li>Bei einfacher Fahrlässigkeit nur bei Verletzung einer wesentlichen Vertragspflicht und begrenzt auf den vorhersehbaren, vertragstypischen Schaden.</li>
+        <li>Da der Dienst unentgeltlich ist, ist die Haftung im gesetzlich zulässigen Rahmen weiter eingeschränkt. Die Haftung nach dem Produkthaftungsgesetz bleibt unberührt.</li>
+        <li>Für Nutzerinhalte und für Inhalte/Dienste Dritter wird keine Haftung übernommen.</li>
+      </ul>
+      <h3>9. Inhalte Dritter</h3>
+      <p>Album-Daten, Cover und Marktwerte stammen u. a. von Discogs und Apple/iTunes; für deren Richtigkeit und Verfügbarkeit wird keine Gewähr übernommen. Marken, Logos und Albumcover sind Eigentum der jeweiligen Rechteinhaber und dienen nur der Kennzeichnung.</p>
+      <h3>10. Laufzeit und Kündigung</h3>
+      <p>Du kannst dein Konto jederzeit ohne Gründe in den Einstellungen unter „Account löschen" löschen. Der Anbieter kann das Nutzungsverhältnis mit angemessener Frist beenden oder den Dienst einstellen; das Recht zur außerordentlichen Sperrung bei Verstößen bleibt unberührt.</p>
+      <h3>11. Änderungen der Bedingungen</h3>
+      <p>Der Anbieter kann diese Bedingungen mit Wirkung für die Zukunft ändern, soweit erforderlich (z. B. geänderte Rechtslage oder Funktionen). Über wesentliche Änderungen wird in geeigneter Form informiert; mit fortgesetzter Nutzung gelten sie als akzeptiert.</p>
+      <h3>12. Schlussbestimmungen</h3>
+      <ul>
+        <li>Es gilt deutsches Recht; zwingende Verbraucherschutzvorschriften deines Wohnsitzlandes bleiben unberührt.</li>
+        <li>Sollte eine Bestimmung unwirksam sein, bleibt die Wirksamkeit der übrigen unberührt.</li>
+        <li>Verbraucherstreitbeilegung: Der Anbieter ist nicht verpflichtet und nicht bereit, an einem Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen (§ 36 VSBG).</li>
+      </ul>
+      <p>Stand: Juni 2026.</p>
+      <p class="info-note">Entwurf – für den vollständigen rechtlichen Rahmen vor dem öffentlichen Launch fachkundig prüfen lassen.</p>`,
+      en: `<h3>1. Scope and provider</h3>
+      <p>These Terms govern the use of the Discend app and website ("Service"), provided by Jan Simelka, Am Krüzweg 64, 44879 Bochum, Germany (see Legal notice). By registering or using the Service you accept these Terms.</p>
+      <h3>2. The Service</h3>
+      <p>Discend is a free service to catalog and rate music/vinyl collections, keep lists and follow other users. There is no claim to a specific feature set, availability or continued existence. The Service may be changed, restricted or discontinued at any time.</p>
+      <h3>3. Registration and account</h3>
+      <ul>
+        <li>Some features require a free account; your information must be truthful.</li>
+        <li>Keep your credentials secret; you are liable for activity under your account.</li>
+        <li>You must be at least 16 years old or have parental consent.</li>
+        <li>Generally one account per person.</li>
+      </ul>
+      <h3>4. User content and rights</h3>
+      <p>"User content" is everything you post (e.g. reviews, notes, lists, profile data, images). You keep your rights and grant the provider a simple, operation-limited right to store, process and display your content within the Service to others or publicly. You warrant that you hold the necessary rights and do not infringe third-party rights (copyright, trademark, personality rights).</p>
+      <h3>5. Rules of conduct</h3>
+      <p>The following are prohibited in particular:</p>
+      <ul>
+        <li>unlawful, insulting, defamatory, discriminatory, violence-glorifying, youth-endangering or pornographic content;</li>
+        <li>harassment, threats or bullying of others;</li>
+        <li>spam, advertising or mass/automated behavior;</li>
+        <li>infringing third-party rights;</li>
+        <li>malware or disrupting/circumventing the Service's security;</li>
+        <li>impersonating someone else.</li>
+      </ul>
+      <h3>6. Moderation</h3>
+      <p>The provider may remove content that violates these Terms or applicable law and may warn, temporarily or permanently suspend accounts. There is no continuous monitoring of all content; reported violations will, however, be investigated.</p>
+      <h3>7. Availability</h3>
+      <p>The Service is provided "as available". Maintenance, faults or outages may occur; no specific availability is guaranteed.</p>
+      <h3>8. Liability</h3>
+      <ul>
+        <li>Unlimited liability for intent and gross negligence and for injury to life, body or health.</li>
+        <li>For slight negligence only upon breach of a material contractual duty, limited to foreseeable, typical damage.</li>
+        <li>As the Service is free of charge, liability is further limited to the extent legally permitted. Liability under the German Product Liability Act remains unaffected.</li>
+        <li>No liability is assumed for user content or third-party content/services.</li>
+      </ul>
+      <h3>9. Third-party content</h3>
+      <p>Album data, covers and market values come from Discogs and Apple/iTunes, among others; no guarantee is given for their accuracy or availability. Trademarks, logos and album covers are the property of their respective owners and serve identification only.</p>
+      <h3>10. Term and termination</h3>
+      <p>You can delete your account at any time without reason in the settings under "Delete account". The provider may end the usage relationship with reasonable notice or discontinue the Service; the right to extraordinary suspension for violations remains unaffected.</p>
+      <h3>11. Changes to these Terms</h3>
+      <p>The provider may change these Terms with future effect where necessary (e.g. changed legal situation or features). Material changes will be communicated appropriately; continued use constitutes acceptance.</p>
+      <h3>12. Final provisions</h3>
+      <ul>
+        <li>German law applies; mandatory consumer protection rules of your country of residence remain unaffected.</li>
+        <li>If a provision is invalid, the validity of the remaining provisions is unaffected.</li>
+        <li>Consumer dispute resolution: the provider is not obliged and not willing to participate in dispute resolution proceedings before a consumer arbitration board.</li>
+      </ul>
+      <p>Last updated: June 2026.</p>
+      <p class="info-note">Draft – please have it professionally reviewed before the public launch.</p>`,
     },
   },
   faq: {
