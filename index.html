@@ -126,7 +126,6 @@
 
         <div id="ptab-profile" class="ptab-panel active">
         <div class="profile-banner" id="profile-banner"></div>
-        <input type="file" id="banner-file" accept="image/*" hidden />
 
         <div class="profile-avatar-wrap">
           <div class="profile-avatar" id="profile-avatar-display"></div>
@@ -180,7 +179,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 125</p>
+        <p class="hint profile-version">Discend · Build 126</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -671,6 +670,17 @@
         <button type="button" id="btn-song-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <div id="song-pick-list" class="song-pick-list"></div>
+    </div>
+  </dialog>
+
+  <!-- Banner-Auswahl (Aus meinen Alben / Themes) -->
+  <dialog id="banner-dialog">
+    <div class="cover-pick">
+      <div class="cover-pick-head">
+        <span data-i18n="banner.title">Choose banner</span>
+        <button type="button" id="btn-banner-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+      </div>
+      <div id="banner-grid" class="banner-grid"></div>
     </div>
   </dialog>
 

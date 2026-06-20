@@ -15,7 +15,7 @@ import {
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
-import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, sendPasswordReset, deleteAccount } from './auth.js';
+import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, sendPasswordReset, deleteAccount, uploadProfileImage } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 import { t as tr, applyI18n, getLang, setLang } from './i18n.js';
 
@@ -1509,7 +1509,7 @@ function fmtEuro(n) {
 
 function renderProfile() {
   const p = getProfile() || {};
-  $('#profile-banner').style.backgroundImage = p.banner_url ? `url("${p.banner_url}")` : '';
+  applyBanner($('#profile-banner'), p.banner_url, bannerCovers(getList('collection'), p.favorites));
   const av = $('#profile-avatar-display');
   if (p.avatar_url) {
     av.style.backgroundImage = `url("${p.avatar_url}")`;
@@ -1895,7 +1895,8 @@ function openFavPicker(slot) {
   }));
 }
 
-function downscaleImage(file, maxW, quality) {
+// Bild verkleinern/komprimieren und als Blob zurückgeben (für den Storage-Upload).
+function downscaleImageBlob(file, maxW, quality) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -1905,13 +1906,62 @@ function downscaleImage(file, maxW, quality) {
       const c = document.createElement('canvas');
       c.width = w; c.height = h;
       c.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(c.toDataURL('image/jpeg', quality));
+      c.toBlob((b) => resolve(b), 'image/jpeg', quality);
     };
-    img.onerror = () => resolve('');
+    img.onerror = () => resolve(null);
     const fr = new FileReader();
     fr.onload = () => { img.src = fr.result; };
     fr.readAsDataURL(file);
   });
+}
+
+// ---------- Banner: Auto-Collage aus eigenen Covern oder Design-Theme ----------
+const BANNER_THEMES = {
+  rose: 'linear-gradient(135deg,#d96a8a 0%,#6f68b8 100%)',
+  petrol: 'linear-gradient(135deg,#3fa7c6 0%,#1b2330 100%)',
+  sunset: 'linear-gradient(135deg,#f0b429 0%,#d96a8a 100%)',
+  forest: 'linear-gradient(135deg,#3fa77a 0%,#1b2330 100%)',
+  grape: 'linear-gradient(135deg,#6f68b8 0%,#2a2350 100%)',
+  night: 'linear-gradient(135deg,#2a3647 0%,#14181c 100%)',
+};
+
+// Cover-URLs für die Auto-Collage: zuerst Favoriten, dann Sammlung (unique, max 8).
+function bannerCovers(items, favIds) {
+  const list = items || [];
+  const fav = (favIds || []).map((id) => list.find((x) => x.id === id)).filter(Boolean);
+  const seen = new Set();
+  const urls = [];
+  for (const it of [...fav, ...list]) {
+    const u = it && it.coverUrl;
+    if (u && !seen.has(u)) { seen.add(u); urls.push(u); }
+    if (urls.length >= 8) break;
+  }
+  return urls;
+}
+
+// Banner auf ein Element anwenden. value: 'covers' | 't:<theme>' | (legacy) Bild-URL.
+function applyBanner(el, value, covers) {
+  if (!el) return;
+  el.classList.remove('banner-collage');
+  el.style.background = '';
+  el.style.backgroundImage = '';
+  el.innerHTML = '';
+  const v = value || 'covers';
+  if (v.indexOf('t:') === 0) {
+    el.style.background = BANNER_THEMES[v.slice(2)] || BANNER_THEMES.night;
+  } else if (v === 'covers') {
+    const cov = (covers || []).slice(0, 8);
+    if (cov.length) {
+      el.classList.add('banner-collage');
+      el.innerHTML = cov.map((u) => `<span style="background-image:url('${escapeHtml(u)}')"></span>`).join('') + '<i class="banner-veil"></i>';
+    } else {
+      el.style.background = BANNER_THEMES.night;
+    }
+  } else {
+    el.style.backgroundImage = `url("${v}")`;
+    el.style.backgroundSize = 'cover';
+    el.style.backgroundPosition = 'center';
+  }
 }
 
 function openProfileSettings() {
@@ -1978,22 +2028,43 @@ $('#ps-save').addEventListener('click', () => {
   renderProfile();
   toast(tr('toast.profileSaved'));
 });
-$('#ps-banner-btn').addEventListener('click', () => $('#banner-file').click());
+$('#ps-banner-btn').addEventListener('click', openBannerPicker);
 $('#ps-avatar-btn').addEventListener('click', () => $('#avatar-file').click());
-$('#banner-file').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const dataUrl = await downscaleImage(file, 1280, 0.82);
-  if (dataUrl) { updateProfile({ banner_url: dataUrl }); renderProfile(); }
-  e.target.value = '';
-});
 $('#avatar-file').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  const dataUrl = await downscaleImage(file, 400, 0.85);
-  if (dataUrl) { updateProfile({ avatar_url: dataUrl }); renderProfile(); }
+  toast(tr('toast.uploadingImage'));
+  const blob = await downscaleImageBlob(file, 400, 0.85);
+  const url = blob ? await uploadProfileImage('avatar', blob) : null;
+  if (url) { updateProfile({ avatar_url: url }); renderProfile(); toast(tr('toast.saved')); }
+  else { toast(tr('toast.uploadFailed')); }
   e.target.value = '';
 });
+
+// Banner-Auswahl: „Aus meinen Alben" + Design-Themes (kein Upload).
+function openBannerPicker() {
+  const p = getProfile() || {};
+  const cur = p.banner_url || 'covers';
+  const cov = bannerCovers(getList('collection'), p.favorites).slice(0, 4);
+  const collage = cov.length
+    ? cov.map((u) => `<span style="background-image:url('${escapeHtml(u)}')"></span>`).join('') + '<i class="banner-veil"></i>'
+    : '';
+  let html = `<button type="button" class="banner-opt${cur === 'covers' ? ' sel' : ''}" data-banner="covers">`
+    + `<span class="banner-prev banner-collage">${collage}</span>`
+    + `<span class="banner-opt-lbl">${escapeHtml(tr('banner.fromAlbums'))}</span></button>`;
+  html += Object.keys(BANNER_THEMES).map((k) =>
+    `<button type="button" class="banner-opt${cur === 't:' + k ? ' sel' : ''}" data-banner="t:${k}">`
+    + `<span class="banner-prev" style="background:${BANNER_THEMES[k]}"></span>`
+    + `<span class="banner-opt-lbl">${k}</span></button>`).join('');
+  $('#banner-grid').innerHTML = html;
+  $('#banner-grid').querySelectorAll('.banner-opt').forEach((b) => b.addEventListener('click', () => {
+    updateProfile({ banner_url: b.dataset.banner });
+    renderProfile();
+    $('#banner-dialog').close();
+  }));
+  $('#banner-dialog').showModal();
+}
+$('#btn-banner-close').addEventListener('click', () => $('#banner-dialog').close());
 $('#btn-fav-close').addEventListener('click', () => $('#fav-dialog').close());
 
 $('#btn-export').addEventListener('click', () => {
@@ -2490,7 +2561,7 @@ async function openUserProfile(user) {
   friendsFollowing = new Set(await getFollowing().catch(() => []));
   $('#up-name').textContent = u.display_name || u.username || '';
   $('#up-handle').textContent = '@' + (u.username || '');
-  $('#up-banner').style.backgroundImage = u.banner_url ? `url("${u.banner_url}")` : '';
+  applyBanner($('#up-banner'), u.banner_url, []); // Cover-Collage folgt nach dem Laden
   const av = $('#up-avatar');
   if (u.avatar_url) { av.style.backgroundImage = `url("${u.avatar_url}")`; av.innerHTML = ''; }
   else { av.style.backgroundImage = ''; av.innerHTML = '<svg class="avatar-ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>'; }
@@ -2532,6 +2603,7 @@ async function openUserProfile(user) {
   let coll = [], wish = [], vhist = [];
   try { [coll, wish, vhist] = await Promise.all([fetchUserItems(u.id, 'collection'), fetchUserItems(u.id, 'wishlist'), u.hide_value ? Promise.resolve([]) : fetchValueHistory(u.id)]); }
   catch { /* ignorieren */ }
+  applyBanner($('#up-banner'), u.banner_url, bannerCovers(coll, u.favorites));
   const latestVal = vhist.length ? vhist[vhist.length - 1].value : 0;
   // Statistiken
   const rated = coll.filter((i) => Number(i.rating) > 0);

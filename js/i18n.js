@@ -225,6 +225,10 @@ export const DICT = {
   'dlg.chooseFav': { en: 'Choose favorite', de: 'Favorit wählen' },
   'dlg.chooseFavSong': { en: 'Choose favorite song', de: 'Lieblingssong wählen' },
   'dlg.chooseCover': { en: 'Choose cover', de: 'Cover wählen' },
+  'banner.title': { en: 'Choose banner', de: 'Banner wählen' },
+  'banner.fromAlbums': { en: 'From my albums', de: 'Aus meinen Alben' },
+  'toast.uploadingImage': { en: 'Uploading…', de: 'Wird hochgeladen…' },
+  'toast.uploadFailed': { en: 'Upload failed', de: 'Upload fehlgeschlagen' },
 
   // Toasts / Bestätigungen
   'toast.movedToCollection': { en: 'Moved to collection', de: 'In Sammlung verschoben' },

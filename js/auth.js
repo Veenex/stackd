@@ -29,6 +29,17 @@ export function updateProfile(patch) {
   return currentProfile;
 }
 
+// Profilbild in den Storage-Bucket laden (eigener Ordner = user-id). Gibt die öffentliche URL zurück (oder null).
+export async function uploadProfileImage(kind, blob) {
+  if (!sb || !currentUser || !blob) return null;
+  const path = `${currentUser.id}/${kind}.jpg`;
+  const { error } = await sb.storage.from('profile-images')
+    .upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+  if (error) { console.warn('upload:', error.message); return null; }
+  const { data } = sb.storage.from('profile-images').getPublicUrl(path);
+  return data && data.publicUrl ? data.publicUrl + '?v=' + Date.now() : null;
+}
+
 // Von app.js beim Start aufgerufen.
 export async function initAuth({ onChange } = {}) {
   onChangeCb = onChange || null;
