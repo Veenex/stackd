@@ -13,7 +13,8 @@ let mode = 'login'; // 'login' | 'register' | 'forgot' | 'update'
 
 // Reset-Link FRÜH erkennen – bevor der Supabase-Client die URL verarbeitet und leert.
 const RECOVERY_LINK = typeof location !== 'undefined'
-  && /type=recovery/.test((location.hash || '') + '&' + (location.search || ''));
+  && (/pwreset=1/.test(location.search || '')
+      || /type=recovery/.test((location.hash || '') + '&' + (location.search || '')));
 
 export function getUser() { return currentUser; }
 export function getProfile() { return currentProfile; }
@@ -101,7 +102,7 @@ export async function deleteAccount() {
 // Reset-Link an die eigene E-Mail senden.
 export async function sendPasswordReset() {
   if (!sb || !currentUser) return tr('auth.err.notSignedIn');
-  const { error } = await sb.auth.resetPasswordForEmail(currentUser.email, { redirectTo: location.origin + location.pathname });
+  const { error } = await sb.auth.resetPasswordForEmail(currentUser.email, { redirectTo: location.origin + location.pathname + '?pwreset=1' });
   return error ? error.message : null;
 }
 
@@ -174,7 +175,7 @@ async function onSubmit(e) {
       if (data.session) { closeAuth(); }
       else { setMsg(tr('auth.msg.almostDone'), 'ok'); mode = 'login'; applyMode(); }
     } else if (mode === 'forgot') {
-      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname + '?pwreset=1' });
       if (error) return setMsg(tr('auth.err.mailFailed', { msg: error.message }), 'error');
       setMsg(tr('auth.msg.resetMaybe'), 'ok');
     } else if (mode === 'update') {
