@@ -1,7 +1,7 @@
 // service-worker.js – einfacher App-Shell-Cache, damit die App offline startet.
 // Daten (Sammlung/Wishlist) liegen in localStorage und sind ohnehin offline.
 
-const CACHE = 'platten-v124';
+const CACHE = 'platten-v125';
 const ASSETS = [
   './',
   './index.html',
@@ -15,11 +15,11 @@ const ASSETS = [
   './js/auth.js',
   './js/i18n.js',
   './js/vendor/supabase.umd.js',
+  './js/vendor/html5-qrcode.min.js',
   './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
-  'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',
 ];
 
 self.addEventListener('install', (e) => {

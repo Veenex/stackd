@@ -11,8 +11,8 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=63" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png?v=63" />
   <link rel="stylesheet" href="styles.css" />
-  <!-- Barcode-Scanner (UMD, global Html5Qrcode) -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- Barcode-Scanner (UMD, global Html5Qrcode) – lokal gebündelt, kein CDN -->
+  <script src="js/vendor/html5-qrcode.min.js"></script>
 </head>
 <body>
   <header class="app-header">
@@ -180,7 +180,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 124</p>
+        <p class="hint profile-version">Discend · Build 125</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
