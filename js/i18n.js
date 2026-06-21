@@ -71,6 +71,7 @@ export const DICT = {
   // Suche / Sortierung / Filter
   'ph.searchCollection': { en: 'Search (artist, title, note…)', de: 'Suchen (Künstler, Titel, Notiz…)' },
   'ph.searchAlbum': { en: 'Search album…', de: 'Album suchen…' },
+  'ph.searchSong': { en: 'Search song…', de: 'Song suchen…' },
   'ph.searchWishlist': { en: 'Search wishlist…', de: 'Wishlist durchsuchen…' },
   'ph.searchUsername': { en: 'Search username…', de: 'Username suchen…' },
   'sort.artist': { en: 'Artist A–Z', de: 'Künstler A–Z' },

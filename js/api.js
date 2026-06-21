@@ -490,6 +490,20 @@ export async function fetchItunesTracklist(artist, title) {
   } catch { return null; }
 }
 
+// Songs im iTunes-Katalog suchen (für Lieblingssong-Auswahl). Gibt {title,artist,album,preview}[] zurück.
+export async function fetchItunesSongs(query, limit = 25) {
+  const q = String(query || '').trim();
+  if (!q) return [];
+  try {
+    const r = await fetch('https://itunes.apple.com/search?entity=song&limit=' + limit + '&term=' + encodeURIComponent(q));
+    if (!r.ok) return [];
+    const d = await r.json();
+    return (d.results || [])
+      .filter((x) => x.kind === 'song' || x.wrapperType === 'track')
+      .map((x) => ({ title: x.trackName || '', artist: x.artistName || '', album: x.collectionName || '', preview: x.previewUrl || '' }));
+  } catch { return []; }
+}
+
 // 30s-Hörprobe für einen einzelnen Song (iTunes Song-Suche). Gibt previewUrl oder '' zurück.
 export async function fetchSongPreview(artist, title) {
   const term = `${artist || ''} ${title || ''}`.trim();

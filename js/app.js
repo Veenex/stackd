@@ -14,7 +14,7 @@ import {
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
 } from './store.js';
-import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, fetchSongPreview, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
+import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, fetchSongPreview, fetchItunesSongs, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, sendPasswordReset, deleteAccount, uploadProfileImage } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 import { t as tr, applyI18n, getLang, setLang } from './i18n.js';
@@ -1770,6 +1770,20 @@ function favSlotInner(item) {
     ? `<img src="${escapeHtml(item.coverUrl)}" alt="" onerror="this.remove()" />`
     : '<span class="fav-disc"></span>';
 }
+// Favorit = Collection-ID (alt) ODER Album-Objekt (neu, aus der Suche – auch Alben außerhalb der Collection).
+function favAlbumObj(a) {
+  return { title: a.title || '', artist: a.artist || '', coverUrl: a.coverUrl || '', source: a.source || 'discogs', sourceId: a.sourceId || '', masterId: a.masterId || '' };
+}
+function resolveFav(fav, coll) {
+  if (!fav) return null;
+  if (typeof fav === 'object') return fav;
+  return (coll || getList('collection')).find((x) => x.id === fav) || null;
+}
+function openFav(item) {
+  if (!item) return;
+  if (item.id) openDetail('collection', item.id); // eigenes Collection-Album
+  else openPreview(item);                          // beliebiges Album
+}
 
 // Lieblingssongs im Profil (selbst gewählt, gespeichert in profile.fav_songs).
 let favSongsCache = [];
@@ -1782,21 +1796,26 @@ function renderFavoriteSongs() {
   el.innerHTML = songs.map((s, i) => `<div class="pfsong" data-idx="${i}">`
     + `<button class="pfsong-play" data-idx="${i}" aria-label="${tr('a11y.preview')}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>`
     + `<span class="pfsong-title">${escapeHtml(s.title || '(Song)')}</span></div>`).join('');
-  // Titel antippen -> Album öffnen
+  // Titel antippen -> Album öffnen (oder bei gesuchten Songs danach suchen)
   el.querySelectorAll('.pfsong-title').forEach((t) => t.addEventListener('click', () => {
-    const s = favSongsCache[+t.closest('.pfsong').dataset.idx];
-    if (s && s.albumId) openPreview({ source: 'discogs', sourceId: s.albumId, title: s.album || '', artist: s.artist || '', coverUrl: '' });
+    const s = favSongsCache[+t.closest('.pfsong').dataset.idx]; if (!s) return;
+    if (s.albumId) openPreview({ source: 'discogs', sourceId: s.albumId, title: s.album || '', artist: s.artist || '', coverUrl: '' });
+    else runDbSearchWith({ q: `${s.artist || ''} ${s.album || s.title || ''}`.trim() });
   }));
-  // Play -> 30s-Hörprobe (lazy über iTunes geladen, pro Song gecacht)
+  // Play -> 30s-Hörprobe (gespeicherte bevorzugen, sonst lazy über iTunes, pro Song gecacht)
   el.querySelectorAll('.pfsong-play').forEach((b) => b.addEventListener('click', async (e) => {
     e.stopPropagation();
     const s = favSongsCache[+b.dataset.idx]; if (!s) return;
-    if (s._preview === undefined) {
-      b.classList.add('loading');
-      try { s._preview = await fetchSongPreview(s.artist || s.album || '', s.title || ''); } catch { s._preview = ''; }
-      b.classList.remove('loading');
+    let url = s.preview;
+    if (!url) {
+      if (s._preview === undefined) {
+        b.classList.add('loading');
+        try { s._preview = await fetchSongPreview(s.artist || s.album || '', s.title || ''); } catch { s._preview = ''; }
+        b.classList.remove('loading');
+      }
+      url = s._preview;
     }
-    if (s._preview) togglePreview(s._preview, b);
+    if (url) togglePreview(url, b);
     else toast(tr('toast.noPreview'));
   }));
 }
@@ -1824,51 +1843,71 @@ function removeFavSong(slot) {
   updateProfile({ fav_songs: arr });
   refreshFavSongs();
 }
-async function openSongPicker(slot) {
+let songPickSlot = null;
+let songSearchTimer = null;
+function renderSongPick(songs, fromSearch) {
+  songPickCache = songs || [];
   const box = $('#song-pick-list');
-  box.innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
-  $('#song-dialog').showModal();
-  let songs = [];
-  try { songs = await fetchMyLikedSongs(50); } catch { /* ignorieren */ }
-  if (!songs.length) { box.innerHTML = `<p class="hint">${tr('songpicker.none')}</p>`; return; }
-  songPickCache = songs;
-  box.innerHTML = songs.map((s, i) => `<button class="song-pick-row" data-i="${i}"><span class="fs-title">${escapeHtml(s.title || '(Song)')}</span><span class="fs-artist">${escapeHtml(s.artist || s.album || '')}</span></button>`).join('');
+  if (!songPickCache.length) { box.innerHTML = `<p class="hint">${fromSearch ? tr('msg.nothingFound') : tr('songpicker.none')}</p>`; return; }
+  box.innerHTML = songPickCache.map((s, i) => `<button class="song-pick-row" data-i="${i}"><span class="fs-title">${escapeHtml(s.title || '(Song)')}</span><span class="fs-artist">${escapeHtml(s.artist || s.album || '')}</span></button>`).join('');
   box.querySelectorAll('.song-pick-row').forEach((b) => b.addEventListener('click', () => {
     const s = songPickCache[+b.dataset.i];
     const arr = ((getProfile() || {}).fav_songs || []).slice();
     while (arr.length < 4) arr.push(null);
-    arr[slot] = { albumId: s.albumId, position: s.position, title: s.title, artist: s.artist, album: s.album };
+    arr[songPickSlot] = { albumId: s.albumId || '', position: s.position || '', title: s.title || '', artist: s.artist || '', album: s.album || '', preview: s.preview || '' };
     updateProfile({ fav_songs: arr });
     $('#song-dialog').close();
     refreshFavSongs();
   }));
 }
+async function openSongPicker(slot) {
+  songPickSlot = slot;
+  const inp = $('#song-search'); inp.value = '';
+  const box = $('#song-pick-list');
+  box.innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
+  $('#song-dialog').showModal();
+  let liked = [];
+  // Such-Handler SOFORT setzen (vor dem Laden der Likes), damit Tippen direkt sucht.
+  inp.oninput = () => {
+    clearTimeout(songSearchTimer);
+    const q = inp.value.trim();
+    if (!q) { renderSongPick(liked, false); return; }
+    songSearchTimer = setTimeout(async () => {
+      box.innerHTML = `<p class="hint">${tr('msg.searching')}</p>`;
+      let res = [];
+      try { res = await fetchItunesSongs(q, 25); } catch { /* ignorieren */ }
+      renderSongPick(res, true);
+    }, 350);
+  };
+  try { liked = await fetchMyLikedSongs(50); } catch { /* ignorieren */ }
+  renderSongPick(liked, false);
+}
 $('#btn-song-close').addEventListener('click', () => $('#song-dialog').close());
 
 // Anzeige auf der Profilseite (klickbar -> Albumseite)
 function renderFavoritesDisplay() {
-  const favIds = (getProfile() || {}).favorites || [];
+  const favs = (getProfile() || {}).favorites || [];
   const coll = getList('collection');
   const el = $('#profile-favorites');
   if (!el) return;
   let html = '';
   for (let i = 0; i < 4; i++) {
-    const item = favIds[i] ? coll.find((x) => x.id === favIds[i]) : null;
-    html += item ? `<button class="fav-slot filled" data-id="${item.id}">${favSlotInner(item)}</button>` : '<div class="fav-slot empty"></div>';
+    const item = resolveFav(favs[i], coll);
+    html += item ? `<button class="fav-slot filled" data-i="${i}">${favSlotInner(item)}</button>` : '<div class="fav-slot empty"></div>';
   }
   el.innerHTML = html;
-  el.querySelectorAll('.fav-slot.filled').forEach((b) => b.addEventListener('click', () => openDetail('collection', b.dataset.id)));
+  el.querySelectorAll('.fav-slot.filled').forEach((b) => b.addEventListener('click', () => openFav(resolveFav(favs[+b.dataset.i], coll))));
 }
 
 // Bearbeitbare Slots im Profil-Popup
 function renderFavoritesEdit() {
-  const favIds = (getProfile() || {}).favorites || [];
+  const favs = (getProfile() || {}).favorites || [];
   const coll = getList('collection');
   const el = $('#ps-favorites');
   if (!el) return;
   let html = '';
   for (let i = 0; i < 4; i++) {
-    const item = favIds[i] ? coll.find((x) => x.id === favIds[i]) : null;
+    const item = resolveFav(favs[i], coll);
     html += item
       ? `<button type="button" class="fav-slot filled" data-slot="${i}">${favSlotInner(item)}<span class="fav-x">×</span></button>`
       : `<button type="button" class="fav-slot empty" data-slot="${i}">+</button>`;
@@ -1893,20 +1932,41 @@ function removeFavorite(slot) {
   refreshFavorites();
 }
 
-function openFavPicker(slot) {
-  const coll = getList('collection');
+let favPickSlot = null;
+let favPickCache = [];
+let favSearchTimer = null;
+function renderFavPick(albums) {
+  favPickCache = albums || [];
   const grid = $('#fav-pick-grid');
-  $('#fav-pick-status').textContent = coll.length ? '' : 'Deine Collection ist leer.';
-  grid.innerHTML = coll.map((i) => `<button data-id="${i.id}">${favSlotInner(i)}</button>`).join('');
-  $('#fav-dialog').showModal();
+  grid.innerHTML = favPickCache.map((a, i) => `<button data-i="${i}">${favSlotInner(a)}</button>`).join('');
   grid.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
+    const a = favPickCache[+b.dataset.i]; if (!a) return;
     const fav = ((getProfile() || {}).favorites || []).slice();
     while (fav.length < 4) fav.push(null);
-    fav[slot] = b.dataset.id;
+    fav[favPickSlot] = a.id ? a.id : favAlbumObj(a); // Collection -> ID (bearbeitbar), Suche -> Objekt
     updateProfile({ favorites: fav });
     $('#fav-dialog').close();
     refreshFavorites();
   }));
+}
+function openFavPicker(slot) {
+  favPickSlot = slot;
+  const inp = $('#fav-search'); inp.value = '';
+  renderFavPick(getList('collection')); // Standard: eigene Sammlung als Schnellauswahl
+  $('#fav-pick-status').textContent = '';
+  $('#fav-dialog').showModal();
+  inp.oninput = () => {
+    clearTimeout(favSearchTimer);
+    const q = inp.value.trim();
+    if (!q) { renderFavPick(getList('collection')); $('#fav-pick-status').textContent = ''; return; }
+    favSearchTimer = setTimeout(async () => {
+      $('#fav-pick-status').textContent = tr('msg.searching');
+      let res = [];
+      try { res = dedupeAlbums(await discogsSearch({ q })); } catch { /* ignorieren */ }
+      $('#fav-pick-status').textContent = res.length ? '' : tr('msg.nothingFound');
+      renderFavPick(res);
+    }, 350);
+  };
 }
 
 // Bild verkleinern/komprimieren und als Blob zurückgeben (für den Storage-Upload).
@@ -2558,7 +2618,7 @@ async function openUserProfile(user) {
     li.classList.toggle('open', !nowHidden);
   }));
   // Favoriten (aus dem Profil; verweisen auf Sammlungs-IDs)
-  const favItems = ((u.favorites || []).map((id) => coll.find((x) => x.id === id)).filter(Boolean));
+  const favItems = (u.favorites || []).map((f) => resolveFav(f, coll)).filter(Boolean);
   let favHtml = '';
   for (let i = 0; i < 4; i++) {
     const it = favItems[i];

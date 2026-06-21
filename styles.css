@@ -593,6 +593,7 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 #cover-dialog { width: min(94vw, 520px); }
 .cover-pick { padding: 16px; position: relative; }
 .cover-pick-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: 600; }
+#fav-search, #song-search { margin: 0 0 10px; }
 .cover-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-height: 66vh; overflow-y: auto; align-items: start; }
 .cover-grid button { display: block; width: 100%; padding: 0; margin: 0; border: 2px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface-2); cursor: pointer; }
 .cover-grid button:active { border-color: var(--accent); }
