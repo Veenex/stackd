@@ -1953,7 +1953,7 @@ function applyBanner(el, value, covers) {
     const cov = (covers || []).slice(0, 8);
     if (cov.length) {
       el.classList.add('banner-collage');
-      el.innerHTML = cov.map((u) => `<span style="background-image:url('${escapeHtml(u)}')"></span>`).join('') + '<i class="banner-veil"></i>';
+      el.innerHTML = cov.map((u) => `<span style="background-image:url('${escapeHtml(u)}')"></span>`).join('');
     } else {
       el.style.background = BANNER_THEMES.night;
     }
