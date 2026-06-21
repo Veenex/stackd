@@ -601,8 +601,9 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 /* Profil-Seite */
 .profile { max-width: 640px; margin: 0 auto; }
 /* Profil-Kopf: Lieblingssongs links, großes Profilbild rechts */
-.profile-head { display: flex; align-items: center; gap: 14px; margin: 6px 0 14px; }
-.profile-songs-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.profile-head { display: flex; align-items: flex-start; gap: 14px; margin: 6px 0 14px; }
+.profile-id-col { flex: 0 0 auto; width: 46vw; max-width: 230px; display: flex; flex-direction: column; align-items: center; }
+.profile-songs-col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 7px; padding-top: 6px; }
 .profile-songs-col .pfsong-none { margin: 0; text-align: left; font-size: 12px; }
 .pfsong { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .pfsong-play {
