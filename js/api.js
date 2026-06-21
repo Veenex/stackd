@@ -490,6 +490,19 @@ export async function fetchItunesTracklist(artist, title) {
   } catch { return null; }
 }
 
+// 30s-Hörprobe für einen einzelnen Song (iTunes Song-Suche). Gibt previewUrl oder '' zurück.
+export async function fetchSongPreview(artist, title) {
+  const term = `${artist || ''} ${title || ''}`.trim();
+  if (!term) return '';
+  try {
+    const r = await fetch('https://itunes.apple.com/search?entity=song&limit=1&term=' + encodeURIComponent(term));
+    if (!r.ok) return '';
+    const d = await r.json();
+    const hit = (d.results || [])[0];
+    return (hit && hit.previewUrl) || '';
+  } catch { return ''; }
+}
+
 export async function fetchTracklist(item) {
   if (!item || !item.sourceId) return null;
 

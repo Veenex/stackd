@@ -199,6 +199,7 @@ export const DICT = {
   'set.favAlbums': { en: 'Favorite albums', de: 'Lieblingsalben' },
   'set.favSongs': { en: 'Favorite songs', de: 'Lieblingssongs' },
   'set.imageBanner': { en: 'Profile picture & banner', de: 'Profilbild & Banner' },
+  'set.image': { en: 'Profile picture', de: 'Profilbild' },
   'set.changeAvatar': { en: 'Change profile picture', de: 'Profilbild ändern' },
   'set.changeBanner': { en: 'Change banner', de: 'Banner ändern' },
   'set.data': { en: 'Data', de: 'Daten' },
@@ -229,6 +230,7 @@ export const DICT = {
   'banner.fromAlbums': { en: 'From my albums', de: 'Aus meinen Alben' },
   'toast.uploadingImage': { en: 'Uploading…', de: 'Wird hochgeladen…' },
   'toast.uploadFailed': { en: 'Upload failed', de: 'Upload fehlgeschlagen' },
+  'toast.noPreview': { en: 'No preview available', de: 'Keine Hörprobe verfügbar' },
 
   // Toasts / Bestätigungen
   'toast.movedToCollection': { en: 'Moved to collection', de: 'In Sammlung verschoben' },

@@ -125,12 +125,14 @@
         </div>
 
         <div id="ptab-profile" class="ptab-panel active">
-        <div class="profile-banner" id="profile-banner"></div>
-
-        <div class="profile-avatar-wrap">
-          <div class="profile-avatar" id="profile-avatar-display"></div>
-        </div>
         <input type="file" id="avatar-file" accept="image/*" hidden />
+
+        <div class="profile-head">
+          <div id="profile-songs" class="profile-songs-col"></div>
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar" id="profile-avatar-display"></div>
+          </div>
+        </div>
 
         <p class="profile-meta-line" id="profile-meta-line"></p>
         <p class="profile-bio-display" id="profile-bio-display"></p>
@@ -138,11 +140,6 @@
         <div class="profile-section">
           <span class="dp-label" data-i18n="lbl.favorites">Favorites</span>
           <div id="profile-favorites" class="fav-slots"></div>
-        </div>
-
-        <div class="profile-section">
-          <span class="dp-label" data-i18n="lbl.favSongs">Favorite songs</span>
-          <div id="profile-songs" class="fav-songs"></div>
         </div>
 
         <div class="profile-section">
@@ -179,7 +176,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 127</p>
+        <p class="hint profile-version">Discend · Build 128</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -434,8 +431,7 @@
       <button id="user-back" class="icon-btn" data-i18n-aria="a11y.back" aria-label="Back">‹</button>
     </header>
     <div class="detail-scroll" id="user-scroll">
-      <div class="profile-banner" id="up-banner"></div>
-      <div class="profile-avatar-wrap"><div class="profile-avatar" id="up-avatar"></div></div>
+      <div class="profile-avatar-wrap up-avatar-wrap"><div class="profile-avatar" id="up-avatar"></div></div>
       <h2 class="up-name" id="up-name"></h2>
       <p class="up-handle" id="up-handle"></p>
       <p class="profile-meta-line up-center" id="up-meta"></p>
@@ -561,10 +557,9 @@
           <div class="set-section-label" data-i18n="set.favSongs">Favorite songs</div>
           <div id="ps-songs" class="fav-songs-edit"></div>
 
-          <div class="set-section-label" data-i18n="set.imageBanner">Profile picture &amp; banner</div>
+          <div class="set-section-label" data-i18n="set.image">Profile picture</div>
           <div class="ps-images">
             <button type="button" id="ps-avatar-btn" class="btn" data-i18n="set.changeAvatar">Change profile picture</button>
-            <button type="button" id="ps-banner-btn" class="btn" data-i18n="set.changeBanner">Change banner</button>
           </div>
 
           <div class="set-section-label" data-i18n="set.data">Data</div>
@@ -670,17 +665,6 @@
         <button type="button" id="btn-song-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <div id="song-pick-list" class="song-pick-list"></div>
-    </div>
-  </dialog>
-
-  <!-- Banner-Auswahl (Aus meinen Alben / Themes) -->
-  <dialog id="banner-dialog">
-    <div class="cover-pick">
-      <div class="cover-pick-head">
-        <span data-i18n="banner.title">Choose banner</span>
-        <button type="button" id="btn-banner-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
-      </div>
-      <div id="banner-grid" class="banner-grid"></div>
     </div>
   </dialog>
 
