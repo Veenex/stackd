@@ -39,6 +39,14 @@ Deno.serve(async (req) => {
         const v = p.get(k);
         if (v) target.searchParams.set(k, v);
       }
+    } else if (action === "itunes") {
+      // Apple/iTunes-Proxy (iTunes sendet keine CORS-Header -> Browser-Direktaufruf blockiert).
+      const kind = p.get("kind") === "lookup" ? "lookup" : "search";
+      target = new URL(`https://itunes.apple.com/${kind}`);
+      for (const k of ["term", "entity", "limit", "id", "country", "media"]) {
+        const v = p.get(k);
+        if (v != null && v !== "") target.searchParams.set(k, v);
+      }
     } else {
       // search
       target = new URL(`${DISCOGS}/database/search`);
@@ -51,7 +59,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (TOKEN) target.searchParams.set("token", TOKEN);
+    if (TOKEN && action !== "itunes") target.searchParams.set("token", TOKEN);
 
     const res = await fetch(target.toString(), {
       headers: { "User-Agent": UA, "Accept": "application/json" },

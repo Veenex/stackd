@@ -23,6 +23,20 @@ async function discogsProxy(action, params = {}) {
   return res.json();
 }
 
+// iTunes/Apple läuft über denselben Server-Proxy (iTunes sendet KEINE CORS-Header,
+// direkter Browser-Aufruf wird sonst blockiert). kind = 'search' | 'lookup'.
+async function itunesProxy(kind, params = {}) {
+  const usp = new URLSearchParams({ action: 'itunes', kind });
+  for (const [k, v] of Object.entries(params)) {
+    if (v != null && v !== '') usp.set(k, String(v));
+  }
+  const res = await fetch(`${DISCOGS_FN}?${usp.toString()}`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Accept: 'application/json' },
+  });
+  if (!res.ok) throw new Error('iTunes-Proxy HTTP ' + res.status);
+  return res.json();
+}
+
 // Normalisiertes Ergebnisobjekt
 function normalize(partial) {
   return {
@@ -261,9 +275,7 @@ export async function fetchCoverArt(artist, title) {
   const term = `${artist || ''} ${title || ''}`.trim();
   if (!term) return null;
   try {
-    const r = await fetch('https://itunes.apple.com/search?entity=album&limit=1&term=' + encodeURIComponent(term));
-    if (!r.ok) return null;
-    const d = await r.json();
+    const d = await itunesProxy('search', { entity: 'album', limit: 1, term });
     const a = d.results && d.results[0];
     if (a && a.artworkUrl100) return a.artworkUrl100.replace('100x100bb', '600x600bb');
   } catch { /* ignorieren */ }
@@ -282,11 +294,8 @@ export async function fetchCoverCandidates(item) {
   // 1. iTunes/Apple: offizielle Cover-Grafiken in hoher Auflösung (saubere Artworks, keine Fotos)
   if (term) {
     try {
-      const r = await fetch('https://itunes.apple.com/search?entity=album&limit=12&term=' + encodeURIComponent(term));
-      if (r.ok) {
-        const d = await r.json();
-        (d.results || []).forEach((a) => { if (a.artworkUrl100) add(a.artworkUrl100.replace('100x100bb', '600x600bb')); });
-      }
+      const d = await itunesProxy('search', { entity: 'album', limit: 12, term });
+      (d.results || []).forEach((a) => { if (a.artworkUrl100) add(a.artworkUrl100.replace('100x100bb', '600x600bb')); });
     } catch { /* ignorieren */ }
   }
 
@@ -474,14 +483,10 @@ export async function fetchItunesTracklist(artist, title) {
   const term = `${artist || ''} ${title || ''}`.trim();
   if (!term) return null;
   try {
-    const a = await fetch('https://itunes.apple.com/search?entity=album&limit=1&term=' + encodeURIComponent(term));
-    if (!a.ok) return null;
-    const ad = await a.json();
+    const ad = await itunesProxy('search', { entity: 'album', limit: 1, term });
     const col = (ad.results || [])[0];
     if (!col || !col.collectionId) return null;
-    const s = await fetch('https://itunes.apple.com/lookup?id=' + col.collectionId + '&entity=song&limit=200');
-    if (!s.ok) return null;
-    const sd = await s.json();
+    const sd = await itunesProxy('lookup', { id: col.collectionId, entity: 'song', limit: 200 });
     const tracks = (sd.results || [])
       .filter((x) => x.wrapperType === 'track' && x.kind === 'song')
       .sort((x, y) => ((x.discNumber || 1) - (y.discNumber || 1)) || ((x.trackNumber || 0) - (y.trackNumber || 0)))
@@ -495,9 +500,7 @@ export async function fetchItunesSongs(query, limit = 25) {
   const q = String(query || '').trim();
   if (!q) return [];
   try {
-    const r = await fetch('https://itunes.apple.com/search?entity=song&limit=' + limit + '&term=' + encodeURIComponent(q));
-    if (!r.ok) return [];
-    const d = await r.json();
+    const d = await itunesProxy('search', { entity: 'song', limit, term: q });
     return (d.results || [])
       .filter((x) => x.kind === 'song' || x.wrapperType === 'track')
       .map((x) => ({ title: x.trackName || '', artist: x.artistName || '', album: x.collectionName || '', preview: x.previewUrl || '' }));
@@ -509,9 +512,7 @@ export async function fetchSongPreview(artist, title) {
   const term = `${artist || ''} ${title || ''}`.trim();
   if (!term) return '';
   try {
-    const r = await fetch('https://itunes.apple.com/search?entity=song&limit=1&term=' + encodeURIComponent(term));
-    if (!r.ok) return '';
-    const d = await r.json();
+    const d = await itunesProxy('search', { entity: 'song', limit: 1, term });
     const hit = (d.results || [])[0];
     return (hit && hit.previewUrl) || '';
   } catch { return ''; }
