@@ -390,6 +390,15 @@ export const DICT = {
 
   // Folgen
   'btn.unfollow': { en: 'Unfollow', de: 'Entfolgen' },
+  'mod.report': { en: 'Report', de: 'Melden' },
+  'mod.block': { en: 'Block', de: 'Blockieren' },
+  'mod.unblock': { en: 'Unblock', de: 'Blockierung aufheben' },
+  'mod.blockedNote': { en: 'You have blocked this user. Their content is hidden.', de: 'Du hast diesen Nutzer blockiert. Seine Inhalte sind ausgeblendet.' },
+  'mod.reportUserConfirm': { en: 'Report this user for inappropriate content?', de: 'Diesen Nutzer wegen unangemessener Inhalte melden?' },
+  'mod.reportReviewConfirm': { en: 'Report this review?', de: 'Diese Review melden?' },
+  'toast.reported': { en: 'Reported. Thank you.', de: 'Gemeldet. Danke.' },
+  'toast.blocked': { en: 'User blocked', de: 'Nutzer blockiert' },
+  'toast.unblocked': { en: 'Block removed', de: 'Blockierung aufgehoben' },
   'hint.findPeople': { en: 'Type a username to find people.', de: 'Tippe einen Username, um Leute zu finden.' },
   'btn.moveToWishlist': { en: 'To wishlist', de: 'In Wishlist' },
   'btn.moveToCollection': { en: 'To collection', de: 'In Collection' },

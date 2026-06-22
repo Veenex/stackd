@@ -7,6 +7,7 @@ import {
   getPlaylists, createPlaylist, deletePlaylist, togglePlaylistItem, movePlaylistItem,
   syncAll, clearUserCache,
   searchUsers, getFollowing, follow, unfollow, fetchFriendsFeed,
+  getBlocked, blockUser, unblockUser, reportTarget,
   fetchReviewsFeed, fetchFriendsLists, searchReviews, searchPlaylists,
   fetchUserProfile, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
@@ -2585,6 +2586,41 @@ async function openUserProfile(user) {
       setFollowBtn(fbtn, friendsFollowing.has(u.id));
       if (currentView === 'home') renderFriendsRow();
     };
+  }
+  // Moderation: Blockieren / Melden
+  const upMod = document.querySelector('.up-mod');
+  const isBlocked = getBlocked().has(u.id);
+  if (isMe) {
+    if (upMod) upMod.style.display = 'none';
+  } else if (upMod) {
+    upMod.style.display = '';
+    const blockBtn = $('#up-block');
+    blockBtn.textContent = tr(isBlocked ? 'mod.unblock' : 'mod.block');
+    blockBtn.onclick = async () => {
+      if (!requireAuth()) return;
+      if (getBlocked().has(u.id)) { await unblockUser(u.id); toast(tr('toast.unblocked')); }
+      else { await blockUser(u.id); toast(tr('toast.blocked')); }
+      if (currentView === 'home') renderHome();
+      openUserProfile(u); // neu aufbauen (Status/Inhalte)
+    };
+    $('#up-report').onclick = async () => {
+      if (!requireAuth()) return;
+      if (!confirm(tr('mod.reportUserConfirm'))) return;
+      await reportTarget('user', u.id, '');
+      toast(tr('toast.reported'));
+    };
+  }
+  // Bei Blockierung: Hinweis zeigen, Inhalte ausblenden und nicht laden
+  $('#up-blocked-note').classList.toggle('hidden', !isBlocked);
+  $('#up-favorites-section').style.display = isBlocked ? 'none' : '';
+  $('#up-stats-section').style.display = isBlocked ? 'none' : '';
+  if (isBlocked) {
+    fbtn.style.display = 'none';
+    $('#up-lists').innerHTML = ''; $('#up-lists-section').hidden = true;
+    $('#user-page').classList.remove('hidden');
+    $('#user-scroll').scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+    return; // Inhalte blockierter Nutzer nicht laden
   }
   $('#up-collection').innerHTML = '';
   $('#up-wishlist').innerHTML = '';

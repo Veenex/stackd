@@ -1102,6 +1102,9 @@ body.logged-in .logout-btn { display: block; }
 .up-handle { text-align: center; color: var(--muted); margin: 2px 0 0; font-size: 13px; }
 .up-center { text-align: center; }
 .up-follow { display: block; width: auto; margin: 16px auto 4px; padding: 10px 28px; }
+.up-mod { display: flex; justify-content: center; gap: 20px; margin: 4px 0 6px; }
+.up-mod-btn { color: var(--muted); font-size: 13px; }
+#up-blocked-note { margin-top: 24px; }
 .stat-toggle { cursor: pointer; }
 .stat-chev { display: inline-block; margin-left: 5px; color: var(--muted); transition: transform .15s ease; }
 .stat-toggle.open .stat-chev { transform: rotate(90deg); }

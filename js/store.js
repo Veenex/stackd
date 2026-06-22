@@ -250,6 +250,8 @@ export async function syncAll() {
   const u = uid(); if (!u) return;
   const sb = await cloud(); if (!sb) return;
 
+  fetchBlocked().catch(() => {}); // Blockier-Liste im Hintergrund laden
+
   const [{ data: rows }, { data: pls }, { data: plItems }] = await Promise.all([
     sb.from('items').select('*').eq('user_id', u),
     sb.from('playlists').select('*').eq('user_id', u),
@@ -297,7 +299,7 @@ export async function searchUsers(query) {
   const { data } = await sb.from('profiles')
     .select('id,username,display_name,avatar_url')
     .ilike('username', '%' + ilikeEsc(q) + '%').limit(20);
-  return (data || []).filter((p) => p.id !== u); // sich selbst ausblenden
+  return (data || []).filter((p) => p.id !== u && !blockedSet.has(p.id)); // sich selbst + blockierte ausblenden
 }
 
 export async function getFollowing() {
@@ -319,6 +321,44 @@ export async function unfollow(userId) {
   if (!sb || !u) return;
   const { error } = await sb.from('follows').delete().eq('follower_id', u).eq('followee_id', userId);
   if (error) console.warn('unfollow:', error.message);
+}
+
+// ---------- Blockieren / Melden (Moderation) ----------
+let blockedSet = new Set();
+export function getBlocked() { return blockedSet; }
+export async function fetchBlocked() {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) { blockedSet = new Set(); return blockedSet; }
+  const { data } = await sb.from('blocks').select('blocked_id').eq('blocker_id', u);
+  blockedSet = new Set((data || []).map((r) => r.blocked_id));
+  return blockedSet;
+}
+export async function blockUser(userId) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return;
+  const { error } = await sb.from('blocks').insert({ blocker_id: u, blocked_id: userId });
+  if (error) { console.warn('block:', error.message); return; }
+  blockedSet.add(userId);
+  await unfollow(userId); // beim Blockieren auch entfolgen
+}
+export async function unblockUser(userId) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return;
+  const { error } = await sb.from('blocks').delete().eq('blocker_id', u).eq('blocked_id', userId);
+  if (error) { console.warn('unblock:', error.message); return; }
+  blockedSet.delete(userId);
+}
+export async function reportTarget(targetType, targetId, reason) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return false;
+  const { error } = await sb.from('reports').insert({ reporter_id: u, target_type: targetType, target_id: String(targetId), reason: reason || null });
+  if (error) { console.warn('report:', error.message); return false; }
+  return true;
+}
+// Entfernt Einträge blockierter Autoren. getId(x) -> Autor-User-ID des Eintrags.
+function dropBlocked(arr, getId) {
+  if (!blockedSet.size) return arr;
+  return (arr || []).filter((x) => { const id = getId(x); return !id || !blockedSet.has(id); });
 }
 
 // ---------- Likes & Kommentare auf Aktivitäten (Sammlungseinträge) ----------
@@ -454,7 +494,7 @@ export async function fetchFriendsFeed(limit = 20) {
     const it = playItems[p.item_id]; if (!it) return null;
     return { ...fromRow(it), by: pmap[p.user_id] || null, kind: 'play', playNote: p.note || '', playedOn: p.played_on, ts: p.created_at ? new Date(p.created_at).getTime() : 0 };
   }).filter(Boolean);
-  return [...adds, ...plys].sort((a, b) => b.ts - a.ts).slice(0, limit);
+  return dropBlocked([...adds, ...plys], (x) => x.by && x.by.id).sort((a, b) => b.ts - a.ts).slice(0, limit);
 }
 
 // Reviews-Feed: zuerst Reviews von Gefolgten, danach allgemein neueste Reviews.
@@ -490,7 +530,7 @@ export async function fetchReviewsFeed(limit = 30) {
       .not('review', 'is', null).order('added_at', { ascending: false }).limit(limit * 2);
     await addRows((data || []).filter((it) => !u || it.user_id !== u));
   }
-  return out.slice(0, limit);
+  return dropBlocked(out, (x) => x.by && x.by.id).slice(0, limit);
 }
 
 // Listen (Playlists) von Gefolgten – für den „Lists"-Home-Tab.
@@ -512,7 +552,7 @@ export async function fetchFriendsLists(limit = 20) {
   ]);
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
   const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
-  return pls.map((p) => ({
+  return dropBlocked(pls, (p) => p.user_id).map((p) => ({
     id: p.id, name: p.name, description: p.description || '', by: pmap[p.user_id] || null,
     items: (plItems || []).filter((pi) => pi.playlist_id === p.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((pi) => map[pi.item_id]).filter(Boolean),
   }));
@@ -526,7 +566,7 @@ export async function searchReviews(q, limit = 30) {
   const { data } = await sb.from('public_items').select('*').not('review', 'is', null)
     .or(`title.ilike.%${safe}%,artist.ilike.%${safe}%`)
     .order('added_at', { ascending: false }).limit(limit * 2);
-  const rows = (data || []).filter((it) => (it.review || '').trim());
+  const rows = dropBlocked((data || []).filter((it) => (it.review || '').trim()), (it) => it.user_id);
   if (!rows.length) return [];
   const userIds = [...new Set(rows.map((i) => i.user_id))];
   const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', userIds);
@@ -551,7 +591,7 @@ export async function searchPlaylists(q, limit = 30) {
   ]);
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
   const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
-  return pls.map((p) => ({
+  return dropBlocked(pls, (p) => p.user_id).map((p) => ({
     id: p.id, name: p.name, description: p.description || '', by: pmap[p.user_id] || null,
     items: (plItems || []).filter((pi) => pi.playlist_id === p.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((pi) => map[pi.item_id]).filter(Boolean),
   }));
@@ -606,7 +646,7 @@ export async function fetchAlbumRatings(item) {
   const { data } = await q;
   const seen = new Set(); const out = [];
   for (const r of (data || [])) {
-    if (seen.has(r.user_id)) continue; // eine Bewertung pro Nutzer
+    if (seen.has(r.user_id) || blockedSet.has(r.user_id)) continue; // eine Bewertung pro Nutzer, blockierte raus
     seen.add(r.user_id); out.push(Number(r.rating));
   }
   return out.filter((n) => n > 0);
@@ -624,8 +664,9 @@ export async function fetchAlbumReviews(item, limit = 30) {
   } else return [];
   const { data } = await q.order('added_at', { ascending: false }).limit(limit * 2);
   const rows = (data || []).filter((r) => (r.review || '').trim());
-  const seen = new Set(); const uniq = [];
+  const seen = new Set(); let uniq = [];
   for (const r of rows) { if (seen.has(r.user_id)) continue; seen.add(r.user_id); uniq.push(r); }
+  uniq = dropBlocked(uniq, (r) => r.user_id);
   if (!uniq.length) return [];
   const ids = [...new Set(uniq.map((r) => r.user_id))];
   const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
