@@ -75,6 +75,8 @@ export const DICT = {
   'ph.searchWishlist': { en: 'Search wishlist…', de: 'Wishlist durchsuchen…' },
   'ph.searchUsername': { en: 'Search username…', de: 'Username suchen…' },
   'sort.artist': { en: 'Artist A–Z', de: 'Künstler A–Z' },
+  'sort.firstName': { en: 'First name', de: 'Vorname' },
+  'sort.lastName': { en: 'Last name', de: 'Nachname' },
   'sort.title': { en: 'Title A–Z', de: 'Titel A–Z' },
   'sort.rating': { en: 'Rating', de: 'Bewertung' },
   'sort.year': { en: 'Year', de: 'Jahr' },

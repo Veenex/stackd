@@ -727,15 +727,27 @@ export function importAll(data) {
 }
 
 // ---------- Helfer ----------
+// Künstlernamen in Wörter zerlegen; führende Artikel (The/Die/…) für die Sortierung ignorieren.
+function artistTokens(artist) {
+  const a = String(artist || '').trim().replace(/^(the|die|der|das|los|las|les)\s+/i, '');
+  return a.split(/\s+/).filter(Boolean);
+}
+function firstName(artist) { const p = artistTokens(artist); return p[0] || ''; }
+function lastName(artist) { const p = artistTokens(artist); return p.length ? p[p.length - 1] : ''; }
+
 export function sortItems(items, mode) {
-  const by = (sel) => (a, b) =>
-    String(sel(a) || '').localeCompare(String(sel(b) || ''), 'de', { sensitivity: 'base' });
+  const cmp = (x, y) => String(x || '').localeCompare(String(y || ''), 'de', { sensitivity: 'base' });
+  const by = (sel) => (a, b) => cmp(sel(a), sel(b));
   const copy = [...items];
   switch (mode) {
     case 'title': return copy.sort(by((i) => i.title));
     case 'rating': return copy.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     case 'year': return copy.sort((a, b) => String(a.year || '').localeCompare(String(b.year || '')));
     case 'added': return copy.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
+    case 'firstname': // nach Vorname (erstes Wort des Künstlers)
+      return copy.sort((a, b) => cmp(firstName(a.artist), firstName(b.artist)) || cmp(a.artist, b.artist) || cmp(a.title, b.title));
+    case 'lastname': // nach Nachname (letztes Wort) – gruppiert z. B. alle „… Collins"
+      return copy.sort((a, b) => cmp(lastName(a.artist), lastName(b.artist)) || cmp(firstName(a.artist), firstName(b.artist)) || cmp(a.title, b.title));
     case 'artist':
     default: return copy.sort(by((i) => i.artist));
   }
