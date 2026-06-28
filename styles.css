@@ -48,6 +48,18 @@ body {
 
 .hidden { display: none !important; }
 
+/* ---------- Accessibility ---------- */
+/* Sichtbarer Fokus-Rahmen nur für Tastatur-Navigation (nicht bei Maus/Touch) */
+:focus-visible { outline: 2px solid var(--petrol); outline-offset: 2px; }
+:focus:not(:focus-visible) { outline: none; }
+/* „Reduzierte Bewegung" respektieren (Systemeinstellung) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important; scroll-behavior: auto !important;
+  }
+}
+
 /* Header */
 .app-header {
   flex: 0 0 auto;
@@ -996,7 +1008,11 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .dp-tracklist li {
   display: flex; gap: 12px; align-items: baseline;
   padding: 9px 2px; border-bottom: 1px solid var(--border); font-size: 14px;
+  position: relative;
 }
+/* Fortschrittsbalken der Hörprobe (unten an der Zeile) */
+.trk-prog { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: transparent; pointer-events: none; }
+.trk-prog .prog-fill { display: block; height: 100%; width: 0; background: var(--petrol); transition: width .15s linear; }
 .trk-pos { color: var(--muted); min-width: 26px; }
 .trk-title { flex: 1; min-width: 0; }
 .trk-dur { color: var(--muted); font-variant-numeric: tabular-nums; }

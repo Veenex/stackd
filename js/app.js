@@ -45,7 +45,11 @@ let editing = null;       // { list, id } im Detail-Dialog
 function switchView(view) {
   currentView = view;
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + view));
-  $$('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === view));
+  $$('.tab').forEach((t) => {
+    const on = t.dataset.view === view;
+    t.classList.toggle('active', on);
+    t.setAttribute('aria-current', on ? 'page' : 'false');
+  });
   if (view === 'settings') {
     $('#view-title').textContent = profileName() || tr('title.profile');
   } else {
@@ -590,6 +594,7 @@ let previewAudio = null;
 function stopPreview() {
   if (previewAudio) { try { previewAudio.pause(); } catch { /* ignorieren */ } previewAudio = null; }
   document.querySelectorAll('.playing').forEach((b) => b.classList.remove('playing'));
+  document.querySelectorAll('.prog-fill').forEach((f) => { f.style.width = '0%'; });
 }
 function togglePreview(url, btn) {
   const wasPlaying = btn.classList.contains('playing');
@@ -597,8 +602,17 @@ function togglePreview(url, btn) {
   if (wasPlaying) return;
   previewAudio = new Audio(url);
   btn.classList.add('playing');
+  // Fortschrittsbalken der zugehörigen Zeile (falls vorhanden) mitlaufen lassen
+  const row = btn.closest('li, .pfsong');
+  const fill = row ? row.querySelector('.prog-fill') : null;
+  if (fill) fill.style.width = '0%';
+  previewAudio.ontimeupdate = () => {
+    if (fill && previewAudio && previewAudio.duration) {
+      fill.style.width = Math.min(100, (previewAudio.currentTime / previewAudio.duration) * 100) + '%';
+    }
+  };
   previewAudio.play().catch(() => btn.classList.remove('playing'));
-  previewAudio.onended = () => { btn.classList.remove('playing'); previewAudio = null; };
+  previewAudio.onended = () => { btn.classList.remove('playing'); if (fill) fill.style.width = '0%'; previewAudio = null; };
 }
 
 async function loadTracklist(item) {
@@ -650,7 +664,7 @@ async function loadTracklist(item) {
     const play = t.preview
       ? `<button class="trk-play" data-i="${i}" aria-label="${tr('a11y.preview')}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>`
       : '<span class="trk-play-none"></span>';
-    return `<li><span class="trk-pos">${escapeHtml(t.position)}</span>${play}<span class="trk-title">${escapeHtml(t.title)}</span><span class="trk-dur">${escapeHtml(t.duration)}</span><button class="trk-like" data-pos="${escapeHtml(t.position)}" aria-label="${tr('a11y.likeSong')}">${heartSvg()}</button></li>`;
+    return `<li><span class="trk-pos">${escapeHtml(t.position)}</span>${play}<span class="trk-title">${escapeHtml(t.title)}</span><span class="trk-dur">${escapeHtml(t.duration)}</span><button class="trk-like" data-pos="${escapeHtml(t.position)}" aria-label="${tr('a11y.likeSong')}">${heartSvg()}</button><span class="trk-prog"><i class="prog-fill"></i></span></li>`;
   }).join('');
   ol.querySelectorAll('.trk-play').forEach((b) => b.addEventListener('click', () => {
     const t = tracks[+b.dataset.i];
