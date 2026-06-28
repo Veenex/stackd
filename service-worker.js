@@ -1,7 +1,9 @@
 // service-worker.js – einfacher App-Shell-Cache, damit die App offline startet.
 // Daten (Sammlung/Wishlist) liegen in localStorage und sind ohnehin offline.
 
-const CACHE = 'platten-v134';
+const CACHE = 'platten-v135';
+const IMG_CACHE = 'platten-img-v1'; // Cover/Bilder separat, cache-first
+const IMG_MAX = 400;                // max. gecachte Bilder (älteste fliegen raus)
 const ASSETS = [
   './',
   './index.html',
@@ -31,16 +33,56 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE && k !== IMG_CACHE).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
   );
 });
 
+// Cover/Bild erkennen (per <img> oder bekannte Bild-Hosts/-Endungen).
+function isImageRequest(req, url) {
+  if (req.destination === 'image') return true;
+  return /\.(png|jpe?g|webp|gif|avif|svg)(\?|$)/i.test(url.pathname)
+    || /mzstatic\.com|discogs\.com|coverartarchive\.org|s2\/favicons/.test(url.hostname + url.pathname);
+}
+
+// Cache-first für Bilder: einmal geladen, danach aus dem Cache (schnell, spart Daten).
+async function cacheFirstImage(req) {
+  const cache = await caches.open(IMG_CACHE);
+  const hit = await cache.match(req);
+  if (hit) return hit;
+  try {
+    const res = await fetch(req);
+    if (res && (res.ok || res.type === 'opaque')) {
+      cache.put(req, res.clone()).then(() => trimImageCache()).catch(() => {});
+    }
+    return res;
+  } catch {
+    return hit || Response.error();
+  }
+}
+
+// Bild-Cache begrenzen (FIFO: älteste Einträge zuerst entfernen).
+async function trimImageCache() {
+  try {
+    const cache = await caches.open(IMG_CACHE);
+    const keys = await cache.keys();
+    for (let i = 0; i < keys.length - IMG_MAX; i++) await cache.delete(keys[i]);
+  } catch { /* ignorieren */ }
+}
+
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
-  // API-Aufrufe (MusicBrainz/Discogs/Cover) immer aus dem Netz holen.
+  if (e.request.method !== 'GET') return; // nur GET behandeln
+
+  // Cover/Bilder: cache-first mit Größenlimit
+  if (isImageRequest(e.request, url)) {
+    e.respondWith(cacheFirstImage(e.request));
+    return;
+  }
+
+  // API-/Datenaufrufe (MusicBrainz/Discogs/Cover-Archiv) immer aus dem Netz holen.
   const isApi = /musicbrainz\.org|discogs\.com|coverartarchive\.org/.test(url.hostname);
-  if (isApi || e.request.method !== 'GET') {
+  if (isApi) {
     return; // Standard-Netzwerkverhalten
   }
   // App-Shell: network-first – immer die neueste Version laden, wenn online;
