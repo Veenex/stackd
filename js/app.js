@@ -781,6 +781,17 @@ $('#dp-play-add').addEventListener('click', async () => {
 });
 
 // ---------- Stackd Wrapped (Jahresrückblick) ----------
+// Längste Folge aufeinanderfolgender Tage (für die Hör-Streak im Wrapped).
+function longestDayStreak(sortedDates) {
+  let best = 0, run = 0, prev = null;
+  for (const d of sortedDates) {
+    const t = new Date(d + 'T00:00:00').getTime();
+    if (prev !== null && t - prev === 86400000) run++; else run = 1;
+    if (run > best) best = run;
+    prev = t;
+  }
+  return best;
+}
 async function openWrapped() {
   if (!requireAuth()) return;
   const year = new Date().getFullYear();
@@ -800,18 +811,40 @@ async function openWrapped() {
   let mostId = null, mostN = 0;
   Object.entries(counts).forEach(([id, n]) => { if (n > mostN) { mostN = n; mostId = id; } });
   const mostItem = mostId ? coll.find((i) => i.id === mostId) : null;
+  // Top-Künstler (nach Anzahl Alben in der Sammlung)
+  const artistCounts = {};
+  coll.forEach((i) => { const a = (i.artist || '').trim(); if (a) artistCounts[a] = (artistCounts[a] || 0) + 1; });
+  const topArtists = Object.entries(artistCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  // Top-Genres dieses Jahr (sonst gesamt) aus den lazy geladenen Genre-Daten
+  const thisYearItems = coll.filter((i) => new Date(i.addedAt || 0).getFullYear() === year);
+  const genreSource = thisYearItems.some((i) => (i.genre || '').trim()) ? thisYearItems : coll;
+  const genreCounts = {};
+  genreSource.forEach((i) => { const g = (i.genre || '').trim(); if (g) genreCounts[g] = (genreCounts[g] || 0) + 1; });
+  const topGenres = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  // Längste Hör-Streak (aufeinanderfolgende Tage mit Tagebuch-Eintrag) dieses Jahr
+  const streakDates = [...new Set(playsThisYear.map((p) => String(p.played_on || '').slice(0, 10)).filter(Boolean))].sort();
+  const streak = longestDayStreak(streakDates);
   const cards = [
     { label: tr('wrapped.albumsAdded'), val: addedThisYear },
     { label: tr('wrapped.listenEntries'), val: playsThisYear.length },
     { label: tr('wrapped.albumsTotal'), val: coll.length },
     { label: tr('wrapped.avgRating'), val: avg ? avg.toFixed(1) + ' ♪' : '–' },
   ];
-  let html = `<div class="wrapped-cards">${cards.map((c) => `<div class="wrapped-card"><span class="wrapped-num">${c.val}</span><span class="wrapped-lbl">${c.label}</span></div>`).join('')}</div>`;
+  const streakCard = streak > 1 ? `<div class="wrapped-card wrapped-card-wide"><span class="wrapped-num">${streak}</span><span class="wrapped-lbl">${tr('wrapped.listenStreak')}</span></div>` : '';
+  let html = `<div class="wrapped-cards">${cards.map((c) => `<div class="wrapped-card"><span class="wrapped-num">${c.val}</span><span class="wrapped-lbl">${c.label}</span></div>`).join('')}${streakCard}</div>`;
   if (mostItem) {
     html += `<span class="dp-label wrapped-h">${tr('wrapped.mostPlayed', { n: mostN })}</span><button class="wrapped-album" data-id="${mostItem.id}"><div class="chart-cover${mostItem.coverUrl ? '' : ' placeholder'}">${mostItem.coverUrl ? `<img src="${escapeHtml(mostItem.coverUrl)}" alt="" />` : ''}</div><div class="chart-meta"><span class="chart-title">${escapeHtml(mostItem.title || '')}</span><span class="chart-artist">${escapeHtml(mostItem.artist || '')}</span></div></button>`;
   }
   if (topRated.length) {
     html += `<span class="dp-label wrapped-h">${tr('wrapped.topRated')}</span>` + topRated.map((it) => `<button class="wrapped-row" data-id="${it.id}"><span class="chart-title">${escapeHtml(it.artist || '')} – ${escapeHtml(it.title || '')}</span>${ratingDisplayHtml(it.rating)}</button>`).join('');
+  }
+  if (topArtists.length) {
+    const maxA = topArtists[0][1];
+    html += `<span class="dp-label wrapped-h">${tr('wrapped.topArtists')}</span>` + topArtists.map(([a, n]) => `<button class="genre-row" data-artist="${escapeHtml(a)}"><span class="genre-name">${escapeHtml(a)}</span><span class="genre-bar"><span class="genre-fill" style="width:${Math.round((n / maxA) * 100)}%"></span></span><span class="genre-count">${n}</span></button>`).join('');
+  }
+  if (topGenres.length) {
+    const maxG = topGenres[0][1];
+    html += `<span class="dp-label wrapped-h">${tr('wrapped.topGenres', { year })}</span>` + topGenres.map(([g, n]) => `<button class="genre-row" data-genre="${escapeHtml(g)}"><span class="genre-name">${escapeHtml(g)}</span><span class="genre-bar"><span class="genre-fill" style="width:${Math.round((n / maxG) * 100)}%"></span></span><span class="genre-count">${n}</span></button>`).join('');
   }
   if (!coll.length && !playsThisYear.length) html = `<p class="hint">${tr('wrapped.noData', { year })}</p>`;
   // Sammlungswert-Verlauf (heutigen Wert sichern + Verlauf zeichnen)
@@ -834,6 +867,8 @@ async function openWrapped() {
   } catch { /* ignorieren */ }
   $('#wrapped-body').innerHTML = html;
   $('#wrapped-body').querySelectorAll('[data-id]').forEach((b) => b.addEventListener('click', () => { $('#wrapped-dialog').close(); openDetail('collection', b.dataset.id); }));
+  $('#wrapped-body').querySelectorAll('[data-artist]').forEach((b) => b.addEventListener('click', () => { $('#wrapped-dialog').close(); runDbSearchWith({ artist: b.dataset.artist }); }));
+  $('#wrapped-body').querySelectorAll('[data-genre]').forEach((b) => b.addEventListener('click', () => { $('#wrapped-dialog').close(); openGenre(b.dataset.genre); }));
 }
 $('#btn-wrapped').addEventListener('click', openWrapped);
 $('#btn-wrapped-close').addEventListener('click', () => $('#wrapped-dialog').close());

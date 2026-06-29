@@ -321,6 +321,9 @@ export const DICT = {
   'wrapped.topRated': { en: 'Top rated', de: 'Top bewertet' },
   'wrapped.noData': { en: 'No data for {year} yet. Add albums and log what you listen to!', de: 'Noch keine Daten für {year}. Füg Alben hinzu und log, was du hörst!' },
   'wrapped.valueHistory': { en: 'Collection value history', de: 'Sammlungswert-Verlauf' },
+  'wrapped.topArtists': { en: 'Top artists', de: 'Top-Künstler' },
+  'wrapped.topGenres': { en: 'Top genres {year}', de: 'Top-Genres {year}' },
+  'wrapped.listenStreak': { en: 'Longest listening streak (days)', de: 'Längste Hör-Streak (Tage)' },
   'wrapped.currentValue': { en: 'Current value: {v}. History grows from here – check back in a few days.', de: 'Aktueller Wert: {v}. Der Verlauf wächst ab jetzt – schau in ein paar Tagen wieder rein.' },
 
   // Scan
