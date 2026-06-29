@@ -623,11 +623,11 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .profile-under-avatar { width: 46vw; max-width: 230px; margin: 0 0 14px auto; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .pfsong { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .pfsong-play {
-  flex: 0 0 auto; width: 16px; height: 16px; min-width: 16px; min-height: 16px; padding: 0; border-radius: 50%;
+  flex: 0 0 auto; width: 22px; height: 22px; min-width: 22px; min-height: 22px; padding: 0; border-radius: 50%;
   background: none; border: 1px solid var(--border); color: var(--text);
   display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
 }
-.pfsong-play svg { width: 8px; height: 8px; margin-left: 1px; }
+.pfsong-play svg { width: 11px; height: 11px; margin-left: 1px; }
 .pfsong-play.playing { background: var(--rose); border-color: var(--rose); color: #fff; }
 .pfsong-play.loading { opacity: .5; }
 .pfsong-title { font-size: 12px; color: var(--text); cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1391,9 +1391,11 @@ html[data-theme="light"] .toast { box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
   background: var(--accent); border: none; color: #fff; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.mp-toggle svg { width: 20px; height: 20px; display: block; }
+.mp-toggle svg { width: 20px; height: 20px; }
+/* Es ist immer nur EIN Icon sichtbar: läuft = Stopp (Quadrat), sonst = Play (Dreieck). */
 .mp-ic-play { display: none; }
-.mini-player.paused .mp-ic-pause { display: none; }
+.mp-ic-stop { display: block; }
+.mini-player.paused .mp-ic-stop { display: none; }
 .mini-player.paused .mp-ic-play { display: block; }
 .mp-main { flex: 1; min-width: 0; }
 .mp-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 5px; }

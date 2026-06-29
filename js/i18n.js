@@ -492,5 +492,5 @@ export const DICT = {
   // A11y
   'a11y.rating': { en: 'Rating, change with arrow keys', de: 'Bewertung, mit Pfeiltasten ändern' },
   'a11y.player': { en: 'Player', de: 'Wiedergabe' },
-  'a11y.playPause': { en: 'Play / pause', de: 'Abspielen / Pause' },
+  'a11y.playPause': { en: 'Play / stop', de: 'Abspielen / Stopp' },
 };

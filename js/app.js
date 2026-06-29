@@ -2597,7 +2597,18 @@ async function renderHomeLists(body) {
   }));
 }
 
-// „Neu erschienen" – beliebte Releases des aktuellen Jahres (über Discogs).
+// Wochen-Index (wechselt jede Woche) + rotierendes Fenster: gleicher großer Topf,
+// aber je Kalenderwoche ein anderer Ausschnitt → die Startseiten-Listen wirken
+// nicht mehr statisch, bleiben aber innerhalb der Woche stabil.
+function weekIndex() { return Math.floor(Date.now() / (7 * 24 * 3600 * 1000)); }
+function rotateWindow(arr, size, seed) {
+  if (arr.length <= size) return arr.slice(0, size);
+  const span = arr.length - size;                  // mögliche Startpositionen 0..span
+  const off = 1 + (Math.abs(seed * 13) % span);    // 1..span: nie exakt die Top-Liste, gute Streuung pro Woche
+  return arr.slice(off, off + size);
+}
+
+// „Neu erschienen" – Releases des aktuellen Jahres (über Discogs), wöchentlich rotierend.
 let newReleasesCache = null;
 async function loadNewReleases() {
   const ol = document.getElementById('home-new-list');
@@ -2605,12 +2616,13 @@ async function loadNewReleases() {
   let res = newReleasesCache;
   if (!res) {
     const year = new Date().getFullYear();
-    try { res = dedupeAlbums(await discogsSearch({ year: String(year), sort: 'have', sort_order: 'desc', per_page: 40 })); }
+    try { res = dedupeAlbums(await discogsSearch({ year: String(year), sort: 'have', sort_order: 'desc', per_page: 100 })); }
     catch { res = []; }
     newReleasesCache = res;
   }
   const withCover = res.filter((r) => r.coverUrl);
-  const list = (withCover.length >= 10 ? withCover : res).slice(0, 12);
+  const pool = withCover.length >= 10 ? withCover : res;
+  const list = rotateWindow(pool, 12, weekIndex() + 3);
   if (!list.length) { ol.innerHTML = `<li class="hint">${tr('msg.noData')}</li>`; return; }
   ol.innerHTML = list.map((r) => {
     const idx = res.indexOf(r);
@@ -2628,12 +2640,13 @@ async function loadPopularThisWeek() {
   if (!ol) return;
   let res = popularCache;
   if (!res) {
-    try { res = dedupeAlbums(await discogsSearch({ sort: 'have', sort_order: 'desc', per_page: 40 })); }
+    try { res = dedupeAlbums(await discogsSearch({ sort: 'have', sort_order: 'desc', per_page: 100 })); }
     catch { res = []; }
     popularCache = res;
   }
   const withCover = res.filter((r) => r.coverUrl);
-  const list = (withCover.length >= 10 ? withCover : res).slice(0, 10);
+  const pool = withCover.length >= 10 ? withCover : res;
+  const list = rotateWindow(pool, 10, weekIndex());
   if (!list.length) { ol.innerHTML = `<li class="hint">${tr('msg.noData')}</li>`; return; }
   ol.innerHTML = list.map((r, i) => {
     const idx = res.indexOf(r);
