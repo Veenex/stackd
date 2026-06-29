@@ -151,9 +151,11 @@
             <div class="profile-avatar-wrap">
               <div class="profile-avatar" id="profile-avatar-display"></div>
             </div>
-            <p class="profile-meta-line" id="profile-meta-line"></p>
-            <p class="profile-bio-display" id="profile-bio-display"></p>
           </div>
+        </div>
+        <div class="profile-under-avatar">
+          <p class="profile-meta-line" id="profile-meta-line"></p>
+          <p class="profile-bio-display" id="profile-bio-display"></p>
         </div>
 
         <div class="profile-section">
@@ -195,7 +197,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 137</p>
+        <p class="hint profile-version">Discend · Build 138</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -729,6 +731,19 @@
   </dialog>
 
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- Mini-Player (erscheint, sobald eine Hörprobe läuft) -->
+  <div id="mini-player" class="mini-player hidden" role="region" data-i18n-aria="a11y.player" aria-label="Player">
+    <button id="mp-toggle" class="mp-toggle" data-i18n-aria="a11y.playPause" aria-label="Play / pause">
+      <svg class="mp-ic-pause" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+      <svg class="mp-ic-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div class="mp-main">
+      <div class="mp-meta"><span id="mp-title" class="mp-title"></span><span id="mp-time" class="mp-time"></span></div>
+      <div class="mp-bar" id="mp-bar"><div class="mp-fill" id="mp-fill"></div></div>
+    </div>
+    <button id="mp-close" class="mp-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+  </div>
 
   <!-- Pull-to-refresh-Indikator (per JS gesteuert) -->
   <div id="ptr-spin" class="ptr-spin" aria-hidden="true"><span class="ptr-ring"></span></div>
