@@ -1116,7 +1116,7 @@ const INFO_CONTENT = {
         <li><strong>Resend</strong> – Versand von Bestätigungs- und Passwort-E-Mails.</li>
         <li><strong>Discogs</strong> – Abruf von Album- und Marktwert-Daten.</li>
         <li><strong>Apple/iTunes</strong> – Cover-Grafiken und Tracklists.</li>
-        <li><strong>Cloudflare</strong> (Domain/DNS) und <strong>GitHub Pages</strong> (Auslieferung der App).</li>
+        <li><strong>Cloudflare</strong> (Domain/DNS sowie Hosting und Auslieferung der App über Cloudflare Pages).</li>
       </ul>
       <h3>5. Zwecke & Rechtsgrundlage</h3>
       <p>Verarbeitung zur Bereitstellung der App und deines Kontos (Art. 6 Abs. 1 lit. b DSGVO) sowie zur Funktion und Sicherheit (lit. f).</p>
@@ -1144,7 +1144,7 @@ const INFO_CONTENT = {
         <li><strong>Resend</strong> – sending confirmation and password emails.</li>
         <li><strong>Discogs</strong> – fetching album and market value data.</li>
         <li><strong>Apple/iTunes</strong> – cover artwork and tracklists.</li>
-        <li><strong>Cloudflare</strong> (domain/DNS) and <strong>GitHub Pages</strong> (app delivery).</li>
+        <li><strong>Cloudflare</strong> (domain/DNS as well as hosting and app delivery via Cloudflare Pages).</li>
       </ul>
       <h3>5. Purposes & legal basis</h3>
       <p>Processing to provide the app and your account (Art. 6(1)(b) GDPR) and for functionality and security (lit. f).</p>
