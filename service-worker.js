@@ -1,7 +1,7 @@
 // service-worker.js – einfacher App-Shell-Cache, damit die App offline startet.
 // Daten (Sammlung/Wishlist) liegen in localStorage und sind ohnehin offline.
 
-const CACHE = 'platten-v136';
+const CACHE = 'platten-v137';
 const IMG_CACHE = 'platten-img-v1'; // Cover/Bilder separat, cache-first
 const IMG_MAX = 400;                // max. gecachte Bilder (älteste fliegen raus)
 const ASSETS = [
@@ -25,9 +25,14 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())
-  );
+  // Kein automatisches skipWaiting mehr: Die neue Version wartet, bis der Nutzer
+  // im „Update verfügbar"-Hinweis auf „Neu laden" tippt (postMessage SKIP_WAITING).
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+});
+
+// Vom Update-Hinweis ausgelöst: wartende Version sofort aktivieren.
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {

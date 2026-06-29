@@ -457,4 +457,38 @@ export const DICT = {
   'auth.err.emailRegistered': { en: 'This email is already registered.', de: 'Diese E-Mail ist schon registriert.' },
   'auth.err.mailFailed': { en: 'Could not send email: {msg}', de: 'Konnte Mail nicht senden: {msg}' },
   'auth.msg.resetMaybe': { en: 'If the email exists, a reset link is on its way. Check your inbox.', de: 'Falls die E-Mail existiert, kommt ein Reset-Link. Schau in dein Postfach.' },
+
+  // Update-Hinweis (neuer Service Worker)
+  'update.available': { en: 'A new version is available.', de: 'Eine neue Version ist verfügbar.' },
+  'update.reload': { en: 'Reload', de: 'Neu laden' },
+
+  // Offline-Status
+  'offline.message': { en: "You're offline – changes are saved locally.", de: 'Du bist offline – Änderungen werden lokal gespeichert.' },
+  'offline.backOnline': { en: 'Back online', de: 'Wieder online' },
+
+  // „Zum Home-Bildschirm" (iOS)
+  'a2hs.text': { en: 'Install Discend: tap Share, then "Add to Home Screen".', de: 'Discend installieren: tippe auf Teilen und dann „Zum Home-Bildschirm".' },
+
+  // Erscheinungsbild / Theme
+  'set.appearance': { en: 'Appearance', de: 'Erscheinungsbild' },
+  'theme.system': { en: 'System', de: 'System' },
+  'theme.light': { en: 'Light', de: 'Hell' },
+  'theme.dark': { en: 'Dark', de: 'Dunkel' },
+
+  // E-Mail ändern
+  'set.changeEmail': { en: 'Change email', de: 'E-Mail ändern' },
+  'set.currentEmail': { en: 'Current email', de: 'Aktuelle E-Mail' },
+  'set.newEmail': { en: 'New email', de: 'Neue E-Mail' },
+  'set.saveEmail': { en: 'Change email', de: 'E-Mail ändern' },
+  'msg.emailChangeSent': { en: 'Confirm the link in the new email to finish the change.', de: 'Bestätige den Link in der neuen E-Mail, um die Änderung abzuschließen.' },
+  'auth.err.emailInvalid': { en: 'Please enter a valid email.', de: 'Bitte eine gültige E-Mail eingeben.' },
+  'auth.err.emailSame': { en: "That's already your email address.", de: 'Das ist bereits deine E-Mail-Adresse.' },
+
+  // Doppelte-Platte-Warnung
+  'confirm.duplicate': { en: '"{title}" is already in your {list}. Add anyway?', de: '„{title}" ist schon in deiner {list}. Trotzdem hinzufügen?' },
+  'dup.collection': { en: 'collection', de: 'Sammlung' },
+  'dup.wishlist': { en: 'wishlist', de: 'Wishlist' },
+
+  // A11y
+  'a11y.rating': { en: 'Rating, change with arrow keys', de: 'Bewertung, mit Pfeiltasten ändern' },
 };

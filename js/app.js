@@ -16,7 +16,7 @@ import {
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, fetchSongPreview, fetchItunesSongs, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
-import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, sendPasswordReset, deleteAccount, uploadProfileImage } from './auth.js';
+import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, changeEmail, sendPasswordReset, deleteAccount, uploadProfileImage } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 import { t as tr, applyI18n, getLang, setLang } from './i18n.js';
 
@@ -174,6 +174,12 @@ function createRatingInput(container, initial, onChange) {
   const fire = () => { if (typeof onChange === 'function') onChange(value); };
   container.classList.add('rating-input');
   container.innerHTML = '';
+  // Barrierefrei: als Schieberegler bedienbar (Tab + Pfeiltasten).
+  container.setAttribute('role', 'slider');
+  container.setAttribute('tabindex', '0');
+  container.setAttribute('aria-valuemin', '0');
+  container.setAttribute('aria-valuemax', '5');
+  container.setAttribute('aria-label', tr('a11y.rating'));
   for (let i = 1; i <= 5; i++) {
     const slot = document.createElement('span');
     slot.className = 'note-slot';
@@ -186,6 +192,8 @@ function createRatingInput(container, initial, onChange) {
       const frac = Math.max(0, Math.min(1, value - idx));
       slot.querySelector('.note-fill').style.width = frac * 100 + '%';
     });
+    container.setAttribute('aria-valuenow', value);
+    container.setAttribute('aria-valuetext', value ? value + '/5' : '0');
   };
   container.onclick = (e) => {
     if (!requireAuth()) return; // Gäste: erst anmelden
@@ -196,6 +204,19 @@ function createRatingInput(container, initial, onChange) {
     const half = e.clientX - rect.left < rect.width / 2;
     let v = half ? pos - 0.5 : pos;
     if (v === value) v = 0; // erneut auf den gleichen Wert tippen = löschen
+    value = v;
+    render();
+    fire();
+  };
+  container.onkeydown = (e) => {
+    let v = value;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') v = Math.min(5, value + 0.5);
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') v = Math.max(0, value - 0.5);
+    else if (e.key === 'Home') v = 0;
+    else if (e.key === 'End') v = 5;
+    else return;
+    e.preventDefault();
+    if (!requireAuth()) return;
     value = v;
     render();
     fire();
@@ -1492,10 +1513,26 @@ $('#search-db').addEventListener('focus', showSearchUI);
 $$('.sfilter').forEach((b) => b.addEventListener('click', () => setSearchFilter(b.dataset.sf)));
 
 // ---------- Manuelles Formular ----------
+// Doppel-Erkennung: gleicher Barcode oder gleicher (normalisierter) Künstler+Titel
+// in Sammlung oder Wishlist. Vorteil ggü. Discogs: warnt vor versehentlichen Dubletten.
+function normKey(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function findDuplicate(artist, title, barcode) {
+  const a = normKey(artist), t = normKey(title), bc = String(barcode || '').replace(/\D/g, '');
+  for (const list of ['collection', 'wishlist']) {
+    const hit = getList(list).find((i) => {
+      if (bc && String(i.barcode || '').replace(/\D/g, '') === bc) return true;
+      return t.length > 0 && normKey(i.artist) === a && normKey(i.title) === t;
+    });
+    if (hit) return { list, item: hit };
+  }
+  return null;
+}
 $('#manual-form').addEventListener('submit', (e) => {
   e.preventDefault();
   const f = e.target;
   const list = f.list.value;
+  const dup = findDuplicate(f.artist.value, f.title.value, f.barcode.value);
+  if (dup && !confirm(tr('confirm.duplicate', { title: f.title.value.trim() || dup.item.title || '', list: tr(dup.list === 'collection' ? 'dup.collection' : 'dup.wishlist') }))) return;
   addItem(list, {
     artist: f.artist.value.trim(),
     title: f.title.value.trim(),
@@ -2006,11 +2043,15 @@ function downscaleImageBlob(file, maxW, quality) {
 
 function openProfileSettings() {
   const p = getProfile() || {};
-  $('#profile-settings-dialog').classList.remove('show-auth', 'show-delete', 'show-lang');
+  $('#profile-settings-dialog').classList.remove('show-auth', 'show-delete', 'show-lang', 'show-theme');
   $('#ps-signed-name').textContent = p.display_name || p.username || '';
   $('#ps-name').value = p.display_name || p.username || '';
   $('#ps-email').value = (getUser() && getUser().email) || '';
   $('#ps-email').readOnly = true;
+  $('#ps-cur-email').value = (getUser() && getUser().email) || '';
+  $('#ps-new-email').value = '';
+  $('#ps-email-msg').textContent = '';
+  $$('.set-theme-opt').forEach((b) => b.classList.toggle('active', b.dataset.theme === getTheme()));
   $('#ps-location').value = p.location || '';
   $('#ps-website').value = p.website || '';
   $('#ps-bio').value = p.bio || '';
@@ -2038,6 +2079,12 @@ $('#ps-pw-reset').addEventListener('click', async () => {
   const msg = $('#ps-auth-msg'); msg.textContent = tr('msg.sending');
   const err = await sendPasswordReset();
   msg.textContent = err || tr('msg.resetSent');
+});
+$('#ps-email-save').addEventListener('click', async () => {
+  const msg = $('#ps-email-msg'); msg.textContent = tr('msg.pleaseWait');
+  const err = await changeEmail($('#ps-new-email').value);
+  msg.textContent = err || tr('msg.emailChangeSent');
+  if (!err) $('#ps-new-email').value = '';
 });
 $('#ps-delete-open').addEventListener('click', () => {
   $('#ps-del-ack').checked = false; $('#ps-del-confirm').disabled = true; $('#ps-del-msg').textContent = '';
@@ -2120,12 +2167,112 @@ function toast(msg) {
   toastTimer = setTimeout(() => el.classList.add('hidden'), 2200);
 }
 
-// ---------- Service Worker ----------
+// ---------- Service Worker + Update-Hinweis ----------
+function showUpdateBar(reg) {
+  const bar = $('#update-bar'); if (!bar) return;
+  bar.classList.remove('hidden');
+  $('#update-reload').onclick = () => {
+    bar.classList.add('hidden');
+    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    else location.reload();
+  };
+}
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  let refreshing = false;
+  // Sobald die neue Version die Kontrolle übernimmt: einmal neu laden.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshing) return; refreshing = true; location.reload();
+  });
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('service-worker.js');
+      if (reg.waiting && navigator.serviceWorker.controller) showUpdateBar(reg);
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          // Neue Version installiert UND es lief schon eine alte -> Hinweis zeigen.
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) showUpdateBar(reg);
+        });
+      });
+    } catch { /* ignorieren */ }
   });
 }
+
+// ---------- Offline-Hinweis ----------
+function updateOnlineStatus() {
+  const bar = $('#offline-bar'); if (!bar) return;
+  if (navigator.onLine) {
+    if (!bar.classList.contains('hidden')) { bar.classList.add('hidden'); toast(tr('offline.backOnline')); }
+  } else {
+    bar.classList.remove('hidden');
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+if (!navigator.onLine) updateOnlineStatus();
+
+// ---------- iOS „Zum Home-Bildschirm"-Tipp (einmalig) ----------
+function maybeShowA2HS() {
+  try {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iphone|ipad|ipod/i.test(ua) && !window.MSStream;
+    const standalone = ('standalone' in navigator && navigator.standalone) || matchMedia('(display-mode: standalone)').matches;
+    if (!isIOS || standalone) return;
+    if (localStorage.getItem('discend_a2hs_dismissed')) return;
+    const b = $('#a2hs-banner'); if (!b) return;
+    setTimeout(() => b.classList.remove('hidden'), 2500); // erst nach kurzem Stöbern
+    $('#a2hs-close').onclick = () => {
+      b.classList.add('hidden');
+      try { localStorage.setItem('discend_a2hs_dismissed', '1'); } catch { /* voll */ }
+    };
+  } catch { /* ignorieren */ }
+}
+maybeShowA2HS();
+
+// ---------- Pull-to-refresh (Startseite/Listen neu laden) ----------
+async function refreshCurrentView() {
+  if (currentView === 'home') renderHome();
+  else if (currentView === 'collection') { renderList('collection'); renderCounts(); renderValueRange(); }
+  else if (currentView === 'search') renderBrowse();
+  else if (currentView === 'settings') { renderProfile(); renderPlaylists(); renderList('wishlist'); }
+}
+function setupPullToRefresh() {
+  const main = document.getElementById('main');
+  const spin = document.getElementById('ptr-spin');
+  if (!main || !spin) return;
+  const THRESHOLD = 70;
+  let startY = 0, pulling = false, dist = 0, refreshing = false;
+  main.addEventListener('touchstart', (e) => {
+    if (refreshing || main.scrollTop > 0 || e.touches.length !== 1) { pulling = false; return; }
+    startY = e.touches[0].clientY; pulling = true; dist = 0;
+    spin.style.transition = 'none';
+  }, { passive: true });
+  main.addEventListener('touchmove', (e) => {
+    if (!pulling) return;
+    dist = e.touches[0].clientY - startY;
+    if (dist <= 0 || main.scrollTop > 0) { pulling = main.scrollTop <= 0 && dist > 0; spin.style.opacity = '0'; return; }
+    const pull = Math.min(dist, 120);
+    spin.style.opacity = String(Math.min(1, pull / THRESHOLD));
+    spin.style.transform = `translateY(${pull * 0.5}px) rotate(${pull * 3}deg)`;
+  }, { passive: true });
+  main.addEventListener('touchend', async () => {
+    if (!pulling) return;
+    pulling = false;
+    spin.style.transition = 'opacity .2s ease, transform .2s ease';
+    if (dist >= THRESHOLD && !refreshing) {
+      refreshing = true;
+      spin.classList.add('spinning');
+      try { if (getUser()) await syncAll(); } catch { /* ignorieren */ }
+      await refreshCurrentView();
+      spin.classList.remove('spinning');
+      refreshing = false;
+    }
+    spin.style.opacity = '0';
+    spin.style.transform = 'translateY(0)';
+  });
+}
+setupPullToRefresh();
 
 // ---------- Profil-Tabs (Profil / Playlist / Watchlist) ----------
 function setProfileTab(name) {
@@ -2713,6 +2860,28 @@ function closeUserProfile() {
   document.body.style.overflow = '';
 }
 
+// ---------- Erscheinungsbild / Theme (dark | light | system) ----------
+const THEME_KEY = 'discend_theme';
+function getTheme() { return localStorage.getItem(THEME_KEY) || 'dark'; }
+function resolveTheme(t) {
+  if (t === 'system') return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  return t === 'light' ? 'light' : 'dark';
+}
+function applyTheme() {
+  const resolved = resolveTheme(getTheme());
+  document.documentElement.setAttribute('data-theme', resolved);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', resolved === 'light' ? '#f4f1ec' : '#14181C');
+}
+function setTheme(t) {
+  try { localStorage.setItem(THEME_KEY, t); } catch { /* voll */ }
+  applyTheme();
+  $$('.set-theme-opt').forEach((b) => b.classList.toggle('active', b.dataset.theme === t));
+}
+applyTheme();
+// Bei „System": auf Hell/Dunkel-Wechsel des Geräts live reagieren.
+try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (getTheme() === 'system') applyTheme(); }); } catch { /* alt */ }
+
 // ---------- Start ----------
 document.documentElement.lang = getLang();
 applyI18n();
@@ -2723,6 +2892,10 @@ $$('.set-lang-opt').forEach((b) => b.addEventListener('click', () => {
   setLang(b.dataset.lang);
   $$('.set-lang-opt').forEach((x) => x.classList.toggle('active', x.dataset.lang === getLang()));
 }));
+// Erscheinungsbild-Menü (slidet wie Sprache)
+$('#ps-theme-open').addEventListener('click', () => $('#profile-settings-dialog').classList.add('show-theme'));
+$('#ps-theme-back').addEventListener('click', () => $('#profile-settings-dialog').classList.remove('show-theme'));
+$$('.set-theme-opt').forEach((b) => b.addEventListener('click', () => setTheme(b.dataset.theme)));
 // Bei Sprachwechsel die sichtbare Ansicht neu aufbauen (dynamische Texte)
 document.addEventListener('langchange', () => { switchView(currentView); });
 

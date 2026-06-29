@@ -94,6 +94,19 @@ export async function changePassword(password) {
   const { error } = await sb.auth.updateUser({ password });
   return error ? error.message : null;
 }
+// E-Mail-Adresse ändern (eingeloggt). Supabase schickt einen Bestätigungslink an
+// die NEUE Adresse; erst nach Klick wird sie aktiv. null = Erfolg, sonst Fehlertext.
+export async function changeEmail(email) {
+  if (!sb || !currentUser) return tr('auth.err.notSignedIn');
+  const e = (email || '').trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return tr('auth.err.emailInvalid');
+  if (e.toLowerCase() === (currentUser.email || '').toLowerCase()) return tr('auth.err.emailSame');
+  const { error } = await sb.auth.updateUser(
+    { email: e },
+    { emailRedirectTo: location.origin + location.pathname }
+  );
+  return error ? error.message : null;
+}
 // Konto endgültig löschen (über Edge-Function mit Service-Role). null = Erfolg.
 export async function deleteAccount() {
   if (!sb || !currentUser) return tr('auth.err.notSignedIn');

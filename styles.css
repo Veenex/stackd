@@ -1294,3 +1294,87 @@ body.logged-in .logout-btn { display: block; }
     border-left: 1px solid var(--border); border-right: 1px solid var(--border);
   }
 }
+
+/* ---------- Light-Mode (Theme „Hell") ---------- */
+/* Alles läuft über CSS-Variablen; hier nur die Palette + die wenigen fest
+   verdrahteten dunklen Flächen (Header/Tabbar/Login-Overlay) überschreiben. */
+html[data-theme="light"] {
+  --bg: #f4f1ec;
+  --surface: #ffffff;
+  --surface-2: #ece7df;
+  --border: #e2dbd0;
+  --text: #1b2430;
+  --muted: #6c7689;
+  --rose: #c75b7d;
+  --petrol: #2b8aa6;
+  --indigo: #5b54a8;
+  --danger: #d23f28;
+}
+html[data-theme="light"] .app-header { background: rgba(255, 255, 255, .9); border-bottom: 1px solid var(--border); }
+html[data-theme="light"] .tabbar { background: rgba(255, 255, 255, .92); }
+html[data-theme="light"] .auth-page { background: rgba(244, 241, 236, .95); }
+html[data-theme="light"] .toast { box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
+
+/* ---------- Erscheinungsbild-Panel (wie Sprache) ---------- */
+#ps-theme-panel { transform: translateX(100%); }
+.settings-sheet.show-theme #ps-main { transform: translateX(-100%); }
+.settings-sheet.show-theme #ps-theme-panel { transform: translateX(0); }
+.set-theme-opt { justify-content: space-between; }
+.set-theme-opt .set-lang-check { color: var(--rose); font-weight: 700; opacity: 0; }
+.set-theme-opt.active .set-lang-check { opacity: 1; }
+
+/* ---------- Status-Leisten (Offline / Update) ---------- */
+.status-bar {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(80px + var(--safe-bottom));
+  width: calc(100% - 24px); max-width: 676px; z-index: 55;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 11px 16px; border-radius: 12px;
+  font-size: 14px; font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+.status-bar.hidden { display: none !important; }
+.offline-bar { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+.update-bar { background: var(--accent); color: #fff; }
+.update-reload {
+  background: rgba(255, 255, 255, .22); border: 1px solid rgba(255, 255, 255, .55);
+  color: #fff; padding: 7px 16px; border-radius: 8px; font-weight: 700; font-size: 14px;
+  cursor: pointer; flex: 0 0 auto; min-height: 40px;
+}
+
+/* ---------- iOS „Zum Home-Bildschirm" ---------- */
+.a2hs-banner {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(80px + var(--safe-bottom));
+  width: calc(100% - 24px); max-width: 676px; z-index: 55;
+  display: flex; align-items: center; gap: 11px;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+.a2hs-banner.hidden { display: none !important; }
+.a2hs-share { width: 22px; height: 22px; flex: 0 0 auto; color: var(--accent); }
+.a2hs-text { flex: 1; font-size: 13px; line-height: 1.35; }
+.a2hs-close { background: none; border: none; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer; flex: 0 0 auto; padding: 0 6px; min-height: 40px; }
+
+/* ---------- Pull-to-refresh ---------- */
+.ptr-spin {
+  position: fixed; top: 54px; left: 50%; margin-left: -14px;
+  width: 28px; height: 28px; z-index: 9;
+  opacity: 0; pointer-events: none;
+}
+.ptr-ring {
+  display: block; width: 100%; height: 100%;
+  border: 3px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%;
+}
+.ptr-spin.spinning { opacity: 1 !important; transform: translateY(8px) !important; }
+.ptr-spin.spinning .ptr-ring { animation: ptr-rot .7s linear infinite; }
+@keyframes ptr-rot { to { transform: rotate(360deg); } }
+
+/* ---------- A11y: größere Tap-Flächen für kleine Icon-Buttons ---------- */
+.dialog-close, .set-cancel, .set-save, .set-back,
+.trk-play, .trk-like, .pfsong-play, .play-del, .act-c-del {
+  min-width: 40px; min-height: 40px;
+}
+.trk-play, .trk-like, .pfsong-play { display: inline-flex; align-items: center; justify-content: center; }
