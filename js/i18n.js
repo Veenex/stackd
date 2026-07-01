@@ -376,6 +376,7 @@ export const DICT = {
   'htab.albums': { en: 'Albums', de: 'Alben' },
   'htab.reviews': { en: 'Reviews', de: 'Reviews' },
   'htab.lists': { en: 'Lists', de: 'Lists' },
+  'home.forYou': { en: 'For you', de: 'Für dich' },
   'home.popular': { en: 'Popular this week', de: 'Beliebt diese Woche' },
   'home.newReleases': { en: 'New releases {year}', de: 'Neu erschienen {year}' },
   'home.newFromFriends': { en: 'New from friends', de: 'Neu von Freunden' },

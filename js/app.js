@@ -2532,6 +2532,7 @@ function renderHomeAlben(body) {
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9z"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
       '</button>' +
     '</div>' +
+    `<div class="home-section" id="home-foryou-section" hidden><span class="dp-label">${tr('home.forYou')}</span><ol id="home-foryou-list" class="chart-list">${skelCharts()}</ol></div>` +
     `<div class="home-section"><span class="dp-label">${tr('home.popular')}</span><ol id="home-pop-list" class="chart-list">${skelCharts()}</ol></div>` +
     `<div class="home-section"><span class="dp-label">${tr('home.newFromFriends')}</span><div id="home-friends" class="home-friends"></div></div>` +
     `<div class="home-section"><span class="dp-label">${tr('home.newReleases', { year: new Date().getFullYear() })}</span><ol id="home-new-list" class="chart-list">${skelCharts()}</ol></div>`;
@@ -2557,6 +2558,7 @@ function renderHomeAlben(body) {
     $('#onboard-go').addEventListener('click', dismissOnboard);
   }
 
+  loadForYou();
   loadPopularThisWeek();
   renderFriendsRow();
   loadNewReleases();
@@ -2641,6 +2643,53 @@ function rotateWindow(arr, size, seed) {
   const span = arr.length - size;                  // mögliche Startpositionen 0..span
   const off = 1 + (Math.abs(seed * 13) % span);    // 1..span: nie exakt die Top-Liste, gute Streuung pro Woche
   return arr.slice(off, off + size);
+}
+
+// „Für dich" – Empfehlungen aus den Top-Genres + Top-Künstlern der eigenen Sammlung
+// (über Discogs), gefiltert um bereits vorhandene Alben. Nur für angemeldete Nutzer
+// mit ein paar Alben. Innerhalb der Sitzung gecacht.
+let forYouCache = null;
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+async function loadForYou() {
+  const section = document.getElementById('home-foryou-section');
+  const ol = document.getElementById('home-foryou-list');
+  if (!section || !ol) return;
+  const coll = getList('collection');
+  if (!getUser() || coll.length < 3) { section.hidden = true; return; }
+  section.hidden = false; // Skeleton während des Ladens zeigen
+  let res = forYouCache;
+  if (!res) {
+    const genreCounts = {}, artistCounts = {};
+    for (const it of coll) {
+      const g = (it.genre || '').trim(); if (g) genreCounts[g] = (genreCounts[g] || 0) + 1;
+      const a = (it.artist || '').trim(); if (a) artistCounts[a] = (artistCounts[a] || 0) + 1;
+    }
+    const topGenres = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]).slice(0, 2).map((e) => e[0]);
+    const topArtists = Object.entries(artistCounts).sort((a, b) => b[1] - a[1]).slice(0, 3).map((e) => e[0]);
+    const queries = [];
+    topGenres.forEach((g) => queries.push({ genre: g, sort: 'have', sort_order: 'desc', per_page: 40 }));
+    topArtists.forEach((a) => queries.push({ artist: a, sort: 'have', sort_order: 'desc', per_page: 20 }));
+    if (!queries.length) { section.hidden = true; return; }
+    let pool = [];
+    try {
+      const parts = await Promise.all(queries.map((q) => discogsSearch(q).catch(() => [])));
+      pool = dedupeAlbums(parts.flat());
+    } catch { pool = []; }
+    const have = new Set(coll.map(dedupeKey));
+    res = shuffle(pool.filter((r) => r.coverUrl && !have.has(dedupeKey(r)))).slice(0, 15);
+    forYouCache = res;
+  }
+  if (!res.length) { section.hidden = true; return; }
+  section.hidden = false;
+  ol.innerHTML = res.map((r, i) => {
+    const cov = r.coverUrl ? `<img src="${escapeHtml(r.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : '';
+    return `<li class="chart-item" data-idx="${i}"><div class="chart-cover${r.coverUrl ? '' : ' placeholder'}">${cov}</div><div class="chart-meta"><span class="chart-title">${escapeHtml(r.title || '')}</span><span class="chart-artist">${escapeHtml(r.artist || '')}</span></div></li>`;
+  }).join('');
+  ol.querySelectorAll('.chart-item').forEach((li) => li.addEventListener('click', () => openPreview(forYouCache[+li.dataset.idx])));
 }
 
 // „Neu erschienen" – Releases des aktuellen Jahres (über Discogs), wöchentlich rotierend.
