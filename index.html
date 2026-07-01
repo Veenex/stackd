@@ -197,7 +197,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 142</p>
+        <p class="hint profile-version">Discend · Build 143</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -727,6 +727,17 @@
       </div>
       <div id="cover-grid" class="cover-grid"></div>
       <p id="cover-status" class="hint"></p>
+    </div>
+  </dialog>
+
+  <!-- Benachrichtigungen -->
+  <dialog id="notifications-dialog">
+    <div class="cover-pick">
+      <div class="cover-pick-head">
+        <span data-i18n="notif.title">Notifications</span>
+        <button type="button" id="btn-notif-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+      </div>
+      <div id="notif-list" class="notif-list"></div>
     </div>
   </dialog>
 

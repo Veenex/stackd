@@ -14,6 +14,7 @@ import {
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
+  fetchNotifications, fetchUnreadCount, markNotificationsRead,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, fetchSongPreview, fetchItunesSongs, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, changeEmail, sendPasswordReset, deleteAccount, uploadProfileImage } from './auth.js';
@@ -2530,6 +2531,7 @@ function renderHomeAlben(body) {
       '<div class="home-greet-text"><span class="home-greet-hello" id="home-greet-hello"></span></div>' +
       `<button class="home-bell" id="home-bell" aria-label="${tr('a11y.notifications')}">` +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9z"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
+        '<span class="notif-badge hidden" id="notif-badge"></span>' +
       '</button>' +
     '</div>' +
     `<div class="home-section" id="home-foryou-section" hidden><span class="dp-label">${tr('home.forYou')}</span><ol id="home-foryou-list" class="chart-list">${skelCharts()}</ol></div>` +
@@ -2552,7 +2554,8 @@ function renderHomeAlben(body) {
     gav.innerHTML = '<svg class="avatar-ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
   }
   gav.addEventListener('click', () => { if (requireAuth()) switchView('settings'); });
-  $('#home-bell').addEventListener('click', () => toast(tr('toast.noNotifications')));
+  $('#home-bell').addEventListener('click', openNotifications);
+  refreshBellBadge();
   if ($('#onboard')) {
     $('#onboard-x').addEventListener('click', dismissOnboard);
     $('#onboard-go').addEventListener('click', dismissOnboard);
@@ -2780,6 +2783,61 @@ async function renderFriendsRow() {
   el.querySelectorAll('.friend-item').forEach((b) =>
     b.addEventListener('click', () => openActivity(friendsFeedCache[+b.dataset.idx])));
 }
+
+// ---------- Benachrichtigungen ----------
+let notifCache = [];
+function updateBellBadge(c) {
+  const b = document.getElementById('notif-badge');
+  if (!b) return;
+  if (c > 0) { b.textContent = c > 9 ? '9+' : String(c); b.classList.remove('hidden'); }
+  else { b.classList.add('hidden'); }
+}
+async function refreshBellBadge() {
+  if (!getUser()) { updateBellBadge(0); return; }
+  let c = 0;
+  try { c = await fetchUnreadCount(); } catch { /* ignorieren */ }
+  updateBellBadge(c);
+}
+function notifText(n) {
+  const who = n.actor ? (n.actor.display_name || n.actor.username || '') : tr('notif.someone');
+  if (n.type === 'follow') return tr('notif.followed', { who });
+  if (n.type === 'like') return tr('notif.liked', { who });
+  if (n.type === 'comment') {
+    const t = (n.data && n.data.text) ? ' „' + n.data.text + '"' : '';
+    return tr('notif.commented', { who }) + t;
+  }
+  return who;
+}
+function notifRowHtml(n, i) {
+  const hasAv = !!(n.actor && n.actor.avatar_url);
+  const av = hasAv ? `style="background-image:url('${escapeHtml(n.actor.avatar_url)}')"` : '';
+  const dot = n.read ? '' : '<span class="notif-dot"></span>';
+  return `<button class="notif-row" data-idx="${i}"><span class="friend-av${hasAv ? '' : ' placeholder'}" ${av}></span><span class="notif-text">${escapeHtml(notifText(n))}</span>${dot}</button>`;
+}
+function openNotifTarget(n) {
+  $('#notifications-dialog').close();
+  if (!n) return;
+  if (n.type === 'follow') { if (n.actor) openUserProfile(n.actor); }
+  else if (n.itemId) { openDetail('collection', n.itemId); }
+}
+async function openNotifications() {
+  if (!requireAuth()) return;
+  const box = $('#notif-list');
+  box.innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
+  $('#notifications-dialog').showModal();
+  let notifs = [];
+  try { notifs = await fetchNotifications(40); } catch { /* ignorieren */ }
+  notifCache = notifs;
+  if (!notifs.length) {
+    box.innerHTML = emptyState({ title: tr('notif.emptyTitle'), text: tr('notif.emptyText') });
+  } else {
+    box.innerHTML = notifs.map((n, i) => notifRowHtml(n, i)).join('');
+    box.querySelectorAll('.notif-row').forEach((row) => row.addEventListener('click', () => openNotifTarget(notifCache[+row.dataset.idx])));
+  }
+  try { await markNotificationsRead(); } catch { /* ignorieren */ }
+  updateBellBadge(0);
+}
+$('#btn-notif-close').addEventListener('click', () => $('#notifications-dialog').close());
 
 // ---------- Aktivitäts-Fenster (Review, Like, Kommentare) ----------
 let activityItem = null;

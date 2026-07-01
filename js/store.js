@@ -400,6 +400,40 @@ export async function deleteComment(id) {
   await sb.from('comments').delete().eq('id', id).eq('user_id', u);
 }
 
+// ---------- Benachrichtigungen ----------
+// Werden serverseitig per Trigger angelegt (Folgen/Likes/Kommentare). Der Client
+// liest nur die eigenen und markiert sie als gelesen.
+export async function fetchNotifications(limit = 40) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return [];
+  const { data } = await sb.from('notifications').select('*').eq('user_id', u)
+    .order('created_at', { ascending: false }).limit(limit);
+  const rows = data || [];
+  const ids = [...new Set(rows.map((r) => r.actor_id).filter(Boolean))];
+  const pm = {};
+  if (ids.length) {
+    const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
+    (profs || []).forEach((p) => { pm[p.id] = p; });
+  }
+  const mapped = rows.map((r) => ({
+    id: r.id, type: r.type, itemId: r.item_id, data: r.data,
+    read: r.read, createdAt: r.created_at, actorId: r.actor_id, actor: pm[r.actor_id] || null,
+  }));
+  return dropBlocked(mapped, (n) => n.actorId); // Benachrichtigungen blockierter Nutzer ausblenden
+}
+export async function fetchUnreadCount() {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return 0;
+  const { count } = await sb.from('notifications').select('id', { count: 'exact', head: true })
+    .eq('user_id', u).eq('read', false);
+  return count || 0;
+}
+export async function markNotificationsRead() {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return;
+  await sb.from('notifications').update({ read: true }).eq('user_id', u).eq('read', false);
+}
+
 // ---------- Tagebuch / Hör-Log ----------
 export async function addPlay(itemId, playedOn, note) {
   const sb = await cloud(); const u = uid();
