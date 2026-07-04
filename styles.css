@@ -1079,6 +1079,16 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .toast.has-action { display: inline-flex; align-items: center; gap: 16px; }
 .toast-action { background: none; border: none; color: var(--rose); font-weight: 700; font-size: 14px; cursor: pointer; padding: 2px; white-space: nowrap; }
 
+/* A–Z-Sprungleiste (Sammlung, mobil): dünne Buchstabenspalte am rechten Rand */
+.az-bar {
+  position: fixed; right: 1px; top: 50%; transform: translateY(-50%);
+  z-index: 16; display: flex; flex-direction: column; align-items: center;
+  padding: 6px 3px; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.az-bar.hidden { display: none; }
+.az-letter { font-size: 10px; line-height: 1.18; font-weight: 700; color: var(--muted); padding: 0 2px; pointer-events: none; }
+@media (min-width: 720px) { .az-bar { display: none !important; } }
+
 /* ---------- Auth (Login/Registrierung/Reset) ---------- */
 .auth-page {
   position: fixed; inset: 0; z-index: 60;

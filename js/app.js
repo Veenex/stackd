@@ -77,6 +77,7 @@ function switchView(view) {
   }
   const main = document.getElementById('main');
   if (main) main.scrollTop = 0;
+  updateAzBar(); // A–Z-Leiste nur in der Sammlung zeigen
 }
 
 $$('.tab').forEach((tab) => {
@@ -273,6 +274,8 @@ function renderList(list) {
 
   const ul = $(`#list-${list}`);
   ul.innerHTML = items.map(recordItemHtml).join('');
+  // Sprung-Buchstabe je Kachel (für die A–Z-Leiste), passend zum Sortiermodus
+  for (let i = 0; i < items.length; i++) { if (ul.children[i]) ul.children[i].dataset.letter = sortLetter(items[i], mode); }
 
   const hint = $(`#empty-${list}`);
   if (getList(list).length === 0) {
@@ -289,6 +292,61 @@ function renderList(list) {
   ul.querySelectorAll('.tile').forEach((el) => {
     el.addEventListener('click', () => openDetail(list, el.dataset.id));
   });
+  if (list === 'collection') updateAzBar();
+}
+
+// ---------- A–Z-Sprungleiste (Sammlung) ----------
+function azWords(artist) {
+  const a = String(artist || '').trim().replace(/^(the|die|der|das|los|las|les)\s+/i, '');
+  return a.split(/\s+/).filter(Boolean);
+}
+function sortLetter(item, mode) {
+  let s = '';
+  if (mode === 'title') s = item.title || '';
+  else if (mode === 'lastname') { const p = azWords(item.artist); s = p.length ? p[p.length - 1] : ''; }
+  else { const p = azWords(item.artist); s = p[0] || ''; } // artist / firstname
+  const c = s.trim().charAt(0).toUpperCase();
+  return (c >= 'A' && c <= 'Z') ? c : '#';
+}
+function letterRank(c) { return (c >= 'A' && c <= 'Z') ? (c.charCodeAt(0) - 64) : 0; }
+
+const AZ_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+let azBuilt = false;
+function buildAzBar() {
+  const bar = document.getElementById('az-bar');
+  if (!bar || azBuilt) return;
+  bar.innerHTML = AZ_LETTERS.map((L) => `<span class="az-letter">${L}</span>`).join('');
+  const jump = (clientY) => {
+    const r = bar.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(0.999, (clientY - r.top) / r.height));
+    azScrollTo(AZ_LETTERS[Math.floor(ratio * AZ_LETTERS.length)]);
+  };
+  let dragging = false;
+  bar.addEventListener('pointerdown', (e) => { dragging = true; try { bar.setPointerCapture(e.pointerId); } catch { /* */ } jump(e.clientY); e.preventDefault(); });
+  bar.addEventListener('pointermove', (e) => { if (dragging) jump(e.clientY); });
+  const end = (e) => { dragging = false; try { bar.releasePointerCapture(e.pointerId); } catch { /* */ } };
+  bar.addEventListener('pointerup', end);
+  bar.addEventListener('pointercancel', end);
+  azBuilt = true;
+}
+function azScrollTo(L) {
+  const ul = document.getElementById('list-collection');
+  if (!ul) return;
+  const want = letterRank(L);
+  let target = null;
+  for (const t of ul.children) { if (letterRank(t.dataset.letter || '') >= want) { target = t; break; } }
+  if (!target && ul.children.length) target = ul.children[ul.children.length - 1];
+  if (target) target.scrollIntoView({ block: 'start' });
+}
+function updateAzBar() {
+  const bar = document.getElementById('az-bar');
+  if (!bar) return;
+  const sortEl = document.getElementById('sort-collection');
+  const alpha = sortEl && ['artist', 'firstname', 'lastname', 'title'].includes(sortEl.value);
+  const tiles = document.querySelectorAll('#list-collection .tile').length;
+  const show = currentView === 'collection' && alpha && tiles >= 15;
+  bar.classList.toggle('hidden', !show);
+  if (show) buildAzBar();
 }
 
 function renderCounts() {
