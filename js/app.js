@@ -463,8 +463,8 @@ $('#as-collection').addEventListener('click', () => {
   if (editing.list === 'wishlist') {
     moveItem('wishlist', 'collection', editing.id); closeDetail();
     renderList('collection'); renderList('wishlist'); renderCounts(); toast(tr('toast.movedToCollection'));
-  } else if (confirm(tr('confirm.removeFromCollection'))) {
-    deleteItem('collection', editing.id); closeDetail(); renderList('collection'); renderCounts(); toast(tr('toast.removed'));
+  } else {
+    const id = editing.id; closeDetail(); deleteWithUndo('collection', id, tr('toast.removed'));
   }
 });
 // Toggle „Wishlist": analog.
@@ -475,8 +475,8 @@ $('#as-wishlist').addEventListener('click', () => {
   if (editing.list === 'collection') {
     moveItem('collection', 'wishlist', editing.id); closeDetail();
     renderList('collection'); renderList('wishlist'); renderCounts(); toast(tr('toast.movedToWishlist'));
-  } else if (confirm(tr('confirm.removeFromWishlist'))) {
-    deleteItem('wishlist', editing.id); closeDetail(); renderList('wishlist'); renderCounts(); toast(tr('toast.removed'));
+  } else {
+    const id = editing.id; closeDetail(); deleteWithUndo('wishlist', id, tr('toast.removed'));
   }
 });
 
@@ -587,6 +587,8 @@ async function addPreviewTo(list) {
   if (!requireAuth()) return;
   if (!previewResult) return;
   const item = { ...previewResult };
+  const dup = findDuplicate(item.artist, item.title, item.barcode);
+  if (dup && !confirm(tr('confirm.duplicate', { title: (item.title || dup.item.title || '').trim(), list: tr(dup.list === 'collection' ? 'dup.collection' : 'dup.wishlist') }))) return;
   // Bevorzugt offizielles Apple/iTunes-Artwork (saubere Grafik statt Foto); Discogs als Fallback.
   const clean = await fetchCoverArt(item.artist, item.title);
   if (clean) item.coverUrl = clean;
@@ -949,13 +951,9 @@ $('#dp-save').addEventListener('click', () => {
 
 $('#dp-delete').addEventListener('click', () => {
   if (!editing) return;
-  if (!confirm(tr('confirm.deleteEntry'))) return;
-  const list = editing.list;
-  deleteItem(list, editing.id);
+  const { list, id } = editing;
   closeDetail();
-  renderList(list);
-  renderCounts();
-  toast(tr('toast.deleted'));
+  deleteWithUndo(list, id);
 });
 
 $('#dp-move').addEventListener('click', () => {
@@ -1064,6 +1062,8 @@ function showResult(result) {
 
 async function saveResultTo(list) {
   if (!pendingResult) return;
+  const dup = findDuplicate(pendingResult.artist, pendingResult.title, pendingResult.barcode);
+  if (dup && !confirm(tr('confirm.duplicate', { title: (pendingResult.title || dup.item.title || '').trim(), list: tr(dup.list === 'collection' ? 'dup.collection' : 'dup.wishlist') }))) return;
   const clean = await fetchCoverArt(pendingResult.artist, pendingResult.title);
   if (clean) pendingResult.coverUrl = clean;
   addItem(list, {
@@ -2257,10 +2257,39 @@ $('#import-file').addEventListener('change', async (e) => {
 let toastTimer = null;
 function toast(msg) {
   const el = $('#toast');
+  el.classList.remove('has-action');
   el.textContent = msg;
   el.classList.remove('hidden');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.add('hidden'), 2200);
+}
+// Toast mit „Rückgängig"-Knopf (etwas länger sichtbar). cb() läuft bei Klick.
+function toastUndo(msg, cb) {
+  const el = $('#toast');
+  el.classList.add('has-action');
+  el.innerHTML = '<span class="toast-msg"></span><button type="button" class="toast-action"></button>';
+  el.querySelector('.toast-msg').textContent = msg;
+  const btn = el.querySelector('.toast-action');
+  btn.textContent = tr('btn.undo');
+  btn.onclick = () => { clearTimeout(toastTimer); el.classList.add('hidden'); cb(); };
+  el.classList.remove('hidden');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 5000);
+}
+// Löschen mit Rückgängig: Snapshot inkl. id -> Wiederherstellung mit derselben id.
+function deleteWithUndo(list, id, message) {
+  const item = getList(list).find((i) => i.id === id);
+  if (!item) return;
+  const snapshot = { ...item };
+  deleteItem(list, id);
+  renderList(list); renderCounts();
+  if (currentView === 'settings') renderProfile();
+  toastUndo(message || tr('toast.deleted'), () => {
+    addItem(list, snapshot); // gleiche id -> Eintrag zurück
+    renderList(list); renderCounts();
+    if (currentView === 'settings') renderProfile();
+    toast(tr('toast.restored'));
+  });
 }
 
 // ---------- Service Worker + Update-Hinweis ----------

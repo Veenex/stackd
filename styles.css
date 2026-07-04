@@ -1076,6 +1076,8 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
   transition: opacity .25s, transform .25s;
 }
 .toast.hidden { opacity: 0; pointer-events: none; transform: translateX(-50%) translateY(8px) scale(.96); }
+.toast.has-action { display: inline-flex; align-items: center; gap: 16px; }
+.toast-action { background: none; border: none; color: var(--rose); font-weight: 700; font-size: 14px; cursor: pointer; padding: 2px; white-space: nowrap; }
 
 /* ---------- Auth (Login/Registrierung/Reset) ---------- */
 .auth-page {

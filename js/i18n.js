@@ -240,6 +240,8 @@ export const DICT = {
   'toast.movedToWishlist': { en: 'Moved to wishlist', de: 'In Wishlist verschoben' },
   'toast.removed': { en: 'Removed', de: 'Entfernt' },
   'toast.deleted': { en: 'Deleted', de: 'Gelöscht' },
+  'toast.restored': { en: 'Restored', de: 'Wiederhergestellt' },
+  'btn.undo': { en: 'Undo', de: 'Rückgängig' },
   'toast.saved': { en: 'Saved', de: 'Gespeichert' },
   'toast.linkCopied': { en: 'Link copied', de: 'Link kopiert' },
   'toast.addedToCollection': { en: 'Added to collection', de: 'Zur Collection hinzugefügt' },
