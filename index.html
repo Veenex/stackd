@@ -197,7 +197,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 146</p>
+        <p class="hint profile-version">Discend · Build 147</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -727,6 +727,30 @@
       </div>
       <div id="cover-grid" class="cover-grid"></div>
       <p id="cover-status" class="hint"></p>
+    </div>
+  </dialog>
+
+  <!-- Schnellmenü (Langdruck/Rechtsklick auf eine Kachel) -->
+  <dialog id="quick-menu" class="actions-sheet">
+    <div class="as-sheet">
+      <p class="as-head" id="qm-title"></p>
+      <button type="button" class="qm-item" id="qm-like">
+        <span class="qm-ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/></svg></span>
+        <span id="qm-like-label">Like</span>
+      </button>
+      <button type="button" class="qm-item" id="qm-move">
+        <span class="qm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13M14 3l4 4-4 4M20 17H7M10 13l-4 4 4 4"/></svg></span>
+        <span id="qm-move-label">Move</span>
+      </button>
+      <button type="button" class="qm-item" id="qm-share">
+        <span class="qm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg></span>
+        <span data-i18n="a11y.share">Share</span>
+      </button>
+      <button type="button" class="qm-item qm-danger" id="qm-delete">
+        <span class="qm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg></span>
+        <span data-i18n="btn.delete">Delete</span>
+      </button>
+      <button type="button" class="as-done" id="qm-cancel" data-i18n="btn.cancel">Cancel</button>
     </div>
   </dialog>
 

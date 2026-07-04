@@ -242,6 +242,8 @@ export const DICT = {
   'toast.deleted': { en: 'Deleted', de: 'Gelöscht' },
   'toast.restored': { en: 'Restored', de: 'Wiederhergestellt' },
   'btn.undo': { en: 'Undo', de: 'Rückgängig' },
+  'qm.like': { en: 'Like', de: 'Liken' },
+  'qm.unlike': { en: 'Remove like', de: 'Like entfernen' },
   'toast.saved': { en: 'Saved', de: 'Gespeichert' },
   'toast.linkCopied': { en: 'Link copied', de: 'Link kopiert' },
   'toast.addedToCollection': { en: 'Added to collection', de: 'Zur Collection hinzugefügt' },

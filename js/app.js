@@ -289,11 +289,73 @@ function renderList(list) {
   }
   hint.classList.toggle('hidden', items.length > 0);
 
-  ul.querySelectorAll('.tile').forEach((el) => {
-    el.addEventListener('click', () => openDetail(list, el.dataset.id));
-  });
+  ul.querySelectorAll('.tile').forEach((el) => attachTileMenu(el, list));
   if (list === 'collection') updateAzBar();
 }
+
+// ---------- Schnellmenü (Langdruck / Rechtsklick auf eine Kachel) ----------
+let qmTarget = null;
+function attachTileMenu(el, list) {
+  let longFired = false, timer = null, sx = 0, sy = 0;
+  el.addEventListener('click', () => {
+    if (longFired) { longFired = false; return; } // Langdruck-Klick unterdrücken
+    openDetail(list, el.dataset.id);
+  });
+  const startHold = (x, y) => {
+    longFired = false; sx = x; sy = y;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      longFired = true;
+      if (navigator.vibrate) { try { navigator.vibrate(10); } catch { /* */ } }
+      openQuickMenu(list, el.dataset.id);
+    }, 500);
+  };
+  el.addEventListener('touchstart', (e) => { const t = e.touches[0]; if (t) startHold(t.clientX, t.clientY); }, { passive: true });
+  el.addEventListener('touchmove', (e) => { const t = e.touches[0]; if (t && (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10)) clearTimeout(timer); }, { passive: true });
+  el.addEventListener('touchend', () => clearTimeout(timer));
+  el.addEventListener('touchcancel', () => clearTimeout(timer));
+  el.addEventListener('contextmenu', (e) => { e.preventDefault(); openQuickMenu(list, el.dataset.id); });
+}
+function openQuickMenu(list, id) {
+  if (!requireAuth()) return;
+  const item = getList(list).find((i) => i.id === id);
+  if (!item) return;
+  qmTarget = { list, id };
+  $('#qm-title').textContent = [item.artist, item.title].filter(Boolean).join(' – ') || tr('misc.untitled');
+  $('#qm-like').classList.toggle('liked', !!item.liked);
+  $('#qm-like-label').textContent = tr(item.liked ? 'qm.unlike' : 'qm.like');
+  $('#qm-move-label').textContent = list === 'collection' ? tr('btn.moveToWishlist') : tr('btn.moveToCollection');
+  $('#quick-menu').showModal();
+}
+$('#qm-cancel').addEventListener('click', () => $('#quick-menu').close());
+$('#qm-like').addEventListener('click', () => {
+  if (!qmTarget) return;
+  const { list, id } = qmTarget;
+  const item = getList(list).find((i) => i.id === id);
+  if (item) { updateItem(list, id, { liked: !item.liked }); renderList(list); if (currentView === 'settings') renderProfile(); }
+  $('#quick-menu').close();
+});
+$('#qm-move').addEventListener('click', () => {
+  if (!qmTarget) return;
+  const { list, id } = qmTarget;
+  const to = list === 'collection' ? 'wishlist' : 'collection';
+  moveItem(list, to, id);
+  renderList('collection'); renderList('wishlist'); renderCounts();
+  $('#quick-menu').close();
+  toast(to === 'wishlist' ? tr('toast.movedToWishlist') : tr('toast.movedToCollection'));
+});
+$('#qm-share').addEventListener('click', () => {
+  if (!qmTarget) return;
+  const item = getList(qmTarget.list).find((i) => i.id === qmTarget.id);
+  $('#quick-menu').close();
+  if (item) shareLink(`${item.artist || ''} – ${item.title || ''} ${tr('share.suffix')}`.replace(/^ – /, '').trim());
+});
+$('#qm-delete').addEventListener('click', () => {
+  if (!qmTarget) return;
+  const { list, id } = qmTarget;
+  $('#quick-menu').close();
+  deleteWithUndo(list, id);
+});
 
 // ---------- A–Z-Sprungleiste (Sammlung) ----------
 function azWords(artist) {
