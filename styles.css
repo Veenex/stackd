@@ -1103,6 +1103,36 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .az-letter { font-size: 10px; line-height: 1.18; font-weight: 700; color: var(--muted); padding: 0 2px; pointer-events: none; }
 @media (min-width: 720px) { .az-bar { display: none !important; } }
 
+/* Mehrfachauswahl in der Sammlung */
+.sel-toggle { margin-left: auto; }
+.tile-sel { display: none; }
+#list-collection.selecting .tile { position: relative; }
+#list-collection.selecting .tile-sel {
+  display: block; position: absolute; top: 8px; left: 8px; z-index: 3;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: rgba(20, 24, 28, .55); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+}
+#list-collection.selecting .tile.selected .tile-sel {
+  border-color: var(--rose);
+  background: var(--rose) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E") center / 13px no-repeat;
+}
+#list-collection.selecting .tile.selected .tile-cover { outline: 3px solid var(--rose); outline-offset: -1px; }
+.sel-bar {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(80px + var(--safe-bottom));
+  width: calc(100% - 24px); max-width: 676px; z-index: 56;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 12px; padding: 8px 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+.sel-bar.hidden { display: none !important; }
+.sel-cancel { flex: 0 0 auto; background: none; border: none; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; padding: 0 6px; min-height: 40px; }
+.sel-count { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; }
+.sel-actions { flex: 0 0 auto; display: flex; gap: 8px; }
+.sel-action { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 9px; padding: 9px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.sel-action.sel-danger { color: var(--danger); border-color: var(--danger); }
+.sel-action:disabled { opacity: .45; cursor: default; }
+
 /* ---------- Auth (Login/Registrierung/Reset) ---------- */
 .auth-page {
   position: fixed; inset: 0; z-index: 60;

@@ -69,6 +69,9 @@
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z"/></svg>
         </button>
         <div id="ratingfilter-collection" class="rating-filter"></div>
+        <button id="sel-toggle-collection" class="filter-toggle sel-toggle" data-i18n-title="a11y.select" aria-label="Select">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/></svg>
+        </button>
       </div>
       <div id="value-collection" class="value-range value-collection"></div>
       <ul id="list-collection" class="record-list"></ul>
@@ -197,7 +200,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 149</p>
+        <p class="hint profile-version">Discend · Build 150</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -774,6 +777,16 @@
 
   <!-- A–Z-Sprungleiste (nur Sammlung, per JS ein-/ausgeblendet) -->
   <div id="az-bar" class="az-bar hidden" aria-hidden="true"></div>
+
+  <!-- Auswahl-Leiste (Mehrfachauswahl in der Sammlung) -->
+  <div id="sel-bar" class="sel-bar hidden">
+    <button id="sel-cancel" class="sel-cancel" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+    <span id="sel-count" class="sel-count"></span>
+    <div class="sel-actions">
+      <button id="sel-move" class="sel-action" data-i18n="btn.moveToWishlist">To wishlist</button>
+      <button id="sel-delete" class="sel-action sel-danger" data-i18n="btn.delete">Delete</button>
+    </div>
+  </div>
 
   <!-- Benachrichtigungen -->
   <dialog id="notifications-dialog">

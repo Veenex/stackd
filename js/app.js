@@ -44,6 +44,7 @@ let editing = null;       // { list, id } im Detail-Dialog
 
 // ---------- Navigation ----------
 function switchView(view) {
+  if (selMode && view !== 'collection') setSelMode(false);
   currentView = view;
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + view));
   $$('.tab').forEach((t) => {
@@ -252,6 +253,7 @@ function recordItemHtml(item) {
   const meta = rating || heart ? `<div class="tile-meta">${rating}${heart}</div>` : '';
   return `
     <li class="tile" data-id="${item.id}">
+      <span class="tile-sel" aria-hidden="true"></span>
       ${cover}
       ${meta}
       <p class="tile-title">${escapeHtml(item.title) || tr('misc.untitled')}</p>
@@ -290,7 +292,11 @@ function renderList(list) {
   hint.classList.toggle('hidden', items.length > 0);
 
   ul.querySelectorAll('.tile').forEach((el) => attachTileMenu(el, list));
-  if (list === 'collection') updateAzBar();
+  if (list === 'collection') {
+    ul.classList.toggle('selecting', selMode);
+    if (selMode) ul.querySelectorAll('.tile').forEach((t) => { if (selIds.has(t.dataset.id)) t.classList.add('selected'); });
+    updateAzBar();
+  }
 }
 
 // ---------- Schnellmenü (Langdruck / Rechtsklick auf eine Kachel) ----------
@@ -299,9 +305,11 @@ function attachTileMenu(el, list) {
   let longFired = false, timer = null, sx = 0, sy = 0;
   el.addEventListener('click', () => {
     if (longFired) { longFired = false; return; } // Langdruck-Klick unterdrücken
+    if (selMode && list === 'collection') { toggleSel(el); return; } // Auswahlmodus
     openDetail(list, el.dataset.id);
   });
   const startHold = (x, y) => {
+    if (selMode && list === 'collection') return; // im Auswahlmodus kein Langdruck-Menü
     longFired = false; sx = x; sy = y;
     clearTimeout(timer);
     timer = setTimeout(() => {
@@ -357,6 +365,61 @@ $('#qm-delete').addEventListener('click', () => {
   deleteWithUndo(list, id);
 });
 
+// ---------- Mehrfachauswahl (Sammlung) ----------
+let selMode = false;
+const selIds = new Set();
+function toggleSel(el) {
+  const id = el.dataset.id;
+  if (selIds.has(id)) { selIds.delete(id); el.classList.remove('selected'); }
+  else { selIds.add(id); el.classList.add('selected'); }
+  updateSelBar();
+}
+function updateSelBar() {
+  const c = document.getElementById('sel-count');
+  if (c) c.textContent = tr('sel.count', { n: selIds.size });
+  const dis = selIds.size === 0;
+  ['sel-move', 'sel-delete'].forEach((id) => { const b = document.getElementById(id); if (b) b.disabled = dis; });
+}
+function setSelMode(on) {
+  selMode = on;
+  selIds.clear();
+  const ul = document.getElementById('list-collection');
+  if (ul) { ul.classList.toggle('selecting', on); ul.querySelectorAll('.tile.selected').forEach((t) => t.classList.remove('selected')); }
+  const btn = document.getElementById('sel-toggle-collection');
+  if (btn) btn.classList.toggle('active', on);
+  const bar = document.getElementById('sel-bar');
+  if (bar) bar.classList.toggle('hidden', !on);
+  updateSelBar();
+  updateAzBar();
+}
+function selMove() {
+  if (!selIds.size) return;
+  const ids = [...selIds];
+  ids.forEach((id) => moveItem('collection', 'wishlist', id));
+  setSelMode(false);
+  renderList('collection'); renderList('wishlist'); renderCounts();
+  toast(tr('sel.moved', { n: ids.length }));
+}
+function selDelete() {
+  if (!selIds.size) return;
+  const snapshots = [...selIds].map((id) => getList('collection').find((i) => i.id === id)).filter(Boolean).map((it) => ({ ...it }));
+  snapshots.forEach((s) => deleteItem('collection', s.id));
+  setSelMode(false);
+  renderList('collection'); renderCounts();
+  if (currentView === 'settings') renderProfile();
+  toastUndo(tr('sel.deleted', { n: snapshots.length }), () => {
+    snapshots.forEach((s) => addItem('collection', s));
+    renderList('collection'); renderCounts();
+    toast(tr('toast.restored'));
+  });
+}
+{
+  const b1 = document.getElementById('sel-toggle-collection'); if (b1) b1.addEventListener('click', () => setSelMode(!selMode));
+  const b2 = document.getElementById('sel-cancel'); if (b2) b2.addEventListener('click', () => setSelMode(false));
+  const b3 = document.getElementById('sel-move'); if (b3) b3.addEventListener('click', selMove);
+  const b4 = document.getElementById('sel-delete'); if (b4) b4.addEventListener('click', selDelete);
+}
+
 // ---------- A–Z-Sprungleiste (Sammlung) ----------
 function azWords(artist) {
   const a = String(artist || '').trim().replace(/^(the|die|der|das|los|las|les)\s+/i, '');
@@ -406,7 +469,7 @@ function updateAzBar() {
   const sortEl = document.getElementById('sort-collection');
   const alpha = sortEl && ['artist', 'firstname', 'lastname', 'title'].includes(sortEl.value);
   const tiles = document.querySelectorAll('#list-collection .tile').length;
-  const show = currentView === 'collection' && alpha && tiles >= 15;
+  const show = currentView === 'collection' && alpha && tiles >= 15 && !selMode;
   bar.classList.toggle('hidden', !show);
   if (show) buildAzBar();
 }
