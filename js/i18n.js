@@ -350,6 +350,7 @@ export const DICT = {
   'genre.none': { en: 'No genre data available.', de: 'Keine Genre-Daten verfügbar.' },
   'genre.moreLoading': { en: 'More genres loading…', de: 'Weitere Genres werden geladen…' },
   'favsongs.none': { en: 'No favorite songs selected yet – edit via the gear icon above.', de: 'Noch keine Lieblingssongs gewählt – über das Zahnrad oben bearbeiten.' },
+  'favsongs.noneOther': { en: 'No favorite songs', de: 'Keine Lieblingssongs' },
   'songpicker.none': { en: "You haven't liked any songs yet. Like songs via the heart next to the tracks on an album page.", de: 'Du hast noch keine Songs gelikt. Like Songs über das Herz neben den Tracks auf einer Albumseite.' },
   'value.noAlbums': { en: 'No albums in your collection yet.', de: 'Noch keine Alben in der Sammlung.' },
   'value.note': { en: 'Market value approx. · automatic from Discogs · {valued}/{total} albums', de: 'Marktwert ca. · automatisch von Discogs · {valued}/{total} Alben' },

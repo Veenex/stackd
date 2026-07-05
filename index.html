@@ -197,7 +197,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 148</p>
+        <p class="hint profile-version">Discend · Build 149</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -452,19 +452,27 @@
   <section id="user-page" class="detail-page hidden">
     <header class="detail-bar">
       <button id="user-back" class="icon-btn" data-i18n-aria="a11y.back" aria-label="Back">‹</button>
+      <h2 class="up-name" id="up-name"></h2>
+      <span class="detail-bar-spacer" aria-hidden="true"></span>
     </header>
     <div class="detail-scroll" id="user-scroll">
-      <div class="profile-avatar-wrap up-avatar-wrap"><div class="profile-avatar" id="up-avatar"></div></div>
-      <h2 class="up-name" id="up-name"></h2>
-      <p class="up-handle" id="up-handle"></p>
-      <p class="profile-meta-line up-center" id="up-meta"></p>
-      <p class="profile-bio-display up-center" id="up-bio"></p>
-      <button id="up-follow" class="btn primary up-follow" data-i18n="btn.follow">Follow</button>
-      <div class="up-mod">
-        <button id="up-block" class="link-btn up-mod-btn"></button>
-        <button id="up-report" class="link-btn up-mod-btn" data-i18n="mod.report">Report</button>
-      </div>
       <p id="up-blocked-note" class="empty-hint hidden" data-i18n="mod.blockedNote">You have blocked this user. Their content is hidden.</p>
+      <div class="up-head">
+        <div class="up-left">
+          <div id="up-songs" class="up-songs"></div>
+          <button id="up-follow" class="btn primary up-follow" data-i18n="btn.follow">Follow</button>
+          <div class="up-mod">
+            <button id="up-block" class="link-btn up-mod-btn"></button>
+            <button id="up-report" class="link-btn up-mod-btn" data-i18n="mod.report">Report</button>
+          </div>
+        </div>
+        <div class="up-right">
+          <div class="profile-avatar-wrap"><div class="profile-avatar" id="up-avatar"></div></div>
+          <p class="up-handle" id="up-handle"></p>
+          <p class="profile-meta-line" id="up-meta"></p>
+          <p class="profile-bio-display" id="up-bio"></p>
+        </div>
+      </div>
       <div class="profile-section" id="up-favorites-section">
         <span class="dp-label" data-i18n="lbl.favorites">Favorites</span>
         <div id="up-favorites" class="fav-slots"></div>
@@ -472,13 +480,23 @@
       <div class="profile-section" id="up-stats-section">
         <span class="dp-label" data-i18n="lbl.stats">Stats</span>
         <ul class="stat-rows" id="up-stats"></ul>
-        <div id="up-collection" class="cat-covers uptab-panel hidden"></div>
-        <div id="up-wishlist" class="cat-covers uptab-panel hidden"></div>
       </div>
       <div class="profile-section" id="up-lists-section" hidden>
         <span class="dp-label" data-i18n="lbl.playlists">Playlists</span>
         <div id="up-lists"></div>
       </div>
+    </div>
+  </section>
+
+  <!-- Sammlung/Wishlist eines anderen Nutzers als eigene Übersichtsseite -->
+  <section id="up-grid-page" class="detail-page hidden">
+    <header class="detail-bar">
+      <button id="up-grid-back" class="icon-btn" data-i18n-aria="a11y.back" aria-label="Back">‹</button>
+      <h2 class="up-name" id="up-grid-title"></h2>
+      <span class="detail-bar-spacer" aria-hidden="true"></span>
+    </header>
+    <div class="detail-scroll">
+      <div id="up-grid" class="cat-covers"></div>
     </div>
   </section>
 

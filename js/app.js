@@ -3131,20 +3131,52 @@ function setFollowBtn(btn, following) {
   btn.classList.toggle('ghost', following);
   btn.classList.toggle('primary', !following);
 }
+// Lieblingssongs in einen Container rendern (für eigenes UND fremdes Profil).
+function renderSongsInto(el, rawSongs) {
+  if (!el) return;
+  const songs = (rawSongs || []).filter(Boolean).slice(0, 4);
+  if (!songs.length) { el.innerHTML = `<p class="hint pfsong-none">${tr('favsongs.noneOther')}</p>`; return; }
+  el.innerHTML = songs.map((s, i) => `<div class="pfsong" data-idx="${i}"><button class="pfsong-play" data-idx="${i}" aria-label="${tr('a11y.preview')}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button><span class="pfsong-title">${escapeHtml(s.title || '(Song)')}</span></div>`).join('');
+  el.querySelectorAll('.pfsong-title').forEach((t) => t.addEventListener('click', () => {
+    const s = songs[+t.closest('.pfsong').dataset.idx]; if (!s) return;
+    if (s.albumId) openPreview({ source: 'discogs', sourceId: s.albumId, title: s.album || '', artist: s.artist || '', coverUrl: '' });
+    else runDbSearchWith({ q: `${s.artist || ''} ${s.album || s.title || ''}`.trim() });
+  }));
+  el.querySelectorAll('.pfsong-play').forEach((b) => b.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const s = songs[+b.dataset.idx]; if (!s) return;
+    let url = s.preview;
+    if (!url) {
+      if (s._preview === undefined) {
+        b.classList.add('loading');
+        try { s._preview = await fetchSongPreview(s.artist || s.album || '', s.title || ''); } catch { s._preview = ''; }
+        b.classList.remove('loading');
+      }
+      url = s._preview;
+    }
+    if (url) togglePreview(url, b, { title: s.title, artist: s.artist || s.album });
+    else toast(tr('toast.noPreview'));
+  }));
+}
+let upColl = [], upWish = [], upName = '';
 async function openUserProfile(user) {
   if (!user) return;
   const u = (await fetchUserProfile(user.id)) || user;
   friendsFollowing = new Set(await getFollowing().catch(() => []));
-  $('#up-name').textContent = u.display_name || u.username || '';
+  upName = u.display_name || u.username || '';
+  $('#up-name').textContent = upName;
   $('#up-handle').textContent = '@' + (u.username || '');
+  renderSongsInto($('#up-songs'), u.fav_songs);
   const av = $('#up-avatar');
   if (u.avatar_url) { av.style.backgroundImage = `url("${u.avatar_url}")`; av.innerHTML = ''; }
   else { av.style.backgroundImage = ''; av.innerHTML = '<svg class="avatar-ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>'; }
+  const PIN = '<svg class="meta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+  const LNK = '<svg class="meta-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
   const parts = [];
-  if (u.location) parts.push(`📍 ${escapeHtml(u.location)}`);
+  if (u.location) parts.push(`${PIN} ${escapeHtml(u.location)}`);
   if (u.website) {
     const href = /^https?:\/\//.test(u.website) ? u.website : 'https://' + u.website;
-    parts.push(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener">🔗 ${escapeHtml(u.website.replace(/^https?:\/\//, ''))}</a>`);
+    parts.push(`<a href="${escapeHtml(href)}" target="_blank" rel="noopener">${LNK} ${escapeHtml(u.website.replace(/^https?:\/\//, ''))}</a>`);
   }
   $('#up-meta').innerHTML = parts.join('  ·  ');
   $('#up-bio').textContent = u.bio || '';
@@ -3189,46 +3221,40 @@ async function openUserProfile(user) {
   $('#up-blocked-note').classList.toggle('hidden', !isBlocked);
   $('#up-favorites-section').style.display = isBlocked ? 'none' : '';
   $('#up-stats-section').style.display = isBlocked ? 'none' : '';
+  $('#up-grid-page').classList.add('hidden');
   if (isBlocked) {
     fbtn.style.display = 'none';
+    $('#up-songs').innerHTML = '';
     $('#up-lists').innerHTML = ''; $('#up-lists-section').hidden = true;
     $('#user-page').classList.remove('hidden');
     $('#user-scroll').scrollTop = 0;
     document.body.style.overflow = 'hidden';
     return; // Inhalte blockierter Nutzer nicht laden
   }
-  $('#up-collection').innerHTML = '';
-  $('#up-wishlist').innerHTML = '';
   $('#up-stats').innerHTML = '';
   $('#up-favorites').innerHTML = '';
-  // Sammlung/Wishlist starten eingeklappt
-  $('#up-collection').classList.add('hidden');
-  $('#up-wishlist').classList.add('hidden');
   $('#up-lists').innerHTML = '';
   $('#up-lists-section').hidden = true;
   $('#user-page').classList.remove('hidden');
   $('#user-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
-  // Sammlung + Wishlist parallel laden
+  // Sammlung + Wishlist + Wert laden
   let coll = [], wish = [], vhist = [];
   try { [coll, wish, vhist] = await Promise.all([fetchUserItems(u.id, 'collection'), fetchUserItems(u.id, 'wishlist'), u.hide_value ? Promise.resolve([]) : fetchValueHistory(u.id)]); }
   catch { /* ignorieren */ }
+  upColl = coll; upWish = wish;
   const latestVal = vhist.length ? vhist[vhist.length - 1].value : 0;
-  // Statistiken
   const rated = coll.filter((i) => Number(i.rating) > 0);
   const avg = rated.length ? (rated.reduce((s, i) => s + Number(i.rating), 0) / rated.length) : 0;
+  // Sammlung/Wishlist öffnen als eigene Seite (kein Aufklappen mehr)
   $('#up-stats').innerHTML =
-    `<li class="stat-toggle" data-panel="up-collection"><span>${tr('stat.collection')}</span><span class="stat-num">${coll.length}<span class="stat-chev">›</span></span></li>` +
-    `<li class="stat-toggle" data-panel="up-wishlist"><span>${tr('stat.wishlist')}</span><span class="stat-num">${wish.length}<span class="stat-chev">›</span></span></li>` +
+    `<li class="stat-toggle" data-grid="collection"><span>${tr('stat.collection')}</span><span class="stat-num">${coll.length}<span class="stat-chev">›</span></span></li>` +
+    `<li class="stat-toggle" data-grid="wishlist"><span>${tr('stat.wishlist')}</span><span class="stat-num">${wish.length}<span class="stat-chev">›</span></span></li>` +
     `<li><span>${tr('stat.rated')}</span><span class="stat-num">${rated.length}</span></li>` +
     `<li><span>${tr('stat.avgRating')}</span><span class="stat-num">${avg ? avg.toFixed(1) + ' ♪' : '–'}</span></li>` +
     ((!u.hide_value && latestVal > 0) ? `<li><span>${tr('stat.collectionValue')}</span><span class="stat-num">${fmtEuro(latestVal)}</span></li>` : '');
-  $('#up-stats').querySelectorAll('.stat-toggle').forEach((li) => li.addEventListener('click', () => {
-    const panel = document.getElementById(li.dataset.panel);
-    const nowHidden = panel.classList.toggle('hidden');
-    li.classList.toggle('open', !nowHidden);
-  }));
-  // Favoriten (aus dem Profil; verweisen auf Sammlungs-IDs)
+  $('#up-stats').querySelectorAll('.stat-toggle').forEach((li) => li.addEventListener('click', () => openUpGrid(li.dataset.grid)));
+  // Favoriten-Alben
   const favItems = (u.favorites || []).map((f) => resolveFav(f, coll)).filter(Boolean);
   let favHtml = '';
   for (let i = 0; i < 4; i++) {
@@ -3237,14 +3263,21 @@ async function openUserProfile(user) {
   }
   $('#up-favorites').innerHTML = favHtml;
   $('#up-favorites').querySelectorAll('.fav-slot.filled').forEach((b) => b.addEventListener('click', () => openPreview(favItems[+b.dataset.fav])));
-  // Sammlung + Wishlist Cover-Grids
-  fillCoverGrid($('#up-collection'), coll);
-  fillCoverGrid($('#up-wishlist'), wish);
   // Listen des Nutzers
   let lists = [];
   try { lists = await fetchUserPlaylists(u.id); } catch { /* ignorieren */ }
   renderUserLists(lists);
 }
+// Sammlung/Wishlist eines Nutzers als eigene Übersichtsseite öffnen.
+function openUpGrid(kind) {
+  const items = kind === 'wishlist' ? upWish : upColl;
+  $('#up-grid-title').textContent = (upName ? upName + ' – ' : '') + tr(kind === 'wishlist' ? 'stat.wishlist' : 'stat.collection');
+  fillCoverGrid($('#up-grid'), items);
+  const p = $('#up-grid-page');
+  p.classList.remove('hidden');
+  const sc = p.querySelector('.detail-scroll'); if (sc) sc.scrollTop = 0;
+}
+$('#up-grid-back').addEventListener('click', () => $('#up-grid-page').classList.add('hidden'));
 // Listen (Playlists) eines Nutzers anzeigen
 function renderUserLists(lists) {
   const sec = $('#up-lists-section'); const box = $('#up-lists');
@@ -3271,6 +3304,7 @@ function fillCoverGrid(el, items) {
 }
 function closeUserProfile() {
   $('#user-page').classList.add('hidden');
+  $('#up-grid-page').classList.add('hidden');
   document.body.style.overflow = '';
 }
 
