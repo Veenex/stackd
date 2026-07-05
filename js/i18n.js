@@ -282,6 +282,9 @@ export const DICT = {
   'search.nobodyFound': { en: 'Nobody found.', de: 'Niemand gefunden.' },
   'search.noReviews': { en: 'No reviews found.', de: 'Keine Reviews gefunden.' },
   'search.noPlaylists': { en: 'No playlists found.', de: 'Keine Playlists gefunden.' },
+  'search.recent': { en: 'Recent searches', de: 'Letzte Suchen' },
+  'search.clearHistory': { en: 'Clear', de: 'Löschen' },
+  'search.recentlyViewed': { en: 'Recently viewed', de: 'Zuletzt angesehen' },
 
   // Albumdetail dynamisch
   'dp.availableOn': { en: 'Available on', de: 'Erhältlich auf' },

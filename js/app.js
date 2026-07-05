@@ -680,6 +680,7 @@ async function renderAlbumReviews(item) {
 // Album aus der Suche/Datenbank ansehen (noch nicht gespeichert) -> Detailseite mit Tracklist
 function openPreview(result) {
   if (!result) return;
+  pushRecentAlbum(result); // „Zuletzt angesehen" merken
   editing = null;
   previewResult = result;
   detailPage.classList.add('preview');
@@ -1447,14 +1448,62 @@ const INFO_CONTENT = {
   },
 };
 
+// ---------- Suchverlauf + „zuletzt angesehen" (lokal) ----------
+const SEARCH_HIST_KEY = 'discend_search_history';
+const RECENT_ALB_KEY = 'discend_recent_albums';
+function loadJson(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; } }
+function saveJson(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch { /* voll */ } }
+function pushSearchHistory(q) {
+  q = (q || '').trim(); if (!q) return;
+  const h = loadJson(SEARCH_HIST_KEY, []).filter((x) => String(x).toLowerCase() !== q.toLowerCase());
+  h.unshift(q);
+  saveJson(SEARCH_HIST_KEY, h.slice(0, 10));
+}
+function recentAlbumKey(a) { return a.masterId ? 'm' + a.masterId : (a.sourceId ? 's' + a.sourceId : ((a.artist || '') + '|' + (a.title || '')).toLowerCase()); }
+function pushRecentAlbum(a) {
+  if (!a || (!a.title && !a.artist)) return;
+  const rec = { title: a.title || '', artist: a.artist || '', coverUrl: a.coverUrl || '', source: a.source || '', sourceId: a.sourceId || '', masterId: a.masterId || '', year: a.year || '' };
+  const k = recentAlbumKey(rec);
+  const list = loadJson(RECENT_ALB_KEY, []).filter((x) => recentAlbumKey(x) !== k);
+  list.unshift(rec);
+  saveJson(RECENT_ALB_KEY, list.slice(0, 12));
+}
+function recentSectionsHtml() {
+  let html = '';
+  const hist = loadJson(SEARCH_HIST_KEY, []);
+  if (hist.length) {
+    html += `<div class="recent-searches"><div class="recent-head"><span class="dp-label">${tr('search.recent')}</span><button class="recent-clear" id="rs-clear">${tr('search.clearHistory')}</button></div><div class="chip-row">`
+      + hist.map((q) => `<button class="search-chip" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`).join('')
+      + '</div></div>';
+  }
+  const rec = loadJson(RECENT_ALB_KEY, []).filter((a) => a.coverUrl);
+  if (rec.length) {
+    html += `<div class="home-section"><span class="dp-label">${tr('search.recentlyViewed')}</span><ol class="chart-list" id="recent-viewed-list">`
+      + rec.map((a, i) => `<li class="chart-item" data-ri="${i}"><div class="chart-cover"><img src="${escapeHtml(a.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" /></div><div class="chart-meta"><span class="chart-title">${escapeHtml(a.title || '')}</span><span class="chart-artist">${escapeHtml(a.artist || '')}</span></div></li>`).join('')
+      + '</ol></div>';
+  }
+  return html;
+}
+
 function renderBrowse() {
   const c = $('#browse-content');
   $('#search-status').textContent = '';
-  c.innerHTML = `<ul class="browse-list">${BROWSE_TABS.map((t) => `<li class="browse-row" data-tab="${t.id}"><span>${tr(t.label)}</span><span class="chev">›</span></li>`).join('')}</ul>
+  c.innerHTML = recentSectionsHtml()
+    + `<ul class="browse-list">${BROWSE_TABS.map((t) => `<li class="browse-row" data-tab="${t.id}"><span>${tr(t.label)}</span><span class="chev">›</span></li>`).join('')}</ul>
     <p class="browse-section">Discend.app</p>
     <ul class="browse-list">${INFO_PAGES.map((p) => `<li class="browse-row" data-info="${p.id}"><span>${tr(p.label)}</span><span class="chev">›</span></li>`).join('')}</ul>`;
   c.querySelectorAll('.browse-row[data-tab]').forEach((li) => li.addEventListener('click', () => openBrowseTab(li.dataset.tab)));
   c.querySelectorAll('.browse-row[data-info]').forEach((li) => li.addEventListener('click', () => renderInfoPage(li.dataset.info)));
+  // Suchverlauf-Chips: erneut suchen
+  c.querySelectorAll('.search-chip').forEach((b) => b.addEventListener('click', () => {
+    const q = b.dataset.q; const inp = $('#search-db'); if (inp) inp.value = q;
+    pushSearchHistory(q); showSearchUI(); setSearchFilter('alben');
+  }));
+  const clr = c.querySelector('#rs-clear');
+  if (clr) clr.addEventListener('click', () => { saveJson(SEARCH_HIST_KEY, []); renderBrowse(); });
+  // Zuletzt angesehen: Album erneut öffnen
+  const rec = loadJson(RECENT_ALB_KEY, []).filter((a) => a.coverUrl);
+  c.querySelectorAll('#recent-viewed-list .chart-item').forEach((li) => li.addEventListener('click', () => { const a = rec[+li.dataset.ri]; if (a) openPreview(a); }));
 }
 
 function renderInfoPage(key) {
@@ -1716,7 +1765,7 @@ async function runPlaylistSearch(q) {
 let searchTimer = null;
 $('#search-cancel').addEventListener('click', cancelSearch);
 $('#search-db').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') { e.preventDefault(); runSearch(); $('#search-db').blur(); } // Enter startet die Suche + schließt die Tastatur
+  if (e.key === 'Enter') { e.preventDefault(); const q = $('#search-db').value.trim(); if (q) pushSearchHistory(q); runSearch(); $('#search-db').blur(); } // Enter startet die Suche + schließt die Tastatur
 });
 $('#search-db').addEventListener('input', () => {
   const v = $('#search-db').value.trim();
