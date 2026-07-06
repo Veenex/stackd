@@ -121,6 +121,7 @@
         <label><span data-i18n="field.barcode">Barcode</span><input type="text" name="barcode" inputmode="numeric" /></label>
         <label><span data-i18n="field.coverUrl">Cover URL</span><input type="url" name="coverUrl" data-i18n-ph="ph.optional" placeholder="optional" /></label>
         <label><span data-i18n="field.price">Purchase price (€)</span><input type="number" name="price" step="0.01" inputmode="decimal" data-i18n-ph="ph.optional" placeholder="optional" /></label>
+        <label><span data-i18n="field.location">Shelf / location</span><input type="text" name="location" data-i18n-ph="ph.locationExample" placeholder="e.g. Shelf A, slot 3" /></label>
         <label><span data-i18n="field.note">Note</span><textarea name="note" rows="3" data-i18n-ph="ph.noteExample" placeholder="e.g. limited edition"></textarea></label>
         <div class="rating-row">
           <span class="rating-row-label" data-i18n="field.rating">Rating</span>
@@ -171,6 +172,11 @@
           <div id="recent-activity" class="recent-row"></div>
         </div>
 
+        <div class="profile-section" id="lent-section" hidden>
+          <span class="dp-label" data-i18n="lbl.lentOut">Lent out</span>
+          <div id="lent-list" class="lent-list"></div>
+        </div>
+
         <div class="profile-section">
           <div class="histo" id="rating-histo"></div>
         </div>
@@ -200,7 +206,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 150</p>
+        <p class="hint profile-version">Discend · Build 151</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -361,6 +367,11 @@
         <button type="button" id="dp-add-collection" class="btn primary" data-i18n="btn.toCollection">To collection</button>
       </div>
 
+      <div class="dp-section" id="dp-lend-section">
+        <span class="dp-label" data-i18n="lbl.lending">Lending</span>
+        <div id="dp-lend"></div>
+      </div>
+
       <div class="dp-section" id="dp-diary-section">
         <span class="dp-label" data-i18n="lbl.diary">Diary (listened on)</span>
         <div class="dp-diary-add">
@@ -410,6 +421,7 @@
               <option>No Cover</option>
             </select>
           </label>
+          <label><span data-i18n="field.location">Shelf / location</span><input type="text" id="dp-edit-location" data-i18n-ph="ph.locationExample" placeholder="e.g. Shelf A, slot 3" /></label>
         </div>
       </details>
 

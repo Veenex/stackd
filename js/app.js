@@ -251,10 +251,12 @@ function recordItemHtml(item) {
   const rating = ratingDisplayHtml(item.rating);
   const heart = item.liked ? `<span class="tile-like">${heartSvg()}</span>` : '';
   const meta = rating || heart ? `<div class="tile-meta">${rating}${heart}</div>` : '';
+  const lent = item.lentTo ? `<span class="tile-lent" title="${escapeHtml(item.lentTo)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"/></svg></span>` : '';
   return `
     <li class="tile" data-id="${item.id}">
       <span class="tile-sel" aria-hidden="true"></span>
       ${cover}
+      ${lent}
       ${meta}
       <p class="tile-title">${escapeHtml(item.title) || tr('misc.untitled')}</p>
       <p class="tile-artist">${escapeHtml(item.artist) || '(unbekannt)'}</p>
@@ -594,7 +596,11 @@ function openDetail(list, id) {
   $('#dp-edit-price').value = item.price ? item.price : '';
   $('#dp-edit-media').value = item.mediaCond || '';
   $('#dp-edit-sleeve').value = item.sleeveCond || '';
+  $('#dp-edit-location').value = item.location || '';
   setConditionDisplay(item.mediaCond, item.sleeveCond);
+  const lendSec = $('#dp-lend-section');
+  if (lendSec) lendSec.style.display = list === 'collection' ? '' : 'none';
+  if (list === 'collection') renderLend(item);
   $('.dp-edit').open = false;
 
   $('#dp-move').textContent = list === 'collection' ? tr('btn.moveToWishlist') : tr('btn.moveToCollection');
@@ -747,6 +753,7 @@ function openPreview(result) {
   editing = null;
   previewResult = result;
   detailPage.classList.add('preview');
+  { const ls = document.getElementById('dp-lend-section'); if (ls) ls.style.display = 'none'; }
   setDetailCover(result.coverUrl);
   $('#dp-title').textContent = result.title || tr('misc.untitled');
   $('#dp-artist').textContent = result.artist || '';
@@ -974,6 +981,41 @@ $('#dp-play-add').addEventListener('click', async () => {
   toast(tr('toast.diaryAdded'));
 });
 
+// ---------- Verleih (Leihliste) ----------
+const LEND_PERSON = '<svg class="lend-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
+function renderLend(item) {
+  const el = $('#dp-lend'); if (!el || !item) return;
+  if (item.lentTo) {
+    const since = item.lentAt ? new Date(item.lentAt).toLocaleDateString(getLang() === 'de' ? 'de-DE' : 'en-US') : '';
+    el.innerHTML = `<div class="lend-status"><span class="lend-who">${LEND_PERSON}<span>${escapeHtml(item.lentTo)}${since ? ' · ' + escapeHtml(tr('lend.since', { date: since })) : ''}</span></span><button type="button" id="dp-lend-return" class="btn ghost">${tr('lend.return')}</button></div>`;
+    $('#dp-lend-return').onclick = () => {
+      const upd = updateItem('collection', item.id, { lentTo: '', lentAt: 0 });
+      renderLend(upd || { ...item, lentTo: '', lentAt: 0 });
+      renderList('collection'); renderLentList();
+      toast(tr('lend.returned'));
+    };
+  } else {
+    el.innerHTML = `<div class="lend-add"><input type="text" id="dp-lend-name" placeholder="${escapeHtml(tr('ph.lendName'))}" /><button type="button" id="dp-lend-set" class="btn ghost">${tr('lend.mark')}</button></div>`;
+    $('#dp-lend-set').onclick = () => {
+      const name = $('#dp-lend-name').value.trim(); if (!name) return;
+      const upd = updateItem('collection', item.id, { lentTo: name, lentAt: Date.now() });
+      renderLend(upd || { ...item, lentTo: name, lentAt: Date.now() });
+      renderList('collection'); renderLentList();
+      toast(tr('lend.markedToast', { name }));
+    };
+  }
+}
+// „Verliehen"-Liste im Profil (alle Collection-Alben mit lentTo).
+function renderLentList() {
+  const sec = document.getElementById('lent-section'); const box = document.getElementById('lent-list');
+  if (!sec || !box) return;
+  const lent = getList('collection').filter((i) => (i.lentTo || '').trim());
+  if (!lent.length) { sec.hidden = true; box.innerHTML = ''; return; }
+  sec.hidden = false;
+  box.innerHTML = lent.map((i) => `<button class="lent-row" data-id="${i.id}"><span class="lent-cover${i.coverUrl ? '' : ' placeholder'}">${i.coverUrl ? `<img src="${escapeHtml(i.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : ''}</span><span class="lent-meta"><span class="chart-title">${escapeHtml(i.title || '')}</span><span class="lent-to">${escapeHtml(tr('lend.toShort', { name: i.lentTo }))}</span></span></button>`).join('');
+  box.querySelectorAll('.lent-row').forEach((b) => b.addEventListener('click', () => openDetail('collection', b.dataset.id)));
+}
+
 // ---------- Stackd Wrapped (Jahresrückblick) ----------
 // Längste Folge aufeinanderfolgender Tage (für die Hör-Streak im Wrapped).
 function longestDayStreak(sortedDates) {
@@ -1123,6 +1165,7 @@ $('#dp-save').addEventListener('click', () => {
     price: parseFloat($('#dp-edit-price').value) || 0,
     mediaCond: $('#dp-edit-media').value,
     sleeveCond: $('#dp-edit-sleeve').value,
+    location: $('#dp-edit-location').value.trim(),
     note: $('#dp-note').value.trim(),
     review: $('#dp-review').value.trim(),
     rating: detailRating ? detailRating.getValue() : 0,
@@ -1870,6 +1913,7 @@ $('#manual-form').addEventListener('submit', (e) => {
     barcode: f.barcode.value.trim(),
     coverUrl: f.coverUrl.value.trim(),
     price: parseFloat(f.price.value) || 0,
+    location: f.location.value.trim(),
     note: f.note.value.trim(),
     rating: manualRating ? manualRating.getValue() : 0,
     source: 'manual',
@@ -1912,6 +1956,7 @@ function renderProfile() {
   renderFavoritesDisplay();
   renderFavoriteSongs();
   renderRecent();
+  renderLentList();
   renderHisto();
   renderStatRows();
   renderValueRange();

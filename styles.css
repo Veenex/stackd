@@ -1133,6 +1133,23 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .sel-action.sel-danger { color: var(--danger); border-color: var(--danger); }
 .sel-action:disabled { opacity: .45; cursor: default; }
 
+/* Verleih (Leihliste) + Standort */
+.tile { position: relative; }
+.tile-lent { position: absolute; top: 6px; right: 6px; z-index: 2; width: 22px; height: 22px; border-radius: 50%; background: var(--rose); color: #fff; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0, 0, 0, .4); }
+.tile-lent svg { width: 13px; height: 13px; display: block; }
+.lend-add { display: flex; gap: 8px; }
+.lend-add input { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); padding: 11px 12px; font-family: inherit; font-size: 15px; }
+.lend-add .btn, .lend-status .btn { flex: 0 0 auto; white-space: nowrap; }
+.lend-status { display: flex; align-items: center; gap: 10px; }
+.lend-who { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.lend-ico { width: 20px; height: 20px; flex: 0 0 auto; color: var(--rose); }
+.lent-list { display: flex; flex-direction: column; gap: 8px; }
+.lent-row { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; padding: 4px 0; color: var(--text); text-align: left; cursor: pointer; }
+.lent-cover { flex: 0 0 auto; width: 44px; height: 44px; border-radius: 8px; overflow: hidden; background: var(--surface-2); border: 1px solid var(--border); }
+.lent-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lent-meta { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.lent-to { font-size: 12px; color: var(--muted); }
+
 /* ---------- Auth (Login/Registrierung/Reset) ---------- */
 .auth-page {
   position: fixed; inset: 0; z-index: 60;
