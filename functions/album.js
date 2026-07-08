@@ -3,6 +3,10 @@
 // die App startet normal; Vorschau-Bots (WhatsApp, iMessage, Twitter/X, Facebook,
 // Slack ...) lesen die eingefuegten OG-/Twitter-Tags fuer eine huebsche Karte.
 
+// Oeffentliche, client-sichere Supabase-Zugangsdaten (identisch mit dem Frontend).
+const SUPABASE_URL = 'https://xjrpojypkbfbsowvjmbj.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_0A1YsQoTYkVyXXnSAHR0oQ_yNdq_KXg';
+
 const esc = (s) => String(s || '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -28,13 +32,15 @@ class HeadInjector {
   element(el) { el.append(this.html, { html: true }); }
 }
 
-// Album-Cover serverseitig ueber iTunes holen (kein CORS-Problem, da nicht im Browser).
+// Album-Cover serverseitig holen. Apple/iTunes blockt Cloudflare-Server-IPs oft,
+// daher ueber denselben Supabase-Proxy wie das Frontend (der erreicht iTunes zuverlaessig).
 async function albumCover(artist, title) {
   if (!title) return '';
   try {
     const term = encodeURIComponent(`${artist} ${title}`.trim());
-    const r = await fetch(`https://itunes.apple.com/search?term=${term}&entity=album&limit=1`,
-      { cf: { cacheTtl: 86400, cacheEverything: true } });
+    const r = await fetch(
+      `${SUPABASE_URL}/functions/v1/discogs?action=itunes&kind=search&entity=album&limit=1&term=${term}`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY, Accept: 'application/json' } });
     if (!r.ok) return '';
     const j = await r.json();
     const it = j.results && j.results[0];
