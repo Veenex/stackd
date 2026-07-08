@@ -211,7 +211,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 155</p>
+        <p class="hint profile-version">Discend · Build 156</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -610,6 +610,8 @@
 
           <button type="button" class="set-row set-row-nav" id="ps-theme-open"><span data-i18n="set.appearance">Appearance</span><span class="set-chev">›</span></button>
 
+          <button type="button" class="set-row set-row-nav" id="ps-feedback-open"><span data-i18n="set.feedback">Feedback</span><span class="set-chev">›</span></button>
+
           <button type="button" class="set-row set-signout" id="ps-signout" data-i18n="btn.signOut">Sign out</button>
 
           <div class="set-section-label" data-i18n="set.profile">Profile</div>
@@ -686,6 +688,18 @@
           <label class="set-field set-check"><span data-i18n="set.deleteAck">I acknowledge this</span><input type="checkbox" id="ps-del-ack" /></label>
           <button type="button" id="ps-del-confirm" class="btn set-wide set-danger" disabled data-i18n="set.deleteConfirm">Permanently delete account</button>
           <p id="ps-del-msg" class="hint"></p>
+        </div>
+
+        <!-- Feedback (slidet von rechts) -->
+        <div class="set-panel" id="ps-feedback-panel">
+          <button type="button" class="set-back" id="ps-fb-back" data-i18n="set.back">‹ Back</button>
+          <div class="set-section-label" data-i18n="set.feedback">Feedback</div>
+          <p class="hint" data-i18n="feedback.intro">Found a bug or have an idea? Let us know.</p>
+          <div class="set-fields">
+            <label class="set-field set-field-bio"><span data-i18n="feedback.message">Message</span><textarea id="ps-fb-text" rows="5" data-i18n-ph="feedback.placeholder" placeholder="What's on your mind?"></textarea></label>
+          </div>
+          <button type="button" id="ps-fb-send" class="btn primary set-wide" data-i18n="feedback.send">Send</button>
+          <p id="ps-fb-msg" class="hint"></p>
         </div>
       </div>
     </div>

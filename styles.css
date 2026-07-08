@@ -1430,6 +1430,9 @@ html[data-theme="light"] .toast { box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
 #ps-theme-panel { transform: translateX(100%); }
 .settings-sheet.show-theme #ps-main { transform: translateX(-100%); }
 .settings-sheet.show-theme #ps-theme-panel { transform: translateX(0); }
+#ps-feedback-panel { transform: translateX(100%); }
+.settings-sheet.show-feedback #ps-main { transform: translateX(-100%); }
+.settings-sheet.show-feedback #ps-feedback-panel { transform: translateX(0); }
 .set-theme-opt { justify-content: space-between; }
 .set-theme-opt .set-lang-check { color: var(--rose); font-weight: 700; opacity: 0; }
 .set-theme-opt.active .set-lang-check { opacity: 1; }

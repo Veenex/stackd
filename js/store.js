@@ -487,6 +487,14 @@ export async function fetchProfileByUsername(username) {
   return data || null;
 }
 
+// Feedback/Problemmeldung speichern (insert-only Tabelle, Auswertung im Dashboard).
+export async function sendFeedback(message, build, lang) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return false;
+  const { error } = await sb.from('feedback').insert({ user_id: u, message: String(message || '').slice(0, 4000), build: build || null, lang: lang || null });
+  return !error;
+}
+
 // Listen (Playlists) eines anderen Nutzers inkl. der enthaltenen Alben (Cover).
 export async function fetchUserPlaylists(userId) {
   const sb = await cloud(); if (!sb || !userId) return [];

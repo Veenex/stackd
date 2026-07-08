@@ -15,6 +15,7 @@ import {
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
   fetchNotifications, fetchUnreadCount, markNotificationsRead,
+  sendFeedback,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, fetchSongPreview, fetchItunesSongs, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, changeEmail, sendPasswordReset, deleteAccount, uploadProfileImage } from './auth.js';
@@ -2575,6 +2576,20 @@ $('#ps-delete-open').addEventListener('click', () => {
 });
 $('#ps-del-back').addEventListener('click', () => $('#profile-settings-dialog').classList.remove('show-delete'));
 $('#ps-del-ack').addEventListener('change', (e) => { $('#ps-del-confirm').disabled = !e.target.checked; });
+$('#ps-feedback-open').addEventListener('click', () => { $('#ps-fb-msg').textContent = ''; $('#profile-settings-dialog').classList.add('show-feedback'); });
+$('#ps-fb-back').addEventListener('click', () => $('#profile-settings-dialog').classList.remove('show-feedback'));
+$('#ps-fb-send').addEventListener('click', async () => {
+  if (!requireAuth()) return;
+  const t = $('#ps-fb-text').value.trim();
+  if (!t) return;
+  const msg = $('#ps-fb-msg'); msg.textContent = tr('msg.sending');
+  const ok = await sendFeedback(t, appBuild(), getLang());
+  msg.textContent = ok ? tr('feedback.thanks') : tr('feedback.failed');
+  if (ok) {
+    $('#ps-fb-text').value = '';
+    setTimeout(() => { $('#profile-settings-dialog').classList.remove('show-feedback'); toast(tr('feedback.thanks')); }, 700);
+  }
+});
 $('#ps-del-confirm').addEventListener('click', async () => {
   if (!$('#ps-del-ack').checked) return;
   const msg = $('#ps-del-msg'); msg.textContent = tr('msg.deletingAccount');
