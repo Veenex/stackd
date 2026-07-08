@@ -1135,6 +1135,36 @@ function longestDayStreak(sortedDates) {
   }
   return best;
 }
+// Jahres-Heatmap der Höreinträge (GitHub-Stil: Wochen-Spalten x 7 Tage).
+function listenHeatmap(playsThisYear, year) {
+  const iso = (dt) => dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+  const counts = {};
+  playsThisYear.forEach((p) => { const d = String(p.played_on || '').slice(0, 10); if (d) counts[d] = (counts[d] || 0) + 1; });
+  let max = 0; for (const n of Object.values(counts)) if (n > max) max = n;
+  const level = (n) => n <= 0 ? 0 : (max <= 1 ? 1 : n >= max * 0.75 ? 4 : n >= max * 0.5 ? 3 : n >= max * 0.25 ? 2 : 1);
+  const end = new Date(year, 11, 31);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const cur = new Date(year, 0, 1);
+  cur.setDate(cur.getDate() - cur.getDay()); // Raster beginnt am Sonntag <= 1. Jan
+  let cols = '';
+  while (cur <= end) {
+    let week = '';
+    for (let d = 0; d < 7; d++) {
+      const dstr = iso(cur);
+      const inYear = cur.getFullYear() === year;
+      const future = cur > today;
+      const n = counts[dstr] || 0;
+      let cls = 'hm-cell', title = '';
+      if (!inYear || future) { cls += ' hm-out'; }
+      else { const lv = level(n); if (lv > 0) cls += ' hm-l' + lv; title = `${dstr}: ${n} ${n === 1 ? tr('unit.play') : tr('unit.plays')}`; }
+      week += `<span class="${cls}"${title ? ` title="${title}"` : ''}></span>`;
+      cur.setDate(cur.getDate() + 1);
+    }
+    cols += `<span class="hm-col">${week}</span>`;
+  }
+  const legend = `<div class="hm-legend"><span>${tr('hm.less')}</span><span class="hm-cell"></span><span class="hm-cell hm-l1"></span><span class="hm-cell hm-l2"></span><span class="hm-cell hm-l3"></span><span class="hm-cell hm-l4"></span><span>${tr('hm.more')}</span></div>`;
+  return `<div class="heatmap-wrap"><div class="heatmap">${cols}</div></div>${legend}`;
+}
 async function openWrapped() {
   if (!requireAuth()) return;
   const year = new Date().getFullYear();
@@ -1175,6 +1205,7 @@ async function openWrapped() {
   ];
   const streakCard = streak > 1 ? `<div class="wrapped-card wrapped-card-wide"><span class="wrapped-num">${streak}</span><span class="wrapped-lbl">${tr('wrapped.listenStreak')}</span></div>` : '';
   let html = `<div class="wrapped-cards">${cards.map((c) => `<div class="wrapped-card"><span class="wrapped-num">${c.val}</span><span class="wrapped-lbl">${c.label}</span></div>`).join('')}${streakCard}</div>`;
+  if (playsThisYear.length) html += `<span class="dp-label wrapped-h">${tr('wrapped.heatmap')}</span>` + listenHeatmap(playsThisYear, year);
   if (mostItem) {
     html += `<span class="dp-label wrapped-h">${tr('wrapped.mostPlayed', { n: mostN })}</span><button class="wrapped-album" data-id="${mostItem.id}"><div class="chart-cover${mostItem.coverUrl ? '' : ' placeholder'}">${mostItem.coverUrl ? `<img src="${escapeHtml(mostItem.coverUrl)}" alt="" />` : ''}</div><div class="chart-meta"><span class="chart-title">${escapeHtml(mostItem.title || '')}</span><span class="chart-artist">${escapeHtml(mostItem.artist || '')}</span></div></button>`;
   }
