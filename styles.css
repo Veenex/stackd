@@ -168,6 +168,29 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 .tile-artist { color: var(--muted); font-size: 12px; margin: 1px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tile-note { color: var(--accent-2); font-size: 11px; margin: 3px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .note-ico { width: 12px; height: 12px; vertical-align: -2px; margin-right: 3px; }
+.tile-body { min-width: 0; }
+/* Sammlungs-Ansicht: kleine Kacheln (mehr pro Reihe, kompakter) */
+.record-list.view-small { grid-template-columns: repeat(4, 1fr); gap: 12px 8px; }
+@media (min-width: 520px) { .record-list.view-small { grid-template-columns: repeat(6, 1fr); } }
+@media (min-width: 720px) { .record-list.view-small { grid-template-columns: repeat(8, 1fr); } }
+@media (min-width: 960px) { .record-list.view-small { grid-template-columns: repeat(10, 1fr); } }
+.record-list.view-small .tile-title { font-size: 11px; margin-top: 3px; }
+.record-list.view-small .tile-artist { font-size: 10px; }
+.record-list.view-small .tile-meta, .record-list.view-small .tile-note { display: none; }
+/* Sammlungs-Ansicht: Liste (Cover links, Text rechts) */
+.record-list.view-list { grid-template-columns: 1fr; gap: 8px; }
+.record-list.view-list .tile { flex-direction: row; align-items: center; gap: 12px; padding: 3px 0; }
+.record-list.view-list .tile-cover { width: 54px; height: 54px; flex: 0 0 auto; border-radius: 8px; }
+.record-list.view-list .tile-body { flex: 1 1 auto; }
+.record-list.view-list .tile-meta { margin-top: 3px; }
+.record-list.view-list .tile-title { font-size: 14px; margin-top: 0; }
+.record-list.view-list .tile-artist { font-size: 12.5px; }
+.record-list.view-list .tile-lent { left: 40px; right: auto; top: 2px; }
+/* Ansicht-Umschalter (segmentierte Icon-Knöpfe) */
+.view-switch { display: inline-flex; gap: 2px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
+.vs-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 26px; border: none; background: none; color: var(--muted); border-radius: 6px; cursor: pointer; padding: 0; }
+.vs-btn svg { width: 17px; height: 17px; }
+.vs-btn.active { background: var(--accent); color: #fff; }
 
 .empty-hint { color: var(--muted); text-align: center; margin-top: 48px; line-height: 1.5; padding: 0 24px; }
 

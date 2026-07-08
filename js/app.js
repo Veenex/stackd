@@ -161,6 +161,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 159, de: ['Sammlung-Ansicht wählbar: große/kleine Kacheln oder Liste'], en: ['Choose your collection view: large/small tiles or list'] },
   { build: 158, de: ['Schöne Vorschau beim Teilen von Links (mit Bild)'], en: ['Rich preview when sharing links (with image)'] },
   { build: 157, de: ['Hörkalender: dein Hörjahr als Heatmap im Wrapped'], en: ['Listening calendar: your year as a heatmap in Wrapped'] },
   { build: 156, de: ['Feedback-Knopf in den Einstellungen'], en: ['Feedback button in settings'] },
@@ -312,10 +313,12 @@ function recordItemHtml(item) {
       <span class="tile-sel" aria-hidden="true"></span>
       ${cover}
       ${lent}
-      ${meta}
-      <p class="tile-title">${escapeHtml(item.title) || tr('misc.untitled')}</p>
-      <p class="tile-artist">${escapeHtml(item.artist) || '(unbekannt)'}</p>
-      ${note}
+      <div class="tile-body">
+        ${meta}
+        <p class="tile-title">${escapeHtml(item.title) || tr('misc.untitled')}</p>
+        <p class="tile-artist">${escapeHtml(item.artist) || '(unbekannt)'}</p>
+        ${note}
+      </div>
     </li>`;
 }
 
@@ -354,6 +357,21 @@ function renderList(list) {
     if (selMode) ul.querySelectorAll('.tile').forEach((t) => { if (selIds.has(t.dataset.id)) t.classList.add('selected'); });
     updateAzBar();
   }
+}
+
+// ---------- Sammlungs-Ansicht (große/kleine Kacheln, Liste) ----------
+const COLLECTION_VIEW_KEY = 'discend_collection_view';
+const COLLECTION_VIEWS = ['large', 'small', 'list'];
+function getCollectionView() {
+  const v = localStorage.getItem(COLLECTION_VIEW_KEY);
+  return COLLECTION_VIEWS.includes(v) ? v : 'large';
+}
+function applyCollectionView(v) {
+  if (!COLLECTION_VIEWS.includes(v)) v = 'large';
+  try { localStorage.setItem(COLLECTION_VIEW_KEY, v); } catch { /* voll */ }
+  const ul = document.getElementById('list-collection');
+  if (ul) COLLECTION_VIEWS.forEach((x) => ul.classList.toggle('view-' + x, x === v));
+  document.querySelectorAll('#view-switch-collection .vs-btn').forEach((b) => b.classList.toggle('active', b.dataset.view === v));
 }
 
 // ---------- Schnellmenü (Langdruck / Rechtsklick auf eine Kachel) ----------
@@ -3625,6 +3643,10 @@ manualRating = createRatingInput($('#manual-rating'), 0);
 $('#manual-rating-clear').addEventListener('click', () => manualRating && manualRating.setValue(0));
 switchView('home');
 routeFromUrl(); // geteilten Deep-Link (/u/name oder /album?…) direkt öffnen
+
+// Sammlungs-Ansicht (große/kleine Kacheln, Liste) wiederherstellen + Umschalter verdrahten
+document.querySelectorAll('#view-switch-collection .vs-btn').forEach((b) => b.addEventListener('click', () => applyCollectionView(b.dataset.view)));
+applyCollectionView(getCollectionView());
 
 $('#btn-friends-close').addEventListener('click', () => $('#friends-dialog').close());
 $('#user-back').addEventListener('click', closeUserProfile);
