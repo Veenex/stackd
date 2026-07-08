@@ -161,6 +161,9 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 158, de: ['Schöne Vorschau beim Teilen von Links (mit Bild)'], en: ['Rich preview when sharing links (with image)'] },
+  { build: 157, de: ['Hörkalender: dein Hörjahr als Heatmap im Wrapped'], en: ['Listening calendar: your year as a heatmap in Wrapped'] },
+  { build: 156, de: ['Feedback-Knopf in den Einstellungen'], en: ['Feedback button in settings'] },
   { build: 155, de: ['Neu: „Was ist neu"-Übersicht nach jedem Update'], en: ['New: this "What\'s new" summary after each update'] },
   { build: 154, de: ['Schönere Illustrationen in leeren Bereichen'], en: ['Nicer illustrations for empty areas'] },
   { build: 153, de: ['Kaufdatum und Kaufort pro Platte'], en: ['Purchase date and place per record'] },
