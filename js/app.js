@@ -597,6 +597,8 @@ function openDetail(list, id) {
   $('#dp-edit-media').value = item.mediaCond || '';
   $('#dp-edit-sleeve').value = item.sleeveCond || '';
   $('#dp-edit-location').value = item.location || '';
+  $('#dp-edit-purchase-date').value = item.purchaseDate || '';
+  $('#dp-edit-purchase-place').value = item.purchasePlace || '';
   setConditionDisplay(item.mediaCond, item.sleeveCond);
   const lendSec = $('#dp-lend-section');
   if (lendSec) lendSec.style.display = list === 'collection' ? '' : 'none';
@@ -1219,6 +1221,8 @@ $('#dp-save').addEventListener('click', () => {
     mediaCond: $('#dp-edit-media').value,
     sleeveCond: $('#dp-edit-sleeve').value,
     location: $('#dp-edit-location').value.trim(),
+    purchaseDate: $('#dp-edit-purchase-date').value || '',
+    purchasePlace: $('#dp-edit-purchase-place').value.trim(),
     note: $('#dp-note').value.trim(),
     review: $('#dp-review').value.trim(),
     rating: detailRating ? detailRating.getValue() : 0,
@@ -1967,6 +1971,8 @@ $('#manual-form').addEventListener('submit', (e) => {
     coverUrl: f.coverUrl.value.trim(),
     price: parseFloat(f.price.value) || 0,
     location: f.location.value.trim(),
+    purchaseDate: f.purchaseDate.value || '',
+    purchasePlace: f.purchasePlace.value.trim(),
     note: f.note.value.trim(),
     rating: manualRating ? manualRating.getValue() : 0,
     source: 'manual',

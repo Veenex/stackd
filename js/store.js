@@ -48,6 +48,8 @@ function toRow(item, list, u) {
     media_cond: item.mediaCond || null,
     sleeve_cond: item.sleeveCond || null,
     location: item.location || null,
+    purchase_date: item.purchaseDate || null,
+    purchase_place: item.purchasePlace || null,
     lent_to: item.lentTo || null,
     lent_at: item.lentAt ? new Date(item.lentAt).toISOString() : null,
     source: item.source || null,
@@ -66,6 +68,7 @@ function fromRow(r) {
     rating: Number(r.rating) || 0, liked: !!r.liked, price: Number(r.price) || 0,
     mediaCond: r.media_cond || '', sleeveCond: r.sleeve_cond || '',
     location: r.location || '', lentTo: r.lent_to || '', lentAt: r.lent_at ? new Date(r.lent_at).getTime() : 0,
+    purchaseDate: r.purchase_date || '', purchasePlace: r.purchase_place || '',
     source: r.source || '', sourceId: r.source_id || '', masterId: r.master_id || 0,
   };
 }
@@ -87,6 +90,7 @@ export function addItem(list, item) {
     coverUrl: '', note: '', review: '', rating: 0, liked: false, price: 0,
     mediaCond: '', sleeveCond: '',
     location: '', lentTo: '', lentAt: 0,
+    purchaseDate: '', purchasePlace: '',
     source: 'manual', sourceId: '',
     ...item,
   };

@@ -125,6 +125,8 @@
         <label><span data-i18n="field.coverUrl">Cover URL</span><input type="url" name="coverUrl" data-i18n-ph="ph.optional" placeholder="optional" /></label>
         <label><span data-i18n="field.price">Purchase price (€)</span><input type="number" name="price" step="0.01" inputmode="decimal" data-i18n-ph="ph.optional" placeholder="optional" /></label>
         <label><span data-i18n="field.location">Shelf / location</span><input type="text" name="location" data-i18n-ph="ph.locationExample" placeholder="e.g. Shelf A, slot 3" /></label>
+        <label><span data-i18n="field.purchaseDate">Purchase date</span><input type="date" name="purchaseDate" /></label>
+        <label><span data-i18n="field.purchasePlace">Purchase place</span><input type="text" name="purchasePlace" data-i18n-ph="ph.purchasePlace" placeholder="e.g. Rough Trade, flea market" /></label>
         <label><span data-i18n="field.note">Note</span><textarea name="note" rows="3" data-i18n-ph="ph.noteExample" placeholder="e.g. limited edition"></textarea></label>
         <div class="rating-row">
           <span class="rating-row-label" data-i18n="field.rating">Rating</span>
@@ -209,7 +211,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 152</p>
+        <p class="hint profile-version">Discend · Build 153</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -425,6 +427,8 @@
             </select>
           </label>
           <label><span data-i18n="field.location">Shelf / location</span><input type="text" id="dp-edit-location" data-i18n-ph="ph.locationExample" placeholder="e.g. Shelf A, slot 3" /></label>
+          <label><span data-i18n="field.purchaseDate">Purchase date</span><input type="date" id="dp-edit-purchase-date" /></label>
+          <label><span data-i18n="field.purchasePlace">Purchase place</span><input type="text" id="dp-edit-purchase-place" data-i18n-ph="ph.purchasePlace" placeholder="e.g. Rough Trade, flea market" /></label>
         </div>
       </details>
 
