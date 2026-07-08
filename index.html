@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- Deep-Links: relative Pfade (CSS/JS/Icons) immer gegen die Wurzel auflösen,
+       auch wenn die App unter /u/name oder /album geladen wird. -->
+  <base href="/" />
   <meta name="theme-color" content="#14181C" />
   <title>Discend</title>
   <link rel="manifest" href="manifest.webmanifest" />
@@ -206,7 +209,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 151</p>
+        <p class="hint profile-version">Discend · Build 152</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">

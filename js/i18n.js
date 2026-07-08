@@ -488,6 +488,7 @@ export const DICT = {
   'auth.err.usernameRule': { en: 'Username: 3–20 characters, only letters, numbers, _', de: 'Username: 3–20 Zeichen, nur Buchstaben, Zahlen, _' },
   'auth.err.pwMin': { en: 'Password: at least 6 characters.', de: 'Passwort: mindestens 6 Zeichen.' },
   'auth.err.usernameTaken': { en: 'This username is already taken.', de: 'Dieser Username ist schon vergeben.' },
+  'deeplink.userNotFound': { en: 'User not found.', de: 'Nutzer nicht gefunden.' },
   'auth.err.emailRegistered': { en: 'This email is already registered.', de: 'Diese E-Mail ist schon registriert.' },
   'auth.err.mailFailed': { en: 'Could not send email: {msg}', de: 'Konnte Mail nicht senden: {msg}' },
   'auth.msg.resetMaybe': { en: 'If the email exists, a reset link is on its way. Check your inbox.', de: 'Falls die E-Mail existiert, kommt ein Reset-Link. Schau in dein Postfach.' },

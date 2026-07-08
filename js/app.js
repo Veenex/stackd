@@ -9,7 +9,7 @@ import {
   searchUsers, getFollowing, follow, unfollow, fetchFriendsFeed,
   getBlocked, blockUser, unblockUser, reportTarget,
   fetchReviewsFeed, fetchFriendsLists, searchReviews, searchPlaylists,
-  fetchUserProfile, fetchUserItems, fetchUserPlaylists,
+  fetchUserProfile, fetchProfileByUsername, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
@@ -619,6 +619,7 @@ function openDetail(list, id) {
 }
 
 function closeDetail() {
+  resetUrl();
   detailPage.classList.add('hidden');
   detailPage.classList.remove('preview');
   stopPreview();
@@ -677,9 +678,58 @@ function setListenLinks(q) {
   $('#dp-youtube').href = `https://music.youtube.com/search?q=${q}`;
 }
 
+// ---------- Deep-Links (teilbare URLs: /u/name und /album?a=&t=&y=) ----------
+// Baut die öffentliche URL zu einem Profil.
+function profileUrl(username) {
+  return location.origin + '/u/' + encodeURIComponent(username || '');
+}
+// Baut die öffentliche URL zu einem Album (nur Künstler/Titel/Jahr – Cover wird
+// beim Öffnen frisch geladen, so bleibt der Link kurz und stabil).
+function albumUrl(a) {
+  if (!a || (!a.artist && !a.title)) return location.origin + '/';
+  const p = new URLSearchParams();
+  if (a.artist) p.set('a', a.artist);
+  if (a.title) p.set('t', a.title);
+  if (a.year) p.set('y', String(a.year));
+  return location.origin + '/album?' + p.toString();
+}
+// Adresszeile aktualisieren, ohne neuen History-Eintrag (Zurück verlässt die App
+// wie bisher; die aktuelle URL ist aber jederzeit als Deep-Link kopierbar).
+function setUrl(url) {
+  try { history.replaceState(null, '', url); } catch { /* ignorieren */ }
+}
+function resetUrl() {
+  if (location.pathname !== '/' || location.search) setUrl(location.origin + '/');
+}
+// Beim App-Start: Zeigt die URL auf ein Profil oder Album? Dann direkt öffnen.
+async function routeFromUrl() {
+  // Auth-Rückläufer (Passwort-Reset o. Ä.) nicht stören
+  if (/pwreset=1|type=recovery/.test((location.search || '') + (location.hash || ''))) return;
+  let path = '/'; try { path = decodeURIComponent(location.pathname || '/'); } catch { path = location.pathname || '/'; }
+  const mu = path.match(/^\/u\/([^/]+)\/?$/);
+  if (mu) {
+    try {
+      const prof = await fetchProfileByUsername(mu[1]);
+      if (prof) openUserProfile(prof);
+      else { toast(tr('deeplink.userNotFound')); resetUrl(); }
+    } catch { resetUrl(); }
+    return;
+  }
+  if (path.replace(/\/$/, '') === '/album' && location.search) {
+    const q = new URLSearchParams(location.search);
+    const artist = q.get('a') || ''; const title = q.get('t') || ''; const year = q.get('y') || '';
+    if (artist || title) {
+      const result = { artist, title, year, coverUrl: '' };
+      try { const cover = await fetchCoverArt(artist, title); if (cover) result.coverUrl = cover; } catch { /* ignorieren */ }
+      openPreview(result);
+    } else { resetUrl(); }
+    return;
+  }
+}
+
 // ---------- Teilen (Web Share API, Fallback: Link kopieren) ----------
-async function shareLink(text) {
-  const url = location.origin + location.pathname;
+async function shareLink(text, url) {
+  url = url || (location.origin + '/');
   try {
     if (navigator.share) { await navigator.share({ title: 'Discend', text, url }); return; }
     await navigator.clipboard.writeText(text + ' ' + url);
@@ -687,12 +737,14 @@ async function shareLink(text) {
   } catch { /* abgebrochen/ignorieren */ }
 }
 function shareProfile() {
-  shareLink(`${profileName() || tr('title.profile')} ${tr('share.suffix')}`);
+  const p = getProfile() || {};
+  const url = p.username ? profileUrl(p.username) : location.origin + '/';
+  shareLink(`${profileName() || tr('title.profile')} ${tr('share.suffix')}`, url);
 }
 function shareAlbum() {
   const a = editing ? getList(editing.list).find((i) => i.id === editing.id) : previewResult;
   if (!a) return;
-  shareLink(`${a.artist || ''} – ${a.title || ''} ${tr('share.suffix')}`.replace(/^ – /, '').trim());
+  shareLink(`${a.artist || ''} – ${a.title || ''} ${tr('share.suffix')}`.replace(/^ – /, '').trim(), albumUrl(a));
 }
 $('#header-share').addEventListener('click', shareProfile);
 $('#as-share').addEventListener('click', shareAlbum);
@@ -752,6 +804,7 @@ function openPreview(result) {
   pushRecentAlbum(result); // „Zuletzt angesehen" merken
   editing = null;
   previewResult = result;
+  setUrl(albumUrl(result)); // Deep-Link in der Adresszeile
   detailPage.classList.add('preview');
   { const ls = document.getElementById('dp-lend-section'); if (ls) ls.style.display = 'none'; }
   setDetailCover(result.coverUrl);
@@ -3272,6 +3325,7 @@ async function openUserProfile(user) {
   const u = (await fetchUserProfile(user.id)) || user;
   friendsFollowing = new Set(await getFollowing().catch(() => []));
   upName = u.display_name || u.username || '';
+  if (u.username) setUrl(profileUrl(u.username)); // Deep-Link in der Adresszeile
   $('#up-name').textContent = upName;
   $('#up-handle').textContent = '@' + (u.username || '');
   renderSongsInto($('#up-songs'), u.fav_songs);
@@ -3411,6 +3465,7 @@ function fillCoverGrid(el, items) {
   el.querySelectorAll('.cat-cover[data-idx]').forEach((b) => b.addEventListener('click', () => openPreview(items[+b.dataset.idx])));
 }
 function closeUserProfile() {
+  resetUrl();
   $('#user-page').classList.add('hidden');
   $('#up-grid-page').classList.add('hidden');
   document.body.style.overflow = '';
@@ -3458,6 +3513,7 @@ document.addEventListener('langchange', () => { switchView(currentView); });
 manualRating = createRatingInput($('#manual-rating'), 0);
 $('#manual-rating-clear').addEventListener('click', () => manualRating && manualRating.setValue(0));
 switchView('home');
+routeFromUrl(); // geteilten Deep-Link (/u/name oder /album?…) direkt öffnen
 
 $('#btn-friends-close').addEventListener('click', () => $('#friends-dialog').close());
 $('#user-back').addEventListener('click', closeUserProfile);

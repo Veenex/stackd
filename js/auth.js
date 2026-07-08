@@ -103,7 +103,7 @@ export async function changeEmail(email) {
   if (e.toLowerCase() === (currentUser.email || '').toLowerCase()) return tr('auth.err.emailSame');
   const { error } = await sb.auth.updateUser(
     { email: e },
-    { emailRedirectTo: location.origin + location.pathname }
+    { emailRedirectTo: location.origin + '/' }
   );
   return error ? error.message : null;
 }
@@ -126,7 +126,7 @@ export async function deleteAccount() {
 // Reset-Link an die eigene E-Mail senden.
 export async function sendPasswordReset() {
   if (!sb || !currentUser) return tr('auth.err.notSignedIn');
-  const { error } = await sb.auth.resetPasswordForEmail(currentUser.email, { redirectTo: location.origin + location.pathname + '?pwreset=1' });
+  const { error } = await sb.auth.resetPasswordForEmail(currentUser.email, { redirectTo: location.origin + '/?pwreset=1' });
   return error ? error.message : null;
 }
 
@@ -194,12 +194,12 @@ async function onSubmit(e) {
       if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return setMsg(tr('auth.err.usernameRule'), 'error');
       if (password.length < 6) return setMsg(tr('auth.err.pwMin'), 'error');
       if (await usernameTaken(username)) return setMsg(tr('auth.err.usernameTaken'), 'error');
-      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username, display_name: username }, emailRedirectTo: location.origin + location.pathname } });
+      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username, display_name: username }, emailRedirectTo: location.origin + '/' } });
       if (error) return setMsg(/already|registered|exists/i.test(error.message) ? tr('auth.err.emailRegistered') : error.message, 'error');
       if (data.session) { closeAuth(); }
       else { setMsg(tr('auth.msg.almostDone'), 'ok'); mode = 'login'; applyMode(); }
     } else if (mode === 'forgot') {
-      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname + '?pwreset=1' });
+      const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/?pwreset=1' });
       if (error) return setMsg(tr('auth.err.mailFailed', { msg: error.message }), 'error');
       setMsg(tr('auth.msg.resetMaybe'), 'ok');
     } else if (mode === 'update') {

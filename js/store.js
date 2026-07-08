@@ -475,6 +475,14 @@ export async function fetchUserProfile(userId) {
   return data || null;
 }
 
+// Profil per Username finden (für Deep-Links /u/name). Case-insensitive, exakt.
+export async function fetchProfileByUsername(username) {
+  const sb = await cloud(); if (!sb || !username) return null;
+  const esc = String(username).replace(/[%_\\]/g, (m) => '\\' + m);
+  const { data } = await sb.from('profiles').select('*').ilike('username', esc).limit(1).maybeSingle();
+  return data || null;
+}
+
 // Listen (Playlists) eines anderen Nutzers inkl. der enthaltenen Alben (Cover).
 export async function fetchUserPlaylists(userId) {
   const sb = await cloud(); if (!sb || !userId) return [];

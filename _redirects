@@ -1,0 +1,4 @@
+# Single-Page-App: unbekannte Pfade (z. B. /u/name, /album) liefern index.html,
+# damit geteilte Deep-Links direkt in der App aufgehen. Echte Dateien
+# (styles.css, js/*, icons/*, manifest) liefert Cloudflare vorher normal aus.
+/*    /index.html    200
