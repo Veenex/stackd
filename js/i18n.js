@@ -111,6 +111,8 @@ export const DICT = {
   'field.purchaseDate': { en: 'Purchase date', de: 'Kaufdatum' },
   'field.purchasePlace': { en: 'Purchase place', de: 'Kaufort' },
   'ph.purchasePlace': { en: 'e.g. Rough Trade, flea market', de: 'z. B. Rough Trade, Flohmarkt' },
+  'whatsnew.title': { en: "What's new", de: 'Was ist neu' },
+  'whatsnew.ok': { en: 'Got it', de: 'Alles klar' },
   'lbl.lending': { en: 'Lending', de: 'Verleih' },
   'lbl.lentOut': { en: 'Lent out', de: 'Verliehen' },
   'lend.mark': { en: 'Mark as lent', de: 'Als verliehen markieren' },

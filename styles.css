@@ -180,6 +180,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 .empty-state .es-cta { margin-top: 8px; min-width: 180px; }
 .empty-state .es-illus { width: 76px; height: 76px; color: var(--muted); margin-bottom: 4px; opacity: .92; }
 .empty-state .es-illus .acc { stroke: var(--rose); }
+.whatsnew-list { margin: 2px 0 12px; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; color: var(--text); font-size: 13.5px; line-height: 1.45; text-align: left; }
+.whatsnew-list li { list-style: disc; }
+.whatsnew-list li::marker { color: var(--rose); }
 
 /* ---------- Onboarding-Karte (Erststart) ---------- */
 .onboard { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 16px 16px; margin: 4px 0 18px; }

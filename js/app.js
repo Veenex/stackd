@@ -150,6 +150,50 @@ function dismissOnboard() {
   const el = document.getElementById('onboard'); if (el) el.remove();
 }
 
+// ---------- „Was ist neu" nach Update (Mini-Changelog) ----------
+const WHATSNEW_KEY = 'discend_last_build';
+// Aktuelle Build-Nummer aus der (immer im DOM vorhandenen) Profil-Version lesen.
+function appBuild() {
+  const el = document.querySelector('.profile-version');
+  const m = el && el.textContent.match(/Build\s+(\d+)/);
+  return m ? parseInt(m[1], 10) : 0;
+}
+// Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
+const CHANGELOG = [
+  { build: 155, de: ['Neu: „Was ist neu"-Übersicht nach jedem Update'], en: ['New: this "What\'s new" summary after each update'] },
+  { build: 154, de: ['Schönere Illustrationen in leeren Bereichen'], en: ['Nicer illustrations for empty areas'] },
+  { build: 153, de: ['Kaufdatum und Kaufort pro Platte'], en: ['Purchase date and place per record'] },
+  { build: 152, de: ['Profile und Alben per Link direkt teilbar'], en: ['Share profiles and albums with a direct link'] },
+  { build: 151, de: ['Leihliste: festhalten, wem du Platten geliehen hast', 'Regal/Standort pro Platte'], en: ['Lending list: track who borrowed your records', 'Shelf/location per record'] },
+];
+function whatsNewCardHtml() {
+  let last = parseInt(localStorage.getItem(WHATSNEW_KEY), 10);
+  const cur = appBuild();
+  if (!cur) return '';
+  if (isNaN(last)) {
+    // Erstkontakt mit dem Changelog: ganz neue Nutzer (noch im Onboarding) nicht
+    // stören; bestehende Nutzer sehen einmalig die jüngsten Neuerungen.
+    if (!localStorage.getItem(ONBOARD_KEY)) { try { localStorage.setItem(WHATSNEW_KEY, String(cur)); } catch { /* voll */ } return ''; }
+    last = 0;
+  }
+  if (last >= cur) return '';
+  const lang = getLang();
+  const items = [];
+  for (const e of CHANGELOG) { if (e.build > last && e.build <= cur) (e[lang] || e.en || []).forEach((t) => items.push(t)); }
+  if (!items.length) { try { localStorage.setItem(WHATSNEW_KEY, String(cur)); } catch { /* voll */ } return ''; }
+  const li = items.slice(0, 6).map((t) => `<li>${escapeHtml(t)}</li>`).join('');
+  return `<div class="onboard whatsnew" id="whatsnew">
+      <button class="onboard-x" id="wn-x" aria-label="${tr('a11y.close')}">×</button>
+      <p class="onboard-title">${escapeHtml(tr('whatsnew.title'))}</p>
+      <ul class="whatsnew-list">${li}</ul>
+      <button class="btn primary onboard-cta" id="wn-ok">${escapeHtml(tr('whatsnew.ok'))}</button>
+    </div>`;
+}
+function dismissWhatsNew() {
+  try { localStorage.setItem(WHATSNEW_KEY, String(appBuild())); } catch { /* voll */ }
+  const el = document.getElementById('whatsnew'); if (el) el.remove();
+}
+
 // Kleine „Pop"-Animation auf dem Herz-Icon, wenn ein Like aktiviert wird.
 function popHeart(scopeEl) {
   const ic = scopeEl && scopeEl.querySelector('svg');
@@ -2905,6 +2949,7 @@ function setHomeTab(tab) {
 // „Alben" = die normale Startseite (Begrüßung + Charts + Neuzugänge).
 function renderHomeAlben(body) {
   body.innerHTML =
+    whatsNewCardHtml() +
     onboardCardHtml() +
     '<div class="home-greet">' +
       `<button class="home-greet-av" id="home-greet-av" aria-label="${tr('a11y.myProfile')}"></button>` +
@@ -2939,6 +2984,10 @@ function renderHomeAlben(body) {
   if ($('#onboard')) {
     $('#onboard-x').addEventListener('click', dismissOnboard);
     $('#onboard-go').addEventListener('click', dismissOnboard);
+  }
+  if ($('#whatsnew')) {
+    $('#wn-x').addEventListener('click', dismissWhatsNew);
+    $('#wn-ok').addEventListener('click', dismissWhatsNew);
   }
 
   loadForYou();
