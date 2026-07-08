@@ -118,6 +118,13 @@ const skelSearchResults = (n = 6) => `<ul class="search-results">${rep(n, () => 
 
 // ---------- Einheitlicher Empty State ----------
 const ES_DISC = '<span class="es-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.4"/></svg></span>';
+// Freundliche Illustrationen für leere Zustände (größer, mit Rose-Akzent .acc).
+const esIllus = (inner) => `<span class="es-ico es-illus"><svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${inner}</svg></span>`;
+const ES_CRATE = esIllus('<rect x="12" y="27" width="40" height="27" rx="2.5"/><path d="M23 27v27M32 27v27M41 27v27"/><circle class="acc" cx="41" cy="17" r="9"/><circle class="acc" cx="41" cy="17" r="2.2"/>');
+const ES_HEART = esIllus('<circle cx="27" cy="35" r="15"/><circle cx="27" cy="35" r="3"/><path class="acc" d="M47 13.5c-1.7-2.3-5.4-1.6-5.4 1.5 0 2.4 3.1 4 5.4 6.2 2.3-2.2 5.4-3.8 5.4-6.2 0-3.1-3.7-3.8-5.4-1.5z"/>');
+const ES_LIST = esIllus('<path d="M24 22h26M24 32h26M24 42h18"/><circle class="acc" cx="16" cy="22" r="2.6"/><circle class="acc" cx="16" cy="32" r="2.6"/><circle class="acc" cx="16" cy="42" r="2.6"/>');
+const ES_PEN = esIllus('<path d="M14 18h36a4 4 0 0 1 4 4v15a4 4 0 0 1-4 4H30l-8 7v-7h-8a4 4 0 0 1-4-4V22a4 4 0 0 1 4-4z"/><path class="acc" d="M32 23l2.2 4.6 5 .7-3.6 3.6.85 5-4.45-2.4-4.45 2.4.85-5-3.6-3.6 5-.7z"/>');
+const ES_BELL = esIllus('<path d="M32 13a10 10 0 0 1 10 10v7l3 5H19l3-5v-7a10 10 0 0 1 10-10z"/><path d="M32 11v2"/><path class="acc" d="M27.5 45a4.5 4.5 0 0 0 9 0"/>');
 function emptyState({ icon = ES_DISC, title = '', text = '', ctaLabel = '', ctaAttr = '' } = {}) {
   return `<div class="empty-state">${icon}`
     + (title ? `<p class="es-title">${escapeHtml(title)}</p>` : '')
@@ -284,8 +291,8 @@ function renderList(list) {
   const hint = $(`#empty-${list}`);
   if (getList(list).length === 0) {
     hint.innerHTML = list === 'collection'
-      ? emptyState({ title: tr('empty.collectionTitle'), text: tr('empty.collectionText'), ctaLabel: tr('empty.collectionCta'), ctaAttr: 'data-go="add"' })
-      : emptyState({ title: tr('empty.wishlistTitle'), text: tr('empty.wishlistText'), ctaLabel: tr('empty.wishlistCta'), ctaAttr: 'data-go="search"' });
+      ? emptyState({ icon: ES_CRATE, title: tr('empty.collectionTitle'), text: tr('empty.collectionText'), ctaLabel: tr('empty.collectionCta'), ctaAttr: 'data-go="add"' })
+      : emptyState({ icon: ES_HEART, title: tr('empty.wishlistTitle'), text: tr('empty.wishlistText'), ctaLabel: tr('empty.wishlistCta'), ctaAttr: 'data-go="search"' });
     const cta = hint.querySelector('.es-cta');
     if (cta) cta.onclick = () => switchView(cta.dataset.go);
   } else {
@@ -2750,7 +2757,7 @@ function renderPlaylists() {
   const pls = getPlaylists();
   const c = $('#playlists-container');
   if (!pls.length) {
-    c.innerHTML = emptyState({ title: tr('empty.playlistsTitle'), text: tr('empty.playlistsText') });
+    c.innerHTML = emptyState({ icon: ES_LIST, title: tr('empty.playlistsTitle'), text: tr('empty.playlistsText') });
     return;
   }
   const coll = getList('collection');
@@ -2948,7 +2955,7 @@ async function renderHomeReviews(body) {
   try { revs = await fetchReviewsFeed(30); } catch { /* ignorieren */ }
   if (!wrap) return;
   if (!revs.length) {
-    wrap.innerHTML = emptyState({ title: tr('empty.reviewsTitle'), text: tr('home.noReviews') });
+    wrap.innerHTML = emptyState({ icon: ES_PEN, title: tr('empty.reviewsTitle'), text: tr('home.noReviews') });
     return;
   }
   homeReviewsCache = revs;
@@ -2988,7 +2995,7 @@ function listCardHtml(l, i) {
 // „Lists" = Playlists von Gefolgten.
 async function renderHomeLists(body) {
   if (!getUser()) {
-    body.innerHTML = emptyState({ title: tr('empty.listsTitle'), text: tr('home.signInLists'), ctaLabel: tr('auth.login'), ctaAttr: 'id="lists-cta"' });
+    body.innerHTML = emptyState({ icon: ES_LIST, title: tr('empty.listsTitle'), text: tr('home.signInLists'), ctaLabel: tr('auth.login'), ctaAttr: 'id="lists-cta"' });
     const b = body.querySelector('#lists-cta'); if (b) b.onclick = () => openAuth('login');
     return;
   }
@@ -2998,7 +3005,7 @@ async function renderHomeLists(body) {
   try { lists = await fetchFriendsLists(20); } catch { /* ignorieren */ }
   if (!wrap) return;
   if (!lists.length) {
-    wrap.innerHTML = emptyState({ title: tr('empty.listsTitle'), text: tr('home.noFriendLists'), ctaLabel: tr('dlg.findFriends'), ctaAttr: 'id="lists-cta"' });
+    wrap.innerHTML = emptyState({ icon: ES_LIST, title: tr('empty.listsTitle'), text: tr('home.noFriendLists'), ctaLabel: tr('dlg.findFriends'), ctaAttr: 'id="lists-cta"' });
     const b = wrap.querySelector('#lists-cta'); if (b) b.onclick = goMemberSearch;
     return;
   }
@@ -3202,7 +3209,7 @@ async function openNotifications() {
   try { notifs = await fetchNotifications(40); } catch { /* ignorieren */ }
   notifCache = notifs;
   if (!notifs.length) {
-    box.innerHTML = emptyState({ title: tr('notif.emptyTitle'), text: tr('notif.emptyText') });
+    box.innerHTML = emptyState({ icon: ES_BELL, title: tr('notif.emptyTitle'), text: tr('notif.emptyText') });
   } else {
     box.innerHTML = notifs.map((n, i) => notifRowHtml(n, i)).join('');
     box.querySelectorAll('.notif-row').forEach((row) => row.addEventListener('click', () => openNotifTarget(notifCache[+row.dataset.idx])));
