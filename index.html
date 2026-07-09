@@ -222,7 +222,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 161</p>
+        <p class="hint profile-version">Discend · Build 162</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -720,7 +720,7 @@
   <dialog id="create-playlist-dialog">
     <div class="cover-pick">
       <div class="cover-pick-head">
-        <span data-i18n="dlg.newPlaylist">New playlist</span>
+        <span id="create-pl-title" data-i18n="dlg.newPlaylist">New playlist</span>
         <button type="button" id="btn-create-pl-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
       </div>
       <div class="pl-create">
@@ -751,9 +751,20 @@
     <div class="wrapped-sheet">
       <div class="friends-head">
         <span id="plv-title"></span>
-        <button type="button" id="btn-plv-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+        <span class="plv-head-actions">
+          <button type="button" id="btn-plv-settings" class="icon-btn" data-i18n-aria="a11y.listSettings" aria-label="List settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+          <button type="button" id="btn-plv-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+        </span>
       </div>
       <p id="plv-desc" class="pl-desc"></p>
+      <div id="plv-settings" class="plv-settings" hidden>
+        <label class="plv-set-row"><span data-i18n="pl.showRanks">Show placements</span><input type="checkbox" id="plv-ranked-toggle" /></label>
+        <button type="button" class="plv-set-btn" id="plv-reorder" data-i18n="pl.reorder">Change order</button>
+        <button type="button" class="plv-set-btn" id="plv-edit" data-i18n="pl.editList">Edit list</button>
+        <button type="button" class="plv-set-btn plv-set-danger" id="plv-delete" data-i18n="pl.deleteList">Delete list</button>
+      </div>
       <div id="plv-list"></div>
     </div>
   </dialog>

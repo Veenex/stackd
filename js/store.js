@@ -157,7 +157,7 @@ export function savePlaylists(pls) {
   if (k) write(k, pls);
 }
 export function createPlaylist(name, description) {
-  const p = { id: crypto.randomUUID(), name: (name || '').trim() || 'Neue Liste', description: (description || '').trim(), itemIds: [], createdAt: Date.now() };
+  const p = { id: crypto.randomUUID(), name: (name || '').trim() || 'Neue Liste', description: (description || '').trim(), ranked: false, itemIds: [], createdAt: Date.now() };
   const u = uid();
   if (!u) return p;
   const pls = getPlaylists(); pls.push(p); savePlaylists(pls);
@@ -187,6 +187,27 @@ export function renamePlaylist(id, name) {
     const sb = await cloud(); if (!sb) return;
     const { error } = await sb.from('playlists').update({ name: p.name }).eq('id', id).eq('user_id', u);
     if (error) console.warn('playlist rename:', error.message);
+  })();
+}
+// Listen-Metadaten ändern (Name, Beschreibung, ranked = Platzierungen anzeigen).
+export function updatePlaylist(id, patch) {
+  const pls = getPlaylists();
+  const p = pls.find((x) => x.id === id);
+  if (!p) return;
+  if (patch.name !== undefined) p.name = (patch.name || '').trim() || p.name;
+  if (patch.description !== undefined) p.description = (patch.description || '').trim();
+  if (patch.ranked !== undefined) p.ranked = !!patch.ranked;
+  savePlaylists(pls);
+  const u = uid();
+  if (u) (async () => {
+    const sb = await cloud(); if (!sb) return;
+    const upd = {};
+    if (patch.name !== undefined) upd.name = p.name;
+    if (patch.description !== undefined) upd.description = p.description || null;
+    if (patch.ranked !== undefined) upd.ranked = p.ranked;
+    if (!Object.keys(upd).length) return;
+    const { error } = await sb.from('playlists').update(upd).eq('id', id).eq('user_id', u);
+    if (error) console.warn('playlist update:', error.message);
   })();
 }
 export function togglePlaylistItem(playlistId, itemId) {
@@ -232,7 +253,7 @@ function persistPlaylistOrder(p) {
 // ---------- Sync: Login (Pull + einmalige Migration) / Logout ----------
 function assemblePlaylists(pls, plItems) {
   return (pls || []).map((p) => ({
-    id: p.id, name: p.name, description: p.description || '',
+    id: p.id, name: p.name, description: p.description || '', ranked: !!p.ranked,
     createdAt: p.created_at ? new Date(p.created_at).getTime() : Date.now(),
     itemIds: (plItems || []).filter((pi) => pi.playlist_id === p.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((pi) => pi.item_id),
   }));

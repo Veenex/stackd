@@ -4,7 +4,7 @@ import {
   getList, addItem, updateItem, deleteItem, moveItem,
   getSettings, saveSettings, exportAll, importAll,
   sortItems, filterItems,
-  getPlaylists, createPlaylist, deletePlaylist, togglePlaylistItem, movePlaylistItem,
+  getPlaylists, createPlaylist, deletePlaylist, updatePlaylist, togglePlaylistItem, movePlaylistItem,
   syncAll, clearUserCache,
   searchUsers, getFollowing, follow, unfollow, fetchFriendsFeed,
   getBlocked, blockUser, unblockUser, reportTarget,
@@ -136,6 +136,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 162, de: ['Listen im Letterboxd-Stil: antippen öffnet die Übersicht, Zahnrad für Platzierungen, Bearbeiten und Löschen'], en: ['Letterboxd-style lists: tap to open, gear for placements, edit and delete'] },
   { build: 160, de: ['Bessere Hörproben: passendere Treffer, weniger falsche oder fehlende Snippets'], en: ['Better previews: more accurate matches, fewer wrong or missing snippets'] },
   { build: 159, de: ['Sammlung-Ansicht wählbar: große/kleine Kacheln oder Liste'], en: ['Choose your collection view: large/small tiles or list'] },
   { build: 158, de: ['Schöne Vorschau beim Teilen von Links (mit Bild)'], en: ['Rich preview when sharing links (with image)'] },
@@ -2817,26 +2818,31 @@ function renderPlaylists() {
     return;
   }
   const coll = getList('collection');
+  // Letterboxd-Stil: ganze Karte klickbar (öffnet die Übersicht), kein Löschen-Knopf an der Zeile.
   c.innerHTML = pls.map((p) => {
     const albums = p.itemIds.map((id) => coll.find((x) => x.id === id)).filter(Boolean);
-    const covers = albums.length
-      ? `<div class="playlist-albums">${albums.map((a) => `<button class="pa-cover" data-id="${a.id}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.remove()" />` : ''}</button>`).join('')}</div>`
-      : `<p class="playlist-empty">${tr('pl.emptyShort')}</p>`;
-    const desc = p.description ? `<p class="pl-desc">${escapeHtml(p.description)}</p>` : '';
-    return `<div class="playlist-item"><div class="playlist-head"><button class="pl-title" data-plopen="${p.id}">${escapeHtml(p.name)}</button><span><span class="pl-count">${albums.length}</span> <button class="playlist-del" data-del="${p.id}">${tr('btn.deleteSmall')}</button></span></div>${desc}${covers}</div>`;
+    const posters = albums.slice(0, 5).map((a) => `<span class="pl-poster${a.coverUrl ? '' : ' placeholder'}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove()" />` : ''}</span>`).join('') || '<span class="pl-poster placeholder"></span>';
+    const desc = p.description ? `<span class="pl-card-desc">${escapeHtml(p.description)}</span>` : '';
+    return `<button class="pl-card" data-plopen="${p.id}">
+        <span class="pl-stack">${posters}</span>
+        <span class="pl-card-body">
+          <span class="pl-card-name">${escapeHtml(p.name)}</span>
+          <span class="pl-card-count">${tr('unit.albumsCount', { n: albums.length })}</span>
+          ${desc}
+        </span>
+        <span class="pl-card-chev">›</span>
+      </button>`;
   }).join('');
-  c.querySelectorAll('.pl-title[data-plopen]').forEach((b) => b.addEventListener('click', () => openPlaylistView(b.dataset.plopen)));
-  c.querySelectorAll('.pa-cover').forEach((b) => b.addEventListener('click', () => openDetail('collection', b.dataset.id)));
-  c.querySelectorAll('.playlist-del').forEach((b) => b.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (confirm(tr('confirm.deletePlaylist'))) { deletePlaylist(b.dataset.del); renderPlaylists(); }
-  }));
+  c.querySelectorAll('.pl-card[data-plopen]').forEach((b) => b.addEventListener('click', () => openPlaylistView(b.dataset.plopen)));
 }
 
 // ---------- Listen-Ansicht (sortierbar/ranked) ----------
 let plvId = null;
+let plvEditMode = false; // Reihenfolge-ändern-Modus (zeigt Hoch/Runter/Entfernen)
 function openPlaylistView(id) {
   plvId = id;
+  plvEditMode = false;
+  $('#plv-settings').hidden = true;
   renderPlaylistView();
   $('#playlist-view-dialog').showModal();
 }
@@ -2847,22 +2853,26 @@ function renderPlaylistView() {
   const descEl = $('#plv-desc');
   descEl.textContent = p.description || '';
   descEl.style.display = p.description ? '' : 'none';
+  $('#plv-ranked-toggle').checked = !!p.ranked;
+  const reorderBtn = $('#plv-reorder');
+  reorderBtn.classList.toggle('active', plvEditMode);
+  reorderBtn.textContent = plvEditMode ? tr('pl.reorderDone') : tr('pl.reorder');
   const coll = getList('collection');
   const albums = p.itemIds.map((id) => coll.find((x) => x.id === id)).filter(Boolean);
   const list = $('#plv-list');
   if (!albums.length) { list.innerHTML = `<p class="pl-none">${tr('pl.empty')}</p>`; return; }
   list.innerHTML = albums.map((a, i) => `
-    <div class="plv-row">
-      <span class="plv-rank">${i + 1}</span>
+    <div class="plv-row${p.ranked ? ' ranked' : ''}${plvEditMode ? ' editing' : ''}">
+      ${p.ranked ? `<span class="plv-rank">${i + 1}</span>` : ''}
       <button class="plv-album" data-open="${a.id}">
         <span class="plv-cover${a.coverUrl ? '' : ' placeholder'}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.remove()" />` : ''}</span>
         <span class="plv-meta"><span class="chart-title">${escapeHtml(a.title || '')}</span><span class="chart-artist">${escapeHtml(a.artist || '')}</span></span>
       </button>
-      <span class="plv-ctrls">
+      ${plvEditMode ? `<span class="plv-ctrls">
         <button class="plv-mv" data-up="${a.id}" ${i === 0 ? 'disabled' : ''} aria-label="${tr('a11y.moveUp')}">▲</button>
         <button class="plv-mv" data-down="${a.id}" ${i === albums.length - 1 ? 'disabled' : ''} aria-label="${tr('a11y.moveDown')}">▼</button>
         <button class="plv-rm" data-rm="${a.id}" aria-label="${tr('a11y.remove')}">×</button>
-      </span>
+      </span>` : ''}
     </div>`).join('');
   list.querySelectorAll('[data-open]').forEach((b) => b.addEventListener('click', () => { $('#playlist-view-dialog').close(); openDetail('collection', b.dataset.open); }));
   list.querySelectorAll('[data-up]').forEach((b) => b.addEventListener('click', () => { movePlaylistItem(plvId, b.dataset.up, -1); renderPlaylistView(); }));
@@ -2870,18 +2880,53 @@ function renderPlaylistView() {
   list.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', () => { togglePlaylistItem(plvId, b.dataset.rm); renderPlaylistView(); renderPlaylists(); }));
 }
 $('#btn-plv-close').addEventListener('click', () => $('#playlist-view-dialog').close());
+// Zahnrad: Einstellungen der Liste ein-/ausklappen
+$('#btn-plv-settings').addEventListener('click', () => { const s = $('#plv-settings'); s.hidden = !s.hidden; });
+$('#plv-ranked-toggle').addEventListener('change', (e) => { updatePlaylist(plvId, { ranked: e.target.checked }); renderPlaylistView(); renderPlaylists(); });
+$('#plv-reorder').addEventListener('click', () => { plvEditMode = !plvEditMode; renderPlaylistView(); });
+$('#plv-edit').addEventListener('click', () => { if (plvId) openPlaylistEdit(plvId); });
+$('#plv-delete').addEventListener('click', () => {
+  if (!plvId) return;
+  if (confirm(tr('confirm.deletePlaylist'))) { deletePlaylist(plvId); $('#playlist-view-dialog').close(); renderPlaylists(); }
+});
 
-$('#btn-new-playlist').addEventListener('click', () => $('#create-playlist-dialog').showModal());
-$('#btn-create-pl-close').addEventListener('click', () => $('#create-playlist-dialog').close());
+// Liste anlegen ODER bearbeiten (derselbe Dialog, gesteuert über editingPlaylistId).
+let editingPlaylistId = null;
+function openPlaylistEdit(id) {
+  const p = getPlaylists().find((x) => x.id === id); if (!p) return;
+  editingPlaylistId = id;
+  $('#new-playlist-name').value = p.name;
+  $('#new-playlist-desc').value = p.description || '';
+  $('#create-pl-title').textContent = tr('dlg.editPlaylist');
+  $('#btn-create-playlist').textContent = tr('btn.save');
+  $('#create-playlist-dialog').showModal();
+}
+function resetPlaylistDialog() {
+  editingPlaylistId = null;
+  $('#new-playlist-name').value = '';
+  $('#new-playlist-desc').value = '';
+  $('#create-pl-title').textContent = tr('dlg.newPlaylist');
+  $('#btn-create-playlist').textContent = tr('btn.create');
+}
+$('#btn-new-playlist').addEventListener('click', () => { resetPlaylistDialog(); $('#create-playlist-dialog').showModal(); });
+$('#btn-create-pl-close').addEventListener('click', () => { $('#create-playlist-dialog').close(); resetPlaylistDialog(); });
 $('#btn-create-playlist').addEventListener('click', () => {
   const name = $('#new-playlist-name').value.trim();
   if (!name) return;
-  createPlaylist(name, $('#new-playlist-desc').value.trim());
-  $('#new-playlist-name').value = '';
-  $('#new-playlist-desc').value = '';
-  $('#create-playlist-dialog').close();
-  renderPlaylists();
-  toast(tr('toast.playlistCreated'));
+  const desc = $('#new-playlist-desc').value.trim();
+  if (editingPlaylistId) {
+    updatePlaylist(editingPlaylistId, { name, description: desc });
+    $('#create-playlist-dialog').close();
+    resetPlaylistDialog();
+    renderPlaylists();
+    renderPlaylistView();
+  } else {
+    createPlaylist(name, desc);
+    $('#create-playlist-dialog').close();
+    resetPlaylistDialog();
+    renderPlaylists();
+    toast(tr('toast.playlistCreated'));
+  }
 });
 $('#new-playlist-name').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.preventDefault(); $('#btn-create-playlist').click(); }
