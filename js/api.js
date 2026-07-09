@@ -479,14 +479,66 @@ export async function fetchReleaseInfo(item) {
 }
 
 // Fallback-Tracklist über Apple/iTunes (wenn Discogs nur wenige/keine Tracks hat).
+// Titel/Interpret tolerant normalisieren: Klammer-Zusätze, „feat.", „- 2016 Remaster",
+// „(Live)" etc. entfernen, Rest klein + nur Buchstaben/Ziffern. So matchen Discogs- und
+// iTunes-Schreibweisen zuverlässiger.
+export function normTitle(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\[[^\]]*\]/g, ' ')
+    .replace(/\b(feat|ft)\.?\s.*$/i, ' ')
+    .replace(/\s-\s.*\b(remaster|remastered|live|mono|stereo|single|radio|edit|version|mix|deluxe|remix|acoustic|demo|anniversary|reissue)\b.*$/i, ' ')
+    .replace(/[^a-z0-9]/g, '');
+}
+
+// Bewertet, wie gut ein iTunes-Song-Treffer zu gewünschtem Interpret+Titel passt.
+// Höher = besser; -1 = Titel passt gar nicht (dann NICHT nehmen → lieber keine Probe).
+function scoreSongMatch(cand, wantArtist, wantTitle) {
+  const ct = normTitle(cand.trackName), ca = normTitle(cand.artistName);
+  const wt = normTitle(wantTitle), wa = normTitle(wantArtist);
+  if (!ct || !wt) return -1;
+  let s;
+  if (ct === wt) s = 100;
+  else if (ct.startsWith(wt) || wt.startsWith(ct)) s = 60;
+  else if (ct.includes(wt) || wt.includes(ct)) s = 30;
+  else return -1;
+  if (wa) { if (ca === wa) s += 40; else if (ca.includes(wa) || wa.includes(ca)) s += 20; }
+  if (cand.previewUrl) s += 10;
+  const raw = (cand.trackName || '').toLowerCase();
+  const wantRaw = (wantTitle || '').toLowerCase();
+  // Live/Remix/Cover abwerten, außer der gewünschte Titel meint das ausdrücklich
+  if (/\b(live|remix|karaoke|tribute|cover|instrumental)\b/.test(raw) && !/\b(live|remix|instrumental)\b/.test(wantRaw)) s -= 25;
+  return s;
+}
+
 export async function fetchItunesTracklist(artist, title) {
   const term = `${artist || ''} ${title || ''}`.trim();
   if (!term) return null;
+  const wt = normTitle(title), wa = normTitle(artist);
+  const artistOk = (an) => !wa || an === wa || an.includes(wa) || wa.includes(an);
   try {
-    const ad = await itunesProxy('search', { entity: 'album', limit: 1, term });
-    const col = (ad.results || [])[0];
-    if (!col || !col.collectionId) return null;
-    const sd = await itunesProxy('lookup', { id: col.collectionId, entity: 'song', limit: 200 });
+    let collectionId = null, best = -1;
+    // 1) Album-Suche: bestes Album mit PASSENDEM Interpret (filtert Tribute-/Cover-Alben raus).
+    const ad = await itunesProxy('search', { entity: 'album', limit: 5, term });
+    for (const a of (ad.results || [])) {
+      if (!a.collectionId) continue;
+      const cn = normTitle(a.collectionName), an = normTitle(a.artistName);
+      if (!artistOk(an)) continue;
+      let s = 0;
+      if (cn && cn === wt) s += 100; else if (wt && cn && (cn.includes(wt) || wt.includes(cn))) s += 50;
+      if (an === wa) s += 40;
+      if (s > best) { best = s; collectionId = a.collectionId; }
+    }
+    // 2) Fallback: Album-ID aus dem best passenden SONG-Treffer ableiten – zuverlässiger,
+    //    wenn die Album-Suche mehrdeutig ist (z. B. Albumtitel = Songtitel wie „Revolution Radio").
+    if (!collectionId) {
+      const ss = await itunesProxy('search', { entity: 'song', limit: 15, term });
+      let bs = 0;
+      for (const c of (ss.results || [])) { const s = scoreSongMatch(c, artist, title); if (s > bs && c.collectionId) { bs = s; collectionId = c.collectionId; } }
+    }
+    if (!collectionId) return null;
+    const sd = await itunesProxy('lookup', { id: collectionId, entity: 'song', limit: 200 });
     const tracks = (sd.results || [])
       .filter((x) => x.wrapperType === 'track' && x.kind === 'song')
       .sort((x, y) => ((x.discNumber || 1) - (y.discNumber || 1)) || ((x.trackNumber || 0) - (y.trackNumber || 0)))
@@ -507,14 +559,18 @@ export async function fetchItunesSongs(query, limit = 25) {
   } catch { return []; }
 }
 
-// 30s-Hörprobe für einen einzelnen Song (iTunes Song-Suche). Gibt previewUrl oder '' zurück.
+// 30s-Hörprobe für einen einzelnen Song. Holt mehrere Treffer und nimmt den best
+// passenden (Titel+Interpret), statt blind den ersten → verhindert falsche Versionen.
+// Passt gar kein Titel, wird '' zurückgegeben (keine falsche Probe).
 export async function fetchSongPreview(artist, title) {
   const term = `${artist || ''} ${title || ''}`.trim();
   if (!term) return '';
   try {
-    const d = await itunesProxy('search', { entity: 'song', limit: 1, term });
-    const hit = (d.results || [])[0];
-    return (hit && hit.previewUrl) || '';
+    const d = await itunesProxy('search', { entity: 'song', limit: 15, term });
+    const cands = (d.results || []).filter((x) => (x.kind === 'song' || x.wrapperType === 'track') && x.previewUrl);
+    let best = null, bestScore = 0;
+    for (const c of cands) { const s = scoreSongMatch(c, artist, title); if (s > bestScore) { bestScore = s; best = c; } }
+    return best ? best.previewUrl : '';
   } catch { return ''; }
 }
 

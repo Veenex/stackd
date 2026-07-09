@@ -17,7 +17,7 @@ import {
   fetchNotifications, fetchUnreadCount, markNotificationsRead,
   sendFeedback,
 } from './store.js';
-import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, fetchSongPreview, fetchItunesSongs, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection } from './api.js';
+import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, fetchSongPreview, fetchItunesSongs, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection, normTitle } from './api.js';
 import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, changeEmail, sendPasswordReset, deleteAccount, uploadProfileImage } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 import { t as tr, applyI18n, getLang, setLang } from './i18n.js';
@@ -161,6 +161,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 160, de: ['Bessere Hörproben: passendere Treffer, weniger falsche oder fehlende Snippets'], en: ['Better previews: more accurate matches, fewer wrong or missing snippets'] },
   { build: 159, de: ['Sammlung-Ansicht wählbar: große/kleine Kacheln oder Liste'], en: ['Choose your collection view: large/small tiles or list'] },
   { build: 158, de: ['Schöne Vorschau beim Teilen von Links (mit Bild)'], en: ['Rich preview when sharing links (with image)'] },
   { build: 157, de: ['Hörkalender: dein Hörjahr als Heatmap im Wrapped'], en: ['Listening calendar: your year as a heatmap in Wrapped'] },
@@ -1056,9 +1057,11 @@ async function loadTracklist(item) {
       const its = await fetchItunesTracklist(item.artist, item.title);
       if (reqId !== tracklistReq) return;
       if (its && its.length) {
-        const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        const map = {}; its.forEach((t) => { if (t.preview) map[norm(t.title)] = t.preview; });
-        tracks.forEach((t) => { if (!t.preview) { const p = map[norm(t.title)]; if (p) t.preview = p; } });
+        const map = {}; its.forEach((t) => { const k = normTitle(t.title); if (t.preview && k) map[k] = t.preview; });
+        tracks.forEach((t) => { if (!t.preview) { const k = normTitle(t.title); const p = k && map[k]; if (p) t.preview = p; } });
+        // Positions-Fallback: gleich viele Tracks => sehr wahrscheinlich dasselbe Album,
+        // also verbleibende fehlende Proben der Reihe nach zuordnen.
+        if (its.length === tracks.length) tracks.forEach((t, i) => { if (!t.preview && its[i] && its[i].preview) t.preview = its[i].preview; });
       }
     } catch { /* ignorieren */ }
   }
