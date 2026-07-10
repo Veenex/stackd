@@ -136,6 +136,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 163, de: ['Listen anderer Nutzer: gleiche Optik, mit Platzierungen, wenn der Ersteller sie anhat'], en: ['Other people\'s lists: same look, with placements if the creator enabled them'] },
   { build: 162, de: ['Listen im Letterboxd-Stil: antippen öffnet die Übersicht, Zahnrad für Platzierungen, Bearbeiten und Löschen'], en: ['Letterboxd-style lists: tap to open, gear for placements, edit and delete'] },
   { build: 160, de: ['Bessere Hörproben: passendere Treffer, weniger falsche oder fehlende Snippets'], en: ['Better previews: more accurate matches, fewer wrong or missing snippets'] },
   { build: 159, de: ['Sammlung-Ansicht wählbar: große/kleine Kacheln oder Liste'], en: ['Choose your collection view: large/small tiles or list'] },
@@ -2842,6 +2843,7 @@ let plvEditMode = false; // Reihenfolge-ändern-Modus (zeigt Hoch/Runter/Entfern
 function openPlaylistView(id) {
   plvId = id;
   plvEditMode = false;
+  $('#btn-plv-settings').style.display = ''; // eigene Liste: Zahnrad zeigen
   $('#plv-settings').hidden = true;
   renderPlaylistView();
   $('#playlist-view-dialog').showModal();
@@ -3560,20 +3562,55 @@ function openUpGrid(kind) {
 }
 $('#up-grid-back').addEventListener('click', () => $('#up-grid-page').classList.add('hidden'));
 // Listen (Playlists) eines Nutzers anzeigen
+// Schreibgeschützte Listen-Übersicht (fremdes Profil): zeigt die Platzierungs-Nummern,
+// wenn der Ersteller sie aktiviert hat (ranked). Kein Zahnrad, kein Bearbeiten.
+function openUserPlaylistView(list) {
+  if (!list) return;
+  $('#btn-plv-settings').style.display = 'none'; // read-only: kein Zahnrad
+  $('#plv-settings').hidden = true;
+  $('#plv-title').textContent = list.name || '';
+  const descEl = $('#plv-desc');
+  descEl.textContent = list.description || '';
+  descEl.style.display = list.description ? '' : 'none';
+  const items = list.items || [];
+  const el = $('#plv-list');
+  if (!items.length) { el.innerHTML = `<p class="pl-none">${tr('pl.empty')}</p>`; }
+  else {
+    el.innerHTML = items.map((a, i) => `
+      <div class="plv-row${list.ranked ? ' ranked' : ''}">
+        ${list.ranked ? `<span class="plv-rank">${i + 1}</span>` : ''}
+        <button class="plv-album" data-i="${i}">
+          <span class="plv-cover${a.coverUrl ? '' : ' placeholder'}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.remove()" />` : ''}</span>
+          <span class="plv-meta"><span class="chart-title">${escapeHtml(a.title || '')}</span><span class="chart-artist">${escapeHtml(a.artist || '')}</span></span>
+        </button>
+      </div>`).join('');
+    el.querySelectorAll('.plv-album').forEach((b) => b.addEventListener('click', () => { $('#playlist-view-dialog').close(); openPreview(items[+b.dataset.i]); }));
+  }
+  $('#playlist-view-dialog').showModal();
+}
 function renderUserLists(lists) {
   const sec = $('#up-lists-section'); const box = $('#up-lists');
   if (!lists.length) { sec.hidden = true; box.innerHTML = ''; return; }
   sec.hidden = false;
+  // Gleiche Karten-Optik wie beim eigenen Profil; Rangliste-Hinweis + Nummern in der Übersicht.
   box.innerHTML = lists.map((pl) => {
-    const covers = pl.items.length
-      ? '<div class="playlist-albums">' + pl.items.map((a, i) => `<button class="pa-cover" data-pl="${pl.id}" data-i="${i}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : ''}</button>`).join('') + '</div>'
-      : '<p class="playlist-empty">Leer.</p>';
-    const desc = pl.description ? `<p class="pl-desc">${escapeHtml(pl.description)}</p>` : '';
-    return `<div class="playlist-item"><div class="playlist-head"><span class="pl-title">${escapeHtml(pl.name)}</span><span class="pl-count">${pl.items.length}</span></div>${desc}${covers}</div>`;
+    const items = pl.items || [];
+    const posters = items.slice(0, 5).map((a) => `<span class="pl-poster${a.coverUrl ? '' : ' placeholder'}">${a.coverUrl ? `<img src="${escapeHtml(a.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove()" />` : ''}</span>`).join('') || '<span class="pl-poster placeholder"></span>';
+    const desc = pl.description ? `<span class="pl-card-desc">${escapeHtml(pl.description)}</span>` : '';
+    const rankNote = pl.ranked ? ` · ${tr('pl.ranked')}` : '';
+    return `<button class="pl-card" data-plopen="${pl.id}">
+        <span class="pl-stack">${posters}</span>
+        <span class="pl-card-body">
+          <span class="pl-card-name">${escapeHtml(pl.name)}</span>
+          <span class="pl-card-count">${tr('unit.albumsCount', { n: items.length })}${rankNote}</span>
+          ${desc}
+        </span>
+        <span class="pl-card-chev">›</span>
+      </button>`;
   }).join('');
-  box.querySelectorAll('.pa-cover').forEach((b) => b.addEventListener('click', () => {
-    const pl = lists.find((x) => x.id === b.dataset.pl);
-    if (pl) openPreview(pl.items[+b.dataset.i]);
+  box.querySelectorAll('.pl-card[data-plopen]').forEach((b) => b.addEventListener('click', () => {
+    const pl = lists.find((x) => x.id === b.dataset.plopen);
+    if (pl) openUserPlaylistView(pl);
   }));
 }
 // Cover-Grid mit Klick -> Album-Vorschau (Items im Closure)

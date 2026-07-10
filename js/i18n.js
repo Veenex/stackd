@@ -135,6 +135,7 @@ export const DICT = {
   'pl.editList': { en: 'Edit list', de: 'Liste bearbeiten' },
   'pl.deleteList': { en: 'Delete list', de: 'Liste löschen' },
   'dlg.editPlaylist': { en: 'Edit list', de: 'Liste bearbeiten' },
+  'pl.ranked': { en: 'Ranked', de: 'Rangliste' },
   'lbl.lending': { en: 'Lending', de: 'Verleih' },
   'lbl.lentOut': { en: 'Lent out', de: 'Verliehen' },
   'lend.mark': { en: 'Mark as lent', de: 'Als verliehen markieren' },

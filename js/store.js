@@ -528,7 +528,7 @@ export async function fetchUserPlaylists(userId) {
   ]);
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
   return pls.map((p) => ({
-    id: p.id, name: p.name, description: p.description || '',
+    id: p.id, name: p.name, description: p.description || '', ranked: !!p.ranked,
     items: (plItems || []).filter((pi) => pi.playlist_id === p.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((pi) => map[pi.item_id]).filter(Boolean),
   }));
 }
