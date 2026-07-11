@@ -136,6 +136,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 165, de: ['Fremde Profile: Sammlung antippbar, Bewertungs-Diagramm sichtbar; kein versehentliches Zoomen mehr'], en: ['Other profiles: browse their collection, see their ratings chart; no more accidental zoom'] },
   { build: 164, de: ['Fremde Profile: 3-Punkte-Menü oben rechts (Entfolgen, Teilen, Blockieren, Melden)'], en: ['Other profiles: 3-dot menu top right (unfollow, share, block, report)'] },
   { build: 163, de: ['Listen anderer Nutzer: gleiche Optik, mit Platzierungen, wenn der Ersteller sie anhat'], en: ['Other people\'s lists: same look, with placements if the creator enabled them'] },
   { build: 162, de: ['Listen im Letterboxd-Stil: antippen öffnet die Übersicht, Zahnrad für Platzierungen, Bearbeiten und Löschen'], en: ['Letterboxd-style lists: tap to open, gear for placements, edit and delete'] },
@@ -585,6 +586,13 @@ function setConditionDisplay(media, sleeve) {
   $('#dp-condition').textContent = parts.length ? tr('cond.label') + ' ' + parts.join('  ·  ') : '';
 }
 
+// Overlays (#detail-page, #user-page, #up-grid-page) teilen sich z-index 40 und stapeln sonst
+// nur nach DOM-Reihenfolge. Das zuletzt geöffnete nach vorne holen (bleibt unter Dialogen/Toast).
+const OVERLAY_SELS = ['#detail-page', '#user-page', '#up-grid-page'];
+function bringOverlayFront(el) {
+  OVERLAY_SELS.forEach((s) => { const o = $(s); if (o) o.style.zIndex = ''; });
+  if (el) el.style.zIndex = '45';
+}
 function openDetail(list, id) {
   const item = getList(list).find((i) => i.id === id);
   if (!item) return;
@@ -636,7 +644,7 @@ function openDetail(list, id) {
   renderAlbumReviews(item);
 
   { const as0 = $('#dp-actions'); if (as0 && as0.open) as0.close(); }
-  detailPage.classList.remove('hidden');
+  bringOverlayFront(detailPage); detailPage.classList.remove('hidden');
   $('#detail-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
 }
@@ -845,7 +853,7 @@ function openPreview(result) {
   renderCommunityRating(result);
   renderAlbumReviews(result);
   { const as0 = $('#dp-actions'); if (as0 && as0.open) as0.close(); }
-  detailPage.classList.remove('hidden');
+  bringOverlayFront(detailPage); detailPage.classList.remove('hidden');
   $('#detail-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
 }
@@ -2087,18 +2095,18 @@ function renderRecent() {
   el.querySelectorAll('.recent-cell').forEach((b) => b.addEventListener('click', () => openDetail('collection', b.dataset.id)));
 }
 
-function renderHisto() {
-  const coll = getList('collection');
+function renderHisto(coll = getList('collection'), sel = '#rating-histo') {
+  const root = $(sel); if (!root) return;
   const steps = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
   const counts = steps.map((v) => coll.filter((i) => (Number(i.rating) || 0) === v).length);
   const max = Math.max(1, ...counts);
   const bars = counts.map((c) => `<div class="histo-bar" data-count="${c}" style="height:${(c / max) * 100}%"><span class="histo-val">${c}</span></div>`).join('');
   const miniNote = `<svg class="mini-note" viewBox="0 0 24 24" fill="currentColor"><path d="${NOTE_PATH}"/></svg>`;
-  $('#rating-histo').innerHTML =
+  root.innerHTML =
     `<span class="histo-end">${miniNote}</span><div class="histo-bars">${bars}</div><span class="histo-end">${miniNote.repeat(5)}</span>`;
 
   // Touch/Halten am Handy: Zahl über dem berührten Balken zeigen (Hover macht CSS)
-  const wrap = $('#rating-histo .histo-bars');
+  const wrap = root.querySelector('.histo-bars');
   const clear = () => wrap.querySelectorAll('.histo-bar.show-val').forEach((b) => b.classList.remove('show-val'));
   const showAt = (x, y) => {
     clear();
@@ -3484,12 +3492,13 @@ async function openUserProfile(user) {
   $('#up-blocked-note').classList.toggle('hidden', !isBlocked);
   $('#up-favorites-section').style.display = isBlocked ? 'none' : '';
   $('#up-stats-section').style.display = isBlocked ? 'none' : '';
+  $('#up-rating-section').hidden = true;
   $('#up-grid-page').classList.add('hidden');
   if (isBlocked) {
     fbtn.style.display = 'none';
     $('#up-songs').innerHTML = '';
     $('#up-lists').innerHTML = ''; $('#up-lists-section').hidden = true;
-    $('#user-page').classList.remove('hidden');
+    bringOverlayFront($('#user-page')); $('#user-page').classList.remove('hidden');
     $('#user-scroll').scrollTop = 0;
     document.body.style.overflow = 'hidden';
     return; // Inhalte blockierter Nutzer nicht laden
@@ -3498,7 +3507,7 @@ async function openUserProfile(user) {
   $('#up-favorites').innerHTML = '';
   $('#up-lists').innerHTML = '';
   $('#up-lists-section').hidden = true;
-  $('#user-page').classList.remove('hidden');
+  bringOverlayFront($('#user-page')); $('#user-page').classList.remove('hidden');
   $('#user-scroll').scrollTop = 0;
   document.body.style.overflow = 'hidden';
   // Sammlung + Wishlist + Wert laden
@@ -3517,6 +3526,9 @@ async function openUserProfile(user) {
     `<li><span>${tr('stat.avgRating')}</span><span class="stat-num">${avg ? avg.toFixed(1) + ' ♪' : '–'}</span></li>` +
     ((!u.hide_value && latestVal > 0) ? `<li><span>${tr('stat.collectionValue')}</span><span class="stat-num">${fmtEuro(latestVal)}</span></li>` : '');
   $('#up-stats').querySelectorAll('.stat-toggle').forEach((li) => li.addEventListener('click', () => openUpGrid(li.dataset.grid)));
+  // Rating-Diagramm (wie beim eigenen Profil), nur wenn es Bewertungen gibt
+  $('#up-rating-section').hidden = rated.length === 0;
+  if (rated.length) renderHisto(coll, '#up-rating-histo');
   // Favoriten-Alben
   const favItems = (u.favorites || []).map((f) => resolveFav(f, coll)).filter(Boolean);
   let favHtml = '';
@@ -3537,6 +3549,7 @@ function openUpGrid(kind) {
   $('#up-grid-title').textContent = (upName ? upName + ' – ' : '') + tr(kind === 'wishlist' ? 'stat.wishlist' : 'stat.collection');
   fillCoverGrid($('#up-grid'), items);
   const p = $('#up-grid-page');
+  bringOverlayFront(p);
   p.classList.remove('hidden');
   const sc = p.querySelector('.detail-scroll'); if (sc) sc.scrollTop = 0;
 }

@@ -130,6 +130,7 @@ export const DICT = {
   'a11y.viewList': { en: 'List view', de: 'Listenansicht' },
   'a11y.listSettings': { en: 'List settings', de: 'Listen-Einstellungen' },
   'a11y.moreOptions': { en: 'More options', de: 'Weitere Optionen' },
+  'lbl.ratings': { en: 'Ratings', de: 'Bewertungen' },
   'pl.showRanks': { en: 'Show placements', de: 'Platzierungen anzeigen' },
   'pl.reorder': { en: 'Change order', de: 'Reihenfolge ändern' },
   'pl.reorderDone': { en: 'Done', de: 'Fertig' },

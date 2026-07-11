@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <!-- Deep-Links: relative Pfade (CSS/JS/Icons) immer gegen die Wurzel auflösen,
        auch wenn die App unter /u/name oder /album geladen wird. -->
   <base href="/" />
@@ -29,6 +29,12 @@
         }
       } catch (e) { /* ignorieren */ }
     })();
+  </script>
+  <!-- Versehentliches Zoomen im Handy-Browser verhindern (Pinch-Zoom, v. a. iOS Safari) -->
+  <script>
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) { e.preventDefault(); }, { passive: false });
+    });
   </script>
   <!-- Barcode-Scanner (UMD, global Html5Qrcode) – lokal gebündelt, kein CDN -->
   <script src="js/vendor/html5-qrcode.min.js"></script>
@@ -222,7 +228,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 164</p>
+        <p class="hint profile-version">Discend · Build 165</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -487,7 +493,7 @@
       <button id="user-back" class="icon-btn" data-i18n-aria="a11y.back" aria-label="Back">‹</button>
       <h2 class="up-name" id="up-name"></h2>
       <button id="up-menu-btn" class="icon-btn" data-i18n-aria="a11y.moreOptions" aria-label="More options">
-        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
       </button>
     </header>
     <div class="detail-scroll" id="user-scroll">
@@ -511,6 +517,10 @@
       <div class="profile-section" id="up-stats-section">
         <span class="dp-label" data-i18n="lbl.stats">Stats</span>
         <ul class="stat-rows" id="up-stats"></ul>
+      </div>
+      <div class="profile-section" id="up-rating-section" hidden>
+        <span class="dp-label" data-i18n="lbl.ratings">Ratings</span>
+        <div class="histo" id="up-rating-histo"></div>
       </div>
       <div class="profile-section" id="up-lists-section" hidden>
         <span class="dp-label" data-i18n="lbl.playlists">Playlists</span>

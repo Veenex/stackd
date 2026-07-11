@@ -25,6 +25,8 @@ html, body {
   color: var(--text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+  touch-action: manipulation; /* Doppeltipp-Zoom unterbinden (kein versehentliches Zoomen) */
+  -webkit-text-size-adjust: 100%;
 }
 
 /* App-Layout: feste Höhe, eigener Scrollbereich (#main). So bleibt die
