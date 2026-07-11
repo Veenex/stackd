@@ -136,6 +136,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 164, de: ['Fremde Profile: 3-Punkte-Menü oben rechts (Entfolgen, Teilen, Blockieren, Melden)'], en: ['Other profiles: 3-dot menu top right (unfollow, share, block, report)'] },
   { build: 163, de: ['Listen anderer Nutzer: gleiche Optik, mit Platzierungen, wenn der Ersteller sie anhat'], en: ['Other people\'s lists: same look, with placements if the creator enabled them'] },
   { build: 162, de: ['Listen im Letterboxd-Stil: antippen öffnet die Übersicht, Zahnrad für Platzierungen, Bearbeiten und Löschen'], en: ['Letterboxd-style lists: tap to open, gear for placements, edit and delete'] },
   { build: 160, de: ['Bessere Hörproben: passendere Treffer, weniger falsche oder fehlende Snippets'], en: ['Better previews: more accurate matches, fewer wrong or missing snippets'] },
@@ -3441,6 +3442,7 @@ function renderSongsInto(el, rawSongs) {
   }));
 }
 let upColl = [], upWish = [], upName = '';
+let upMenuUser = null; // aktuelles Fremdprofil für das 3-Punkte-Menü
 async function openUserProfile(user) {
   if (!user) return;
   const u = (await fetchUserProfile(user.id)) || user;
@@ -3465,41 +3467,19 @@ async function openUserProfile(user) {
   $('#up-bio').textContent = u.bio || '';
   const fbtn = $('#up-follow');
   const isMe = getUser() && getUser().id === u.id;
-  if (isMe) { fbtn.style.display = 'none'; }
-  else {
-    fbtn.style.display = '';
-    setFollowBtn(fbtn, friendsFollowing.has(u.id));
-    fbtn.onclick = async () => {
-      if (!requireAuth()) return;
-      if (friendsFollowing.has(u.id)) { friendsFollowing.delete(u.id); await unfollow(u.id); }
-      else { friendsFollowing.add(u.id); await follow(u.id); }
-      setFollowBtn(fbtn, friendsFollowing.has(u.id));
-      if (currentView === 'home') renderFriendsRow();
-    };
-  }
-  // Moderation: Blockieren / Melden
-  const upMod = document.querySelector('.up-mod');
   const isBlocked = getBlocked().has(u.id);
-  if (isMe) {
-    if (upMod) upMod.style.display = 'none';
-  } else if (upMod) {
-    upMod.style.display = '';
-    const blockBtn = $('#up-block');
-    blockBtn.textContent = tr(isBlocked ? 'mod.unblock' : 'mod.block');
-    blockBtn.onclick = async () => {
-      if (!requireAuth()) return;
-      if (getBlocked().has(u.id)) { await unblockUser(u.id); toast(tr('toast.unblocked')); }
-      else { await blockUser(u.id); toast(tr('toast.blocked')); }
-      if (currentView === 'home') renderHome();
-      openUserProfile(u); // neu aufbauen (Status/Inhalte)
-    };
-    $('#up-report').onclick = async () => {
-      if (!requireAuth()) return;
-      if (!confirm(tr('mod.reportUserConfirm'))) return;
-      await reportTarget('user', u.id, '');
-      toast(tr('toast.reported'));
-    };
-  }
+  // Follow-Button: nur zeigen, wenn man noch NICHT folgt. Unfollow/Teilen/Blockieren/Melden
+  // stecken jetzt im 3-Punkte-Menü oben rechts.
+  fbtn.onclick = async () => {
+    if (!requireAuth()) return;
+    friendsFollowing.add(u.id); await follow(u.id);
+    fbtn.style.display = 'none';
+    if (currentView === 'home') renderFriendsRow();
+  };
+  setFollowBtn(fbtn, false);
+  fbtn.style.display = (isMe || isBlocked || friendsFollowing.has(u.id)) ? 'none' : '';
+  upMenuUser = isMe ? null : u;
+  { const mb = $('#up-menu-btn'); if (mb) mb.style.display = isMe ? 'none' : ''; }
   // Bei Blockierung: Hinweis zeigen, Inhalte ausblenden und nicht laden
   $('#up-blocked-note').classList.toggle('hidden', !isBlocked);
   $('#up-favorites-section').style.display = isBlocked ? 'none' : '';
@@ -3677,6 +3657,43 @@ applyCollectionView(getCollectionView());
 
 $('#btn-friends-close').addEventListener('click', () => $('#friends-dialog').close());
 $('#user-back').addEventListener('click', closeUserProfile);
+// 3-Punkte-Menü auf fremden Profilen (Unfollow / Teilen / Blockieren / Melden)
+$('#up-menu-btn').addEventListener('click', () => {
+  const u = upMenuUser; if (!u) return;
+  $('#um-title').textContent = u.display_name || u.username || '';
+  $('#um-unfollow').style.display = friendsFollowing.has(u.id) ? '' : 'none';
+  $('#um-block-label').textContent = tr(getBlocked().has(u.id) ? 'mod.unblock' : 'mod.block');
+  $('#up-menu').showModal();
+});
+$('#um-close').addEventListener('click', () => $('#up-menu').close());
+$('#um-unfollow').addEventListener('click', async () => {
+  $('#up-menu').close();
+  const u = upMenuUser; if (!u || !requireAuth()) return;
+  friendsFollowing.delete(u.id); await unfollow(u.id);
+  if (getUser() && getUser().id !== u.id && !getBlocked().has(u.id)) { setFollowBtn($('#up-follow'), false); $('#up-follow').style.display = ''; }
+  if (currentView === 'home') renderFriendsRow();
+});
+$('#um-share').addEventListener('click', () => {
+  $('#up-menu').close();
+  const u = upMenuUser; if (!u) return;
+  const url = u.username ? profileUrl(u.username) : location.origin + '/';
+  shareLink(`${u.display_name || u.username || tr('title.profile')} ${tr('share.suffix')}`, url);
+});
+$('#um-block').addEventListener('click', async () => {
+  $('#up-menu').close();
+  const u = upMenuUser; if (!u || !requireAuth()) return;
+  if (getBlocked().has(u.id)) { await unblockUser(u.id); toast(tr('toast.unblocked')); }
+  else { await blockUser(u.id); toast(tr('toast.blocked')); }
+  if (currentView === 'home') renderHome();
+  openUserProfile(u);
+});
+$('#um-report').addEventListener('click', async () => {
+  $('#up-menu').close();
+  const u = upMenuUser; if (!u || !requireAuth()) return;
+  if (!confirm(tr('mod.reportUserConfirm'))) return;
+  await reportTarget('user', u.id, '');
+  toast(tr('toast.reported'));
+});
 $('#btn-activity-close').addEventListener('click', () => $('#activity-dialog').close());
 $('#act-album').addEventListener('click', () => { $('#activity-dialog').close(); if (activityItem) openPreview(activityItem); });
 $('#act-like').addEventListener('click', async () => {

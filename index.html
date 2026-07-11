@@ -222,7 +222,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 163</p>
+        <p class="hint profile-version">Discend · Build 164</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -486,7 +486,9 @@
     <header class="detail-bar">
       <button id="user-back" class="icon-btn" data-i18n-aria="a11y.back" aria-label="Back">‹</button>
       <h2 class="up-name" id="up-name"></h2>
-      <span class="detail-bar-spacer" aria-hidden="true"></span>
+      <button id="up-menu-btn" class="icon-btn" data-i18n-aria="a11y.moreOptions" aria-label="More options">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+      </button>
     </header>
     <div class="detail-scroll" id="user-scroll">
       <p id="up-blocked-note" class="empty-hint hidden" data-i18n="mod.blockedNote">You have blocked this user. Their content is hidden.</p>
@@ -494,10 +496,6 @@
         <div class="up-left">
           <div id="up-songs" class="up-songs"></div>
           <button id="up-follow" class="btn primary up-follow" data-i18n="btn.follow">Follow</button>
-          <div class="up-mod">
-            <button id="up-block" class="link-btn up-mod-btn"></button>
-            <button id="up-report" class="link-btn up-mod-btn" data-i18n="mod.report">Report</button>
-          </div>
         </div>
         <div class="up-right">
           <div class="profile-avatar-wrap"><div class="profile-avatar" id="up-avatar"></div></div>
@@ -827,6 +825,30 @@
         <span data-i18n="btn.delete">Delete</span>
       </button>
       <button type="button" class="as-done" id="qm-cancel" data-i18n="btn.cancel">Cancel</button>
+    </div>
+  </dialog>
+
+  <!-- 3-Punkte-Menü auf fremden Profilen -->
+  <dialog id="up-menu" class="actions-sheet">
+    <div class="as-sheet">
+      <p class="as-head" id="um-title"></p>
+      <button type="button" class="qm-item" id="um-unfollow">
+        <span class="qm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11h-6"/></svg></span>
+        <span data-i18n="btn.unfollow">Unfollow</span>
+      </button>
+      <button type="button" class="qm-item" id="um-share">
+        <span class="qm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg></span>
+        <span data-i18n="a11y.share">Share</span>
+      </button>
+      <button type="button" class="qm-item" id="um-block">
+        <span class="qm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg></span>
+        <span class="um-label" id="um-block-label">Block</span>
+      </button>
+      <button type="button" class="qm-item qm-danger" id="um-report">
+        <span class="qm-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22V15"/></svg></span>
+        <span data-i18n="mod.report">Report</span>
+      </button>
+      <button type="button" class="as-done" id="um-close" data-i18n="btn.cancel">Cancel</button>
     </div>
   </dialog>
 
