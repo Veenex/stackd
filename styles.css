@@ -1470,6 +1470,9 @@ html[data-theme="light"] .app-header { background: rgba(255, 255, 255, .9); bord
 html[data-theme="light"] .tabbar { background: rgba(255, 255, 255, .92); }
 html[data-theme="light"] .auth-page { background: rgba(244, 241, 236, .95); }
 html[data-theme="light"] .toast { box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
+/* Rating-Diagramm im Light-Mode im Rosa-Ton (statt dunkelblau) */
+html[data-theme="light"] .histo-bar { background: var(--rose); }
+html[data-theme="light"] .histo-end { color: var(--rose); }
 
 /* ---------- Erscheinungsbild-Panel (wie Sprache) ---------- */
 #ps-theme-panel { transform: translateX(100%); }
