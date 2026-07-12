@@ -1529,6 +1529,18 @@ html[data-theme="light"] .histo-end { color: var(--rose); }
 .a2hs-share { width: 22px; height: 22px; flex: 0 0 auto; color: var(--accent); }
 .a2hs-text { flex: 1; font-size: 13px; line-height: 1.35; }
 .a2hs-close { background: none; border: none; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer; flex: 0 0 auto; padding: 0 6px; min-height: 40px; }
+/* „Zum Home-Bildschirm"-Overlay (wegklickbar) */
+.a2hs-overlay { border: none; background: transparent; padding: 0; max-width: 340px; }
+.a2hs-overlay::backdrop { background: rgba(0, 0, 0, .5); }
+.a2hs-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 16px; padding: 22px 20px 20px; text-align: center; position: relative; }
+.a2hs-x { position: absolute; top: 6px; right: 8px; background: none; border: none; color: var(--muted); font-size: 24px; line-height: 1; cursor: pointer; padding: 4px 8px; }
+.a2hs-appicon img { width: 60px; height: 60px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0, 0, 0, .3); display: block; margin: 0 auto; }
+.a2hs-title { font-weight: 700; font-size: 17px; margin: 12px 0 4px; color: var(--text); }
+.a2hs-sub { color: var(--muted); font-size: 13px; line-height: 1.4; margin: 0 0 16px; }
+.a2hs-ios { text-align: left; display: flex; flex-direction: column; gap: 12px; }
+.a2hs-step { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); }
+.a2hs-num { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; background: var(--rose); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.a2hs-install { width: 100%; }
 
 /* ---------- Pull-to-refresh ---------- */
 .ptr-spin {

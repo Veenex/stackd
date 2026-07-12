@@ -228,7 +228,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 167</p>
+        <p class="hint profile-version">Discend · Build 168</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -915,12 +915,20 @@
     <button type="button" id="update-reload" class="update-reload" data-i18n="update.reload">Reload</button>
   </div>
 
-  <!-- iOS „Zum Home-Bildschirm" – einmaliger Tipp -->
-  <div id="a2hs-banner" class="a2hs-banner hidden" role="status">
-    <svg class="a2hs-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M8 8l4-4 4 4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg>
-    <span class="a2hs-text" data-i18n="a2hs.text">Install Discend: tap Share, then "Add to Home Screen".</span>
-    <button type="button" id="a2hs-close" class="a2hs-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
-  </div>
+  <!-- „Zum Home-Bildschirm" – wegklickbares Overlay (iOS: Anleitung, Android: Ein-Klick) -->
+  <dialog id="a2hs-overlay" class="a2hs-overlay">
+    <div class="a2hs-card">
+      <button type="button" id="a2hs-x" class="a2hs-x" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+      <span class="a2hs-appicon"><img src="icons/icon-192.png?v=63" alt="" /></span>
+      <p class="a2hs-title" data-i18n="a2hs.title">Add Discend to your home screen</p>
+      <p class="a2hs-sub" data-i18n="a2hs.sub">Open it like a real app — full screen and offline.</p>
+      <div id="a2hs-ios" class="a2hs-ios">
+        <div class="a2hs-step"><span class="a2hs-num">1</span><span data-i18n="a2hs.iosStep1">Tap the Share button below</span><svg class="a2hs-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M8 8l4-4 4 4"/><path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/></svg></div>
+        <div class="a2hs-step"><span class="a2hs-num">2</span><span data-i18n="a2hs.iosStep2">Choose "Add to Home Screen"</span></div>
+      </div>
+      <button type="button" id="a2hs-install" class="btn primary a2hs-install" data-i18n="a2hs.install">Add to home screen</button>
+    </div>
+  </dialog>
 
   <script type="module" src="js/app.js"></script>
 </body>

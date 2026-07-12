@@ -136,6 +136,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 168, de: ['„Zum Home-Bildschirm" als Overlay: Android auf einen Klick, iOS mit Anleitung'], en: ['"Add to home screen" as an overlay: one tap on Android, guide on iOS'] },
   { build: 166, de: ['Menüs schließen jetzt per Tipp daneben; Bewertungen stehen jetzt direkt unter den Favoriten'], en: ['Menus close by tapping outside; ratings now sit right under favorites'] },
   { build: 165, de: ['Fremde Profile: Sammlung antippbar, Bewertungs-Diagramm sichtbar; kein versehentliches Zoomen mehr'], en: ['Other profiles: browse their collection, see their ratings chart; no more accidental zoom'] },
   { build: 164, de: ['Fremde Profile: 3-Punkte-Menü oben rechts (Entfolgen, Teilen, Blockieren, Melden)'], en: ['Other profiles: 3-dot menu top right (unfollow, share, block, report)'] },
@@ -2748,21 +2749,53 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 if (!navigator.onLine) updateOnlineStatus();
 
-// ---------- iOS „Zum Home-Bildschirm"-Tipp (einmalig) ----------
-function maybeShowA2HS() {
+// ---------- „Zum Home-Bildschirm" (iOS: Anleitung-Overlay, Android: Ein-Klick) ----------
+let deferredInstallPrompt = null;
+let a2hsShown = false;
+function isStandalone() {
+  return ('standalone' in navigator && navigator.standalone) || matchMedia('(display-mode: standalone)').matches;
+}
+function showA2HSOverlay(platform) {
+  const dlg = $('#a2hs-overlay'); if (!dlg || a2hsShown) return;
+  if (document.querySelector('dialog[open]')) return; // nicht über einen anderen offenen Dialog legen
+  $('#a2hs-ios').style.display = platform === 'ios' ? '' : 'none';
+  $('#a2hs-install').style.display = platform === 'android' ? '' : 'none';
+  // Einmal gezeigt = nicht mehr nerven (robust, unabhängig vom Schließ-Weg).
+  try { localStorage.setItem('discend_a2hs_v2', '1'); } catch { /* voll */ }
+  try { dlg.showModal(); a2hsShown = true; } catch { /* ignorieren */ }
+}
+function maybeShowA2HS(trigger) {
   try {
+    if (isStandalone() || a2hsShown) return; // schon installiert oder schon gezeigt
+    if (localStorage.getItem('discend_a2hs_v2')) return;
+    // Android/Chrome: nativer Ein-Klick möglich (beforeinstallprompt vorhanden)
+    if (trigger === 'android' && deferredInstallPrompt) { showA2HSOverlay('android'); return; }
+    // iOS Safari: kein programmatischer Weg → Anleitung nach kurzem Stöbern zeigen
     const ua = navigator.userAgent || '';
-    const isIOS = /iphone|ipad|ipod/i.test(ua) && !window.MSStream;
-    const standalone = ('standalone' in navigator && navigator.standalone) || matchMedia('(display-mode: standalone)').matches;
-    if (!isIOS || standalone) return;
-    if (localStorage.getItem('discend_a2hs_dismissed')) return;
-    const b = $('#a2hs-banner'); if (!b) return;
-    setTimeout(() => b.classList.remove('hidden'), 2500); // erst nach kurzem Stöbern
-    $('#a2hs-close').onclick = () => {
-      b.classList.add('hidden');
-      try { localStorage.setItem('discend_a2hs_dismissed', '1'); } catch { /* voll */ }
-    };
+    const iOS = (/iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) && !window.MSStream;
+    if (iOS) setTimeout(() => { if (!a2hsShown && !deferredInstallPrompt) showA2HSOverlay('ios'); }, 2500);
   } catch { /* ignorieren */ }
+}
+// Android: nativen Installations-Dialog vormerken statt Chrome-Mini-Leiste
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; maybeShowA2HS('android'); });
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const dlg = $('#a2hs-overlay'); if (dlg && dlg.open) dlg.close();
+  try { localStorage.setItem('discend_a2hs_v2', '1'); } catch { /* voll */ }
+});
+if ($('#a2hs-overlay')) {
+  $('#a2hs-x').onclick = () => $('#a2hs-overlay').close();
+  $('#a2hs-install').onclick = async () => {
+    const p = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    if (p && typeof p.prompt === 'function') {
+      p.prompt();
+      try { await p.userChoice; } catch { /* ignorieren */ }
+    }
+    const dlg = $('#a2hs-overlay'); if (dlg && dlg.open) dlg.close();
+  };
+  // Beim Schließen (× / daneben tippen / installiert) nicht erneut nerven.
+  $('#a2hs-overlay').addEventListener('close', () => { try { localStorage.setItem('discend_a2hs_v2', '1'); } catch { /* voll */ } });
 }
 maybeShowA2HS();
 

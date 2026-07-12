@@ -533,6 +533,11 @@ export const DICT = {
 
   // „Zum Home-Bildschirm" (iOS)
   'a2hs.text': { en: 'Install Discend: tap Share, then "Add to Home Screen".', de: 'Discend installieren: tippe auf Teilen und dann „Zum Home-Bildschirm".' },
+  'a2hs.title': { en: 'Add Discend to your home screen', de: 'Discend zum Home-Bildschirm hinzufügen' },
+  'a2hs.sub': { en: 'Open it like a real app — full screen and offline.', de: 'Öffne sie wie eine echte App – Vollbild und offline.' },
+  'a2hs.iosStep1': { en: 'Tap the Share button below', de: 'Tippe unten auf „Teilen"' },
+  'a2hs.iosStep2': { en: 'Choose "Add to Home Screen"', de: 'Wähle „Zum Home-Bildschirm"' },
+  'a2hs.install': { en: 'Add to home screen', de: 'Zum Startbildschirm hinzufügen' },
 
   // Erscheinungsbild / Theme
   'set.appearance': { en: 'Appearance', de: 'Erscheinungsbild' },
