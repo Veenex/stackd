@@ -1,7 +1,7 @@
 // service-worker.js – einfacher App-Shell-Cache, damit die App offline startet.
 // Daten (Sammlung/Wishlist) liegen in localStorage und sind ohnehin offline.
 
-const CACHE = 'platten-v165';
+const CACHE = 'platten-v166';
 const IMG_CACHE = 'platten-img-v1'; // Cover/Bilder separat, cache-first
 const IMG_MAX = 400;                // max. gecachte Bilder (älteste fliegen raus)
 const ASSETS = [

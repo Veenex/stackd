@@ -136,6 +136,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 166, de: ['Menüs schließen jetzt per Tipp daneben; Bewertungen stehen jetzt direkt unter den Favoriten'], en: ['Menus close by tapping outside; ratings now sit right under favorites'] },
   { build: 165, de: ['Fremde Profile: Sammlung antippbar, Bewertungs-Diagramm sichtbar; kein versehentliches Zoomen mehr'], en: ['Other profiles: browse their collection, see their ratings chart; no more accidental zoom'] },
   { build: 164, de: ['Fremde Profile: 3-Punkte-Menü oben rechts (Entfolgen, Teilen, Blockieren, Melden)'], en: ['Other profiles: 3-dot menu top right (unfollow, share, block, report)'] },
   { build: 163, de: ['Listen anderer Nutzer: gleiche Optik, mit Platzierungen, wenn der Ersteller sie anhat'], en: ['Other people\'s lists: same look, with placements if the creator enabled them'] },
@@ -3667,6 +3668,12 @@ routeFromUrl(); // geteilten Deep-Link (/u/name oder /album?…) direkt öffnen
 // Sammlungs-Ansicht (große/kleine Kacheln, Liste) wiederherstellen + Umschalter verdrahten
 document.querySelectorAll('#view-switch-collection .vs-btn').forEach((b) => b.addEventListener('click', () => applyCollectionView(b.dataset.view)));
 applyCollectionView(getCollectionView());
+
+// Popup-Dialoge/Menüs schließen, wenn man daneben (auf den abgedunkelten Hintergrund) tippt –
+// statt immer „Abbrechen"/„Speichern" drücken zu müssen. (Klick auf den Dialog selbst = Backdrop.)
+document.querySelectorAll('dialog').forEach((dlg) => {
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+});
 
 $('#btn-friends-close').addEventListener('click', () => $('#friends-dialog').close());
 $('#user-back').addEventListener('click', closeUserProfile);
