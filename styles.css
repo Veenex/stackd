@@ -1353,6 +1353,7 @@ body.logged-in .logout-btn { display: block; }
    sonst liegt das Zahnrad genau hinter dem ×. */
 #playlist-view-dialog .dialog-close { position: static; top: auto; right: auto; padding: 4px; }
 .plv-settings { display: flex; flex-direction: column; margin: 4px 0 12px; padding: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
+.plv-settings[hidden] { display: none; } /* erst per Zahnrad einblenden (überschreibt display:flex) */
 .plv-set-row { display: flex; align-items: center; justify-content: space-between; padding: 8px; font-size: 14px; }
 .plv-set-btn { text-align: left; background: none; border: none; color: var(--text); font-size: 14px; padding: 10px 8px; cursor: pointer; border-radius: 8px; }
 .plv-set-btn:active { background: var(--bg); }
