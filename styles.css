@@ -1545,6 +1545,11 @@ html[data-theme="light"] .histo-end { color: var(--rose); }
 .a2hs-step { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text); }
 .a2hs-num { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; background: var(--rose); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
 .a2hs-install { width: 100%; }
+/* Eigene Tags (Albumseite) – anklickbare Chips, filtern die Sammlung */
+.dp-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 8px 0 0; }
+.dp-tags:empty { display: none; }
+.tag-chip { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); border-radius: 999px; padding: 3px 11px; font-size: 12px; cursor: pointer; }
+.tag-chip:active { background: var(--bg); }
 
 /* ---------- Pull-to-refresh ---------- */
 .ptr-spin {

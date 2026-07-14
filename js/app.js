@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 172, de: ['Eigene Tags pro Platte (z. B. signiert, farbig) – antippen filtert die Sammlung'], en: ['Your own tags per record (e.g. signed, colored) — tap one to filter your collection'] },
   { build: 168, de: ['„Zum Home-Bildschirm" als Overlay: Android auf einen Klick, iOS mit Anleitung'], en: ['"Add to home screen" as an overlay: one tap on Android, guide on iOS'] },
   { build: 166, de: ['Menüs schließen jetzt per Tipp daneben; Bewertungen stehen jetzt direkt unter den Favoriten'], en: ['Menus close by tapping outside; ratings now sit right under favorites'] },
   { build: 165, de: ['Fremde Profile: Sammlung antippbar, Bewertungs-Diagramm sichtbar; kein versehentliches Zoomen mehr'], en: ['Other profiles: browse their collection, see their ratings chart; no more accidental zoom'] },
@@ -584,6 +585,28 @@ function bringOverlayFront(el) {
   OVERLAY_SELS.forEach((s) => { const o = $(s); if (o) o.style.zIndex = ''; });
   if (el) el.style.zIndex = '45';
 }
+// Tags: kommaseparierten Text in eine Liste (getrimmt, dedupliziert, ohne Leere).
+function parseTags(str) {
+  const seen = new Set();
+  return String(str || '').split(',').map((t) => t.trim()).filter((t) => {
+    if (!t) return false;
+    const k = t.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+// Tags als anklickbare Chips auf der Albumseite (Klick filtert die Sammlung danach).
+function renderTagChips(tags) {
+  const el = $('#dp-tags'); if (!el) return;
+  const list = Array.isArray(tags) ? tags : [];
+  el.innerHTML = list.map((t) => `<button class="tag-chip" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('');
+  el.querySelectorAll('.tag-chip').forEach((b) => b.addEventListener('click', () => {
+    closeDetail();
+    const inp = $('#search-collection'); if (inp) inp.value = b.dataset.tag;
+    switchView('collection');
+  }));
+}
 function openDetail(list, id) {
   const item = getList(list).find((i) => i.id === id);
   if (!item) return;
@@ -619,6 +642,8 @@ function openDetail(list, id) {
   $('#dp-edit-location').value = item.location || '';
   $('#dp-edit-purchase-date').value = item.purchaseDate || '';
   $('#dp-edit-purchase-place').value = item.purchasePlace || '';
+  $('#dp-edit-tags').value = (item.tags || []).join(', ');
+  renderTagChips(item.tags);
   setConditionDisplay(item.mediaCond, item.sleeveCond);
   const lendSec = $('#dp-lend-section');
   if (lendSec) lendSec.style.display = list === 'collection' ? '' : 'none';
@@ -829,6 +854,7 @@ function openPreview(result) {
   setUrl(albumUrl(result)); // Deep-Link in der Adresszeile
   detailPage.classList.add('preview');
   { const ls = document.getElementById('dp-lend-section'); if (ls) ls.style.display = 'none'; }
+  renderTagChips([]); // Vorschau (fremdes/ungespeichertes Album): keine eigenen Tags
   setDetailCover(result.coverUrl);
   $('#dp-title').textContent = result.title || tr('misc.untitled');
   $('#dp-artist').textContent = result.artist || '';
@@ -1276,6 +1302,7 @@ $('#dp-save').addEventListener('click', () => {
     location: $('#dp-edit-location').value.trim(),
     purchaseDate: $('#dp-edit-purchase-date').value || '',
     purchasePlace: $('#dp-edit-purchase-place').value.trim(),
+    tags: parseTags($('#dp-edit-tags').value),
     note: $('#dp-note').value.trim(),
     review: $('#dp-review').value.trim(),
     rating: detailRating ? detailRating.getValue() : 0,
@@ -2016,6 +2043,7 @@ $('#manual-form').addEventListener('submit', (e) => {
     location: f.location.value.trim(),
     purchaseDate: f.purchaseDate.value || '',
     purchasePlace: f.purchasePlace.value.trim(),
+    tags: parseTags(f.tags.value),
     note: f.note.value.trim(),
     rating: manualRating ? manualRating.getValue() : 0,
     source: 'manual',

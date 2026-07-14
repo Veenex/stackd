@@ -50,6 +50,7 @@ function toRow(item, list, u) {
     location: item.location || null,
     purchase_date: item.purchaseDate || null,
     purchase_place: item.purchasePlace || null,
+    tags: (Array.isArray(item.tags) && item.tags.length) ? item.tags : null,
     lent_to: item.lentTo || null,
     lent_at: item.lentAt ? new Date(item.lentAt).toISOString() : null,
     source: item.source || null,
@@ -69,6 +70,7 @@ function fromRow(r) {
     mediaCond: r.media_cond || '', sleeveCond: r.sleeve_cond || '',
     location: r.location || '', lentTo: r.lent_to || '', lentAt: r.lent_at ? new Date(r.lent_at).getTime() : 0,
     purchaseDate: r.purchase_date || '', purchasePlace: r.purchase_place || '',
+    tags: Array.isArray(r.tags) ? r.tags : [],
     source: r.source || '', sourceId: r.source_id || '', masterId: r.master_id || 0,
   };
 }
@@ -90,7 +92,7 @@ export function addItem(list, item) {
     coverUrl: '', note: '', review: '', rating: 0, liked: false, price: 0,
     mediaCond: '', sleeveCond: '',
     location: '', lentTo: '', lentAt: 0,
-    purchaseDate: '', purchasePlace: '',
+    purchaseDate: '', purchasePlace: '', tags: [],
     source: 'manual', sourceId: '',
     ...item,
   };
@@ -837,6 +839,6 @@ export function filterItems(items, query) {
   const q = query.trim().toLowerCase();
   if (!q) return items;
   return items.filter((i) =>
-    [i.artist, i.title, i.note, i.label, i.year, i.barcode]
+    [i.artist, i.title, i.note, i.label, i.year, i.barcode, (i.tags || []).join(' ')]
       .some((f) => String(f || '').toLowerCase().includes(q)));
 }
