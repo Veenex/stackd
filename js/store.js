@@ -635,7 +635,8 @@ export async function fetchFriendsLists(limit = 20) {
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
   const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
   return dropBlocked(pls, (p) => p.user_id).map((p) => ({
-    id: p.id, name: p.name, description: p.description || '', by: pmap[p.user_id] || null,
+    id: p.id, name: p.name, description: p.description || '', ranked: !!p.ranked,
+    createdAt: p.created_at ? new Date(p.created_at).getTime() : 0, by: pmap[p.user_id] || null,
     items: (plItems || []).filter((pi) => pi.playlist_id === p.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((pi) => map[pi.item_id]).filter(Boolean),
   }));
 }
@@ -674,7 +675,8 @@ export async function searchPlaylists(q, limit = 30) {
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
   const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
   return dropBlocked(pls, (p) => p.user_id).map((p) => ({
-    id: p.id, name: p.name, description: p.description || '', by: pmap[p.user_id] || null,
+    id: p.id, name: p.name, description: p.description || '', ranked: !!p.ranked,
+    createdAt: p.created_at ? new Date(p.created_at).getTime() : 0, by: pmap[p.user_id] || null,
     items: (plItems || []).filter((pi) => pi.playlist_id === p.id).sort((a, b) => (a.position || 0) - (b.position || 0)).map((pi) => map[pi.item_id]).filter(Boolean),
   }));
 }

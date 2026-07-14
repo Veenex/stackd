@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 174, de: ['Aktivitäts-Feed: neuer „Aktivität"-Tab auf der Startseite – was deine Freunde hinzufügen, hören, bewerten und an Listen erstellen'], en: ['Activity feed: new "Activity" tab on home — what people you follow add, play, rate and list'] },
   { build: 173, de: ['Sammlung exportieren: als CSV (Tabelle) und als Versicherungs-Report zum Ausdrucken/als PDF'], en: ['Export your collection: as CSV (spreadsheet) and as a printable insurance report (PDF)'] },
   { build: 172, de: ['Eigene Tags pro Platte (z. B. signiert, farbig) – antippen filtert die Sammlung'], en: ['Your own tags per record (e.g. signed, colored) — tap one to filter your collection'] },
   { build: 168, de: ['„Zum Home-Bildschirm" als Overlay: Android auf einen Klick, iOS mit Anleitung'], en: ['"Add to home screen" as an overlay: one tap on Android, guide on iOS'] },
@@ -3078,6 +3079,7 @@ function renderHome() {
   el.innerHTML =
     '<div class="home-tabs">' +
       `<button class="home-tab" data-htab="alben">${tr('htab.albums')}</button>` +
+      `<button class="home-tab" data-htab="activity">${tr('htab.activity')}</button>` +
       `<button class="home-tab" data-htab="reviews">${tr('htab.reviews')}</button>` +
       `<button class="home-tab" data-htab="lists">${tr('htab.lists')}</button>` +
     '</div>' +
@@ -3094,6 +3096,7 @@ function setHomeTab(tab) {
   animateSwap(body);
   if (tab === 'reviews') renderHomeReviews(body);
   else if (tab === 'lists') renderHomeLists(body);
+  else if (tab === 'activity') renderHomeActivity(body);
   else renderHomeAlben(body);
 }
 
@@ -3145,6 +3148,74 @@ function renderHomeAlben(body) {
   loadPopularThisWeek();
   renderFriendsRow();
   loadNewReleases();
+}
+
+// „Aktivität" = chronologischer Feed der Gefolgten: Neuzugänge, Höreinträge, neue Listen.
+let homeActivityCache = [];
+function timeAgo(ts) {
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return tr('time.now');
+  const m = Math.floor(s / 60); if (m < 60) return tr('time.min', { n: m });
+  const h = Math.floor(m / 60); if (h < 24) return tr('time.hour', { n: h });
+  const d = Math.floor(h / 24); if (d < 7) return tr('time.day', { n: d });
+  return new Date(ts).toLocaleDateString();
+}
+function activityRowHtml(e, i) {
+  const who = e.by ? (e.by.display_name || e.by.username || '') : '';
+  const whoHtml = `<strong>${escapeHtml(who)}</strong>`;
+  const avStyle = (e.by && e.by.avatar_url) ? ` style="background-image:url('${escapeHtml(e.by.avatar_url)}')"` : '';
+  const avCls = (e.by && e.by.avatar_url) ? '' : ' placeholder';
+  const time = e.ts ? timeAgo(e.ts) : '';
+  let text = '', thumb = '', extra = '';
+  if (e.kind === 'list') {
+    const nameHtml = `<strong>${escapeHtml((e.list && e.list.name) || tr('list.fallbackName'))}</strong>`;
+    text = tr('act.createdList', { who: whoHtml, name: nameHtml });
+    const covers = ((e.list && e.list.items) || []).slice(0, 4).map((it) => `<span class="act-poster${(it && it.coverUrl) ? '' : ' placeholder'}">${(it && it.coverUrl) ? `<img src="${escapeHtml(it.coverUrl)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`).join('');
+    thumb = `<span class="act-stack">${covers}</span>`;
+  } else {
+    const album = `<strong>${escapeHtml(e.title || '')}</strong>` + (e.artist ? ` – ${escapeHtml(e.artist)}` : '');
+    text = tr(e.kind === 'play' ? 'act.played' : 'act.added', { who: whoHtml, album });
+    thumb = `<span class="act-cover${e.coverUrl ? '' : ' placeholder'}">${e.coverUrl ? `<img src="${escapeHtml(e.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove()">` : ''}</span>`;
+    if (e.kind === 'add' && Number(e.rating) > 0) extra += `<span class="act-rating">${ratingDisplayHtml(e.rating)}</span>`;
+    const rv = (e.review || '').trim();
+    if (e.kind === 'add' && rv) extra += `<p class="act-review">${escapeHtml(rv.slice(0, 140))}${rv.length > 140 ? '…' : ''}</p>`;
+  }
+  return `<div class="act-row">
+      <button class="act-av${avCls}" data-who="${i}"${avStyle} aria-label="${escapeHtml(who)}"></button>
+      <button class="act-open act-body" data-i="${i}"><span class="act-text">${text}</span><span class="act-time">${time}</span>${extra}</button>
+      <button class="act-open act-thumb" data-i="${i}">${thumb}</button>
+    </div>`;
+}
+async function renderHomeActivity(body) {
+  if (!getUser()) {
+    body.innerHTML = `<div class="home-empty-card">${tr('home.signInActivity')} <button id="act-cta" class="link-btn">${tr('auth.login')}</button></div>`;
+    const b = body.querySelector('#act-cta'); if (b) b.onclick = () => openAuth('login');
+    return;
+  }
+  body.innerHTML = `<div class="act-feed">${skelLists(5)}</div>`;
+  const wrap = body.querySelector('.act-feed');
+  let events = [];
+  try {
+    const [feed, lists] = await Promise.all([fetchFriendsFeed(30), fetchFriendsLists(12)]);
+    events = (feed || []).slice();
+    (lists || []).forEach((l) => events.push({ kind: 'list', list: l, by: l.by, ts: l.createdAt || 0 }));
+    events.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    events = events.slice(0, 40);
+  } catch { /* ignorieren */ }
+  if (!wrap) return;
+  if (!events.length) {
+    wrap.innerHTML = `<div class="home-empty-card">${tr('act.emptyText')} <button id="act-cta" class="link-btn">${tr('dlg.findFriends')}</button></div>`;
+    const b = wrap.querySelector('#act-cta'); if (b) b.onclick = goMemberSearch;
+    return;
+  }
+  homeActivityCache = events;
+  wrap.innerHTML = events.map((e, i) => activityRowHtml(e, i)).join('');
+  wrap.querySelectorAll('.act-av[data-who]').forEach((b) => b.addEventListener('click', (ev) => { ev.stopPropagation(); const e = homeActivityCache[+b.dataset.who]; if (e && e.by) openUserProfile(e.by); }));
+  wrap.querySelectorAll('.act-open[data-i]').forEach((b) => b.addEventListener('click', () => {
+    const e = homeActivityCache[+b.dataset.i]; if (!e) return;
+    if (e.kind === 'list') openUserPlaylistView(e.list);
+    else openPreview(e);
+  }));
 }
 
 // „Reviews" = Reviews von Gefolgten zuerst, danach allgemein neueste.
