@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 173, de: ['Sammlung exportieren: als CSV (Tabelle) und als Versicherungs-Report zum Ausdrucken/als PDF'], en: ['Export your collection: as CSV (spreadsheet) and as a printable insurance report (PDF)'] },
   { build: 172, de: ['Eigene Tags pro Platte (z. B. signiert, farbig) – antippen filtert die Sammlung'], en: ['Your own tags per record (e.g. signed, colored) — tap one to filter your collection'] },
   { build: 168, de: ['„Zum Home-Bildschirm" als Overlay: Android auf einen Klick, iOS mit Anleitung'], en: ['"Add to home screen" as an overlay: one tap on Android, guide on iOS'] },
   { build: 166, de: ['Menüs schließen jetzt per Tipp daneben; Bewertungen stehen jetzt direkt unter den Favoriten'], en: ['Menus close by tapping outside; ratings now sit right under favorites'] },
@@ -2651,6 +2652,67 @@ $('#import-file').addEventListener('change', async (e) => {
     e.target.value = '';
   }
 });
+
+// Datei-Download-Helfer (Blob → Download).
+function downloadBlob(name, type, content) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+// Sammlung als CSV exportieren (Semikolon-getrennt + BOM: Excel-DE/Umlaut-freundlich).
+function exportCollectionCsv() {
+  const coll = getList('collection');
+  if (!coll.length) { toast(tr('toast.emptyCollectionExport')); return; }
+  const head = ['Interpret', 'Titel', 'Jahr', 'Format', 'Label', 'Genre', 'Zustand Medium', 'Zustand Hülle', 'Bewertung', 'Kaufpreis (EUR)', 'Standort', 'Kaufdatum', 'Kaufort', 'Tags', 'Barcode', 'Hinzugefügt'];
+  const esc = (v) => { const s = String(v ?? ''); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const rows = coll.map((i) => [
+    i.artist, i.title, i.year, i.format, i.label, i.genre, i.mediaCond, i.sleeveCond,
+    i.rating || '', i.price || '', i.location, i.purchaseDate, i.purchasePlace,
+    (i.tags || []).join('; '), i.barcode, i.addedAt ? new Date(i.addedAt).toISOString().slice(0, 10) : '',
+  ].map(esc).join(';'));
+  const csv = '﻿' + head.join(';') + '\r\n' + rows.join('\r\n');
+  downloadBlob('discend-sammlung-' + new Date().toISOString().slice(0, 10) + '.csv', 'text/csv;charset=utf-8', csv);
+}
+// Versicherungs-Report: druckfertige HTML-Seite (im neuen Tab → „Drucken/Als PDF speichern").
+function openInsuranceReport() {
+  const coll = getList('collection').slice().sort((a, b) => (a.artist || '').localeCompare(b.artist || '', 'de'));
+  if (!coll.length) { toast(tr('toast.emptyCollectionExport')); return; }
+  const est = computeCachedValue();
+  const knownSum = coll.reduce((s, i) => s + (Number(i.price) > 0 ? Number(i.price) : 0), 0);
+  const rows = coll.map((i, n) => {
+    const cond = [i.mediaCond, i.sleeveCond].filter(Boolean).join(' / ');
+    const val = Number(i.price) > 0 ? fmtEuro(Number(i.price)) : '';
+    return `<tr><td class="r">${n + 1}</td><td>${escapeHtml(i.artist || '')}</td><td>${escapeHtml(i.title || '')}</td><td>${escapeHtml(String(i.year || ''))}</td><td>${escapeHtml(i.format || '')}</td><td>${escapeHtml(cond)}</td><td class="r">${val}</td></tr>`;
+  }).join('');
+  const name = escapeHtml(profileName() || 'Discend');
+  const date = new Date().toLocaleDateString('de-DE');
+  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Discend – Versicherungs-Report</title>
+<style>
+body{font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;color:#111;margin:24px;}
+h1{font-size:20px;margin:0 0 4px;}.sub{color:#666;font-size:13px;margin:0 0 14px;}
+.totals{display:flex;flex-wrap:wrap;gap:24px;margin:0 0 16px;font-size:14px;}.totals b{display:block;font-size:18px;}
+table{width:100%;border-collapse:collapse;font-size:12px;}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;vertical-align:top;}
+th{background:#f4f4f4;}td.r,th.r{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.foot{margin-top:16px;color:#888;font-size:11px;}
+.btn{display:inline-block;margin:0 0 16px;padding:8px 14px;border:1px solid #999;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;}
+@media print{body{margin:12mm;}.noprint{display:none;}}
+</style></head><body>
+<button class="btn noprint" onclick="window.print()">Als PDF speichern / drucken</button>
+<h1>Schallplatten-Sammlung – Bestandsliste</h1>
+<p class="sub">${name} · ${coll.length} Alben · Stand ${date}</p>
+<div class="totals"><span>Geschätzter Marktwert<b>${fmtEuro(est)}</b></span><span>Summe erfasster Kaufpreise<b>${fmtEuro(knownSum)}</b></span></div>
+<table><thead><tr><th class="r">#</th><th>Interpret</th><th>Titel</th><th>Jahr</th><th>Format</th><th>Zustand</th><th class="r">Wert</th></tr></thead><tbody>${rows}</tbody></table>
+<p class="foot">Erstellt mit Discend (discend.app) am ${date}. Der Marktwert ist eine automatische Schätzung (Discogs) und keine offizielle Bewertung.</p>
+</body></html>`;
+  const w = window.open('', '_blank');
+  if (!w) { toast(tr('toast.popupBlocked')); return; }
+  w.document.open(); w.document.write(html); w.document.close();
+}
+$('#btn-export-csv').addEventListener('click', exportCollectionCsv);
+$('#btn-insurance').addEventListener('click', openInsuranceReport);
 
 // ---------- Toast ----------
 let toastTimer = null;
