@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 186, de: ['Verliehene Platten zeigen jetzt „seit wann" – und nach 3 Monaten eine Erinnerung zum Zurückfordern'], en: ['Lent records now show how long they have been out — after 3 months you get a reminder to ask for them back'] },
   { build: 185, de: ['Hör-Ziel fürs Jahr („50 Platten") mit Fortschrittsbalken auf dem Profil – gezählt werden deine Tagebuch-Einträge'], en: ['Yearly listening goal ("50 records") with a progress bar on your profile — your diary entries count'] },
   { build: 184, de: ['Neue Regal-Ansicht: deine Cover stehen nebeneinander wie Platten im Regal (Umschalter in der Sammlung)'], en: ['New shelf view: your covers stand side by side like records on a shelf (switch in your collection)'] },
   { build: 183, de: ['Sammlung sortieren nach Kaufdatum, Zustand, Regal/Standort und „Verliehene zuerst"'], en: ['Sort your collection by purchase date, condition, shelf/location and "lent out first"'] },
@@ -1172,13 +1173,31 @@ function renderLend(item) {
   }
 }
 // „Verliehen"-Liste im Profil (alle Collection-Alben mit lentTo).
+// Verliehen seit …: nach 3 Monaten wird aus der Info eine sanfte Erinnerung.
+const LENT_REMIND_DAYS = 90;
+function lentDays(lentAt) { return lentAt ? Math.floor((Date.now() - lentAt) / 86400000) : -1; }
+function isLentTooLong(lentAt) { return lentDays(lentAt) >= LENT_REMIND_DAYS; }
+function lentSinceText(lentAt) {
+  const d = lentDays(lentAt);
+  if (d < 0) return '';
+  if (d < 1) return tr('lend.sinceToday');
+  if (d < 31) return tr(d === 1 ? 'lend.sinceDay' : 'lend.sinceDays', { n: d });
+  const m = Math.floor(d / 30);
+  return tr(m === 1 ? 'lend.sinceMonth' : 'lend.sinceMonths', { n: m });
+}
 function renderLentList() {
   const sec = document.getElementById('lent-section'); const box = document.getElementById('lent-list');
   if (!sec || !box) return;
   const lent = getList('collection').filter((i) => (i.lentTo || '').trim());
   if (!lent.length) { sec.hidden = true; box.innerHTML = ''; return; }
   sec.hidden = false;
-  box.innerHTML = lent.map((i) => `<button class="lent-row" data-id="${i.id}"><span class="lent-cover${i.coverUrl ? '' : ' placeholder'}">${i.coverUrl ? `<img src="${escapeHtml(i.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : ''}</span><span class="lent-meta"><span class="chart-title">${escapeHtml(i.title || '')}</span><span class="lent-to">${escapeHtml(tr('lend.toShort', { name: i.lentTo }))}</span></span></button>`).join('');
+  // Länger als 3 Monate weg? Dann sanft erinnern (Zeile bekommt einen Hinweis).
+  box.innerHTML = lent.map((i) => {
+    const since = lentSinceText(i.lentAt);
+    const old = isLentTooLong(i.lentAt);
+    const note = since ? `<span class="lent-since${old ? ' overdue' : ''}">${escapeHtml(old ? tr('lend.remind', { since }) : since)}</span>` : '';
+    return `<button class="lent-row" data-id="${i.id}"><span class="lent-cover${i.coverUrl ? '' : ' placeholder'}">${i.coverUrl ? `<img src="${escapeHtml(i.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" />` : ''}</span><span class="lent-meta"><span class="chart-title">${escapeHtml(i.title || '')}</span><span class="lent-to">${escapeHtml(tr('lend.toShort', { name: i.lentTo }))}</span>${note}</span></button>`;
+  }).join('');
   box.querySelectorAll('.lent-row').forEach((b) => b.addEventListener('click', () => openDetail('collection', b.dataset.id)));
 }
 

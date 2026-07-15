@@ -790,6 +790,10 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .random-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; }
 .random-btn svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--rose); }
 
+/* Verliehen seit … (nach 3 Monaten als Erinnerung hervorgehoben) */
+.lent-since { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.lent-since.overdue { color: var(--rose); font-weight: 600; }
+
 /* Hör-Ziel (Challenge) */
 .goal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .goal-count { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
