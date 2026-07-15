@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 178, de: ['„Was soll ich heute hören?" – neuer Zufalls-Knopf auf der Startseite zieht eine Platte aus deiner Sammlung'], en: ['"What should I play today?" — new shuffle button on home picks a record from your collection'] },
   { build: 177, de: ['Meilensteine auf dem Profil: Abzeichen für Platten, Bewertungen, Favoriten, Künstler und „Jahre dabei" – auch bei anderen sichtbar'], en: ['Milestones on your profile: badges for records, ratings, favorites, artists and years here — visible on other profiles too'] },
   { build: 176, de: ['Wunschzettel teilen: ein Link, der Freunden direkt deine Wunschliste zeigt'], en: ['Share your wishlist: one link that opens your wishlist for friends'] },
   { build: 175, de: ['Album-Seite: Spotify und Apple Music jetzt als große Knöpfe zum Direkt-Anhören'], en: ['Album page: Spotify and Apple Music are now prominent listen buttons'] },
@@ -3189,6 +3190,27 @@ function setHomeTab(tab) {
   else renderHomeAlben(body);
 }
 
+// ---------- Zufalls-Platte („Was soll ich heute hören?") ----------
+const DICE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>';
+let lastRandomId = null;
+// Erst ab ein paar Platten sinnvoll – bei 2 Alben ist „Zufall" albern.
+function randomCardHtml() {
+  if (getList('collection').length < 3) return '';
+  return '<div class="home-section">'
+    + `<span class="dp-label">${tr('home.whatToPlay')}</span>`
+    + `<button class="btn random-btn" id="home-random">${DICE_SVG}<span>${tr('btn.randomRecord')}</span></button>`
+    + '</div>';
+}
+function pickRandomRecord() {
+  const coll = getList('collection');
+  if (!coll.length) return;
+  // Nicht zweimal hintereinander dieselbe Platte vorschlagen
+  const pool = coll.length > 1 ? coll.filter((i) => i.id !== lastRandomId) : coll;
+  const pick = pool[Math.floor(Math.random() * pool.length)];
+  lastRandomId = pick.id;
+  openDetail('collection', pick.id);
+}
+
 // „Alben" = die normale Startseite (Begrüßung + Charts + Neuzugänge).
 function renderHomeAlben(body) {
   body.innerHTML =
@@ -3202,6 +3224,7 @@ function renderHomeAlben(body) {
         '<span class="notif-badge hidden" id="notif-badge"></span>' +
       '</button>' +
     '</div>' +
+    randomCardHtml() +
     `<div class="home-section" id="home-foryou-section" hidden><span class="dp-label">${tr('home.forYou')}</span><ol id="home-foryou-list" class="chart-list">${skelCharts()}</ol></div>` +
     `<div class="home-section"><span class="dp-label">${tr('home.popular')}</span><ol id="home-pop-list" class="chart-list">${skelCharts()}</ol></div>` +
     `<div class="home-section"><span class="dp-label">${tr('home.newFromFriends')}</span><div id="home-friends" class="home-friends"></div></div>` +
@@ -3222,6 +3245,7 @@ function renderHomeAlben(body) {
     gav.innerHTML = '<svg class="avatar-ph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
   }
   gav.addEventListener('click', () => { if (requireAuth()) switchView('settings'); });
+  { const rb = $('#home-random'); if (rb) rb.addEventListener('click', pickRandomRecord); }
   $('#home-bell').addEventListener('click', openNotifications);
   refreshBellBadge();
   if ($('#onboard')) {

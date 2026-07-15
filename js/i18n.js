@@ -487,6 +487,8 @@ export const DICT = {
   'share.suffix': { en: 'on Discend', de: 'auf Discend' },
   'share.myWishlist': { en: 'My wishlist', de: 'Meine Wunschliste' },
   'lbl.milestones': { en: 'Milestones', de: 'Meilensteine' },
+  'home.whatToPlay': { en: 'What should I play today?', de: 'Was soll ich heute hören?' },
+  'btn.randomRecord': { en: 'Pick a random record', de: 'Zufalls-Platte' },
   'ms.records': { en: 'records', de: 'Platten' },
   'ms.rated': { en: 'rated', de: 'bewertet' },
   'ms.liked': { en: 'favorites', de: 'Favoriten' },
