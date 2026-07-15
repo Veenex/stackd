@@ -426,6 +426,7 @@ export const DICT = {
   'stat.avgRating': { en: 'Avg rating', de: 'Ø Bewertung' },
   'stat.collection': { en: 'Collection', de: 'Sammlung' },
   'stat.wishlist': { en: 'Wishlist', de: 'Wishlist' },
+  'stat.inCommon': { en: 'You both have', de: 'Ihr habt gemeinsam' },
   'stat.collectionValue': { en: 'Collection value', de: 'Sammlungswert' },
   'stat.noRating': { en: 'No rating', de: 'Keine Bewertung' },
 

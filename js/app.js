@@ -26,7 +26,7 @@ import {
   ES_DISC, ES_CRATE, ES_HEART, ES_LIST, ES_PEN, ES_BELL, emptyState,
   popHeart, animateSwap, NOTE_PATH, noteSvg, heartSvg, ratingDisplayHtml, fmtEuro,
 } from './ui.js';
-import { sortLetter, letterRank, dedupeAlbums, dedupeKey, valueHistorySvg, weekIndex, rotateWindow, shuffle } from './util.js';
+import { sortLetter, letterRank, dedupeAlbums, dedupeKey, commonAlbums, valueHistorySvg, weekIndex, rotateWindow, shuffle } from './util.js';
 
 // Anzeigename aus dem Supabase-Profil (display_name, sonst username).
 function profileName() {
@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 182, de: ['„Ihr habt gemeinsam" auf fremden Profilen: zeigt, welche Platten ihr beide habt'], en: ['"You both have" on other profiles: see which records you share'] },
   { build: 181, de: ['Listen auf Startseite und in der Suche: Ranglisten-Nummern sichtbar, Antippen öffnet jetzt die Liste (statt des Profils)'], en: ['Lists on home and in search: ranking numbers visible, tapping opens the list (instead of the profile)'] },
   { build: 180, de: ['Ganze Tracklist am Stück anhören: neuer „Alle abspielen"-Knopf', 'Deutlich mehr Alben haben jetzt Hörproben (bessere Erkennung, z. B. Dookie, Nevermind, Dark Side of the Moon)'], en: ['Play the whole tracklist: new "Play all" button', 'Many more albums now have previews (better matching, e.g. Dookie, Nevermind, Dark Side of the Moon)'] },
   { build: 179, de: ['Akzentfarbe wählbar: Rosa, Petrol oder Indigo (Einstellungen → Erscheinungsbild)'], en: ['Pick your accent color: rose, petrol or indigo (Settings → Appearance)'] },
@@ -3753,7 +3754,7 @@ function renderSongsInto(el, rawSongs) {
     else toast(tr('toast.noPreview'));
   }));
 }
-let upColl = [], upWish = [], upName = '';
+let upColl = [], upWish = [], upCommon = [], upName = '';
 let upMenuUser = null; // aktuelles Fremdprofil für das 3-Punkte-Menü
 async function openUserProfile(user) {
   if (!user) return;
@@ -3820,6 +3821,8 @@ async function openUserProfile(user) {
   try { [coll, wish, vhist] = await Promise.all([fetchUserItems(u.id, 'collection'), fetchUserItems(u.id, 'wishlist'), u.hide_value ? Promise.resolve([]) : fetchValueHistory(u.id)]); }
   catch { /* ignorieren */ }
   upColl = coll; upWish = wish;
+  // „Ihr habt X gemeinsam": Schnittmenge mit der eigenen Sammlung (nur eingeloggt, nicht bei sich selbst).
+  upCommon = (isMe || !getUser()) ? [] : commonAlbums(getList('collection'), coll);
   const latestVal = vhist.length ? vhist[vhist.length - 1].value : 0;
   const rated = coll.filter((i) => Number(i.rating) > 0);
   const avg = rated.length ? (rated.reduce((s, i) => s + Number(i.rating), 0) / rated.length) : 0;
@@ -3827,6 +3830,7 @@ async function openUserProfile(user) {
   $('#up-stats').innerHTML =
     `<li class="stat-toggle" data-grid="collection"><span>${tr('stat.collection')}</span><span class="stat-num">${coll.length}<span class="stat-chev">›</span></span></li>` +
     `<li class="stat-toggle" data-grid="wishlist"><span>${tr('stat.wishlist')}</span><span class="stat-num">${wish.length}<span class="stat-chev">›</span></span></li>` +
+    (upCommon.length ? `<li class="stat-toggle" data-grid="common"><span>${tr('stat.inCommon')}</span><span class="stat-num">${upCommon.length}<span class="stat-chev">›</span></span></li>` : '') +
     `<li><span>${tr('stat.rated')}</span><span class="stat-num">${rated.length}</span></li>` +
     `<li><span>${tr('stat.avgRating')}</span><span class="stat-num">${avg ? avg.toFixed(1) + ' ♪' : '–'}</span></li>` +
     ((!u.hide_value && latestVal > 0) ? `<li><span>${tr('stat.collectionValue')}</span><span class="stat-num">${fmtEuro(latestVal)}</span></li>` : '');
@@ -3852,8 +3856,9 @@ async function openUserProfile(user) {
 }
 // Sammlung/Wishlist eines Nutzers als eigene Übersichtsseite öffnen.
 function openUpGrid(kind) {
-  const items = kind === 'wishlist' ? upWish : upColl;
-  $('#up-grid-title').textContent = (upName ? upName + ' – ' : '') + tr(kind === 'wishlist' ? 'stat.wishlist' : 'stat.collection');
+  const items = kind === 'wishlist' ? upWish : kind === 'common' ? upCommon : upColl;
+  const titleKey = kind === 'wishlist' ? 'stat.wishlist' : kind === 'common' ? 'stat.inCommon' : 'stat.collection';
+  $('#up-grid-title').textContent = (upName ? upName + ' – ' : '') + tr(titleKey);
   fillCoverGrid($('#up-grid'), items);
   const p = $('#up-grid-page');
   bringOverlayFront(p);

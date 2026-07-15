@@ -37,6 +37,19 @@ export function dedupeKey(it) {
   return (String(it.artist) + '|' + String(it.title)).toLowerCase().trim();
 }
 
+// Alben, die zwei Sammlungen gemeinsam haben („Ihr habt X gemeinsam").
+// Gleicher Schlüssel wie die Dubletten-Warnung; Ergebnis ist dublettenfrei.
+export function commonAlbums(mine, other) {
+  const set = new Set((mine || []).map(dedupeKey));
+  const seen = new Set();
+  return (other || []).filter((i) => {
+    const k = dedupeKey(i);
+    if (!k || !set.has(k) || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
 // Mini-Liniendiagramm (SVG) für den Sammlungswert-Verlauf.
 export function valueHistorySvg(hist) {
   const vals = hist.map((h) => h.value);
