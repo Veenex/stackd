@@ -1502,6 +1502,12 @@ html[data-theme="light"] .toast { box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
 html[data-theme="light"] .histo-bar { background: var(--rose); }
 html[data-theme="light"] .histo-end { color: var(--rose); }
 
+/* Akzentfarbe wählbar: --rose IST die Akzentfarbe der App (Likes, aktive Elemente).
+   Über var(--petrol)/var(--indigo) gilt automatisch der passende Hell-/Dunkel-Ton.
+   Muss NACH dem Light-Block stehen – gleiche Spezifität, Reihenfolge entscheidet. */
+html[data-accent="petrol"] { --rose: var(--petrol); }
+html[data-accent="indigo"] { --rose: var(--indigo); }
+
 /* ---------- Erscheinungsbild-Panel (wie Sprache) ---------- */
 #ps-theme-panel { transform: translateX(100%); }
 .settings-sheet.show-theme #ps-main { transform: translateX(-100%); }
@@ -1522,6 +1528,14 @@ html[data-theme="light"] .histo-end { color: var(--rose); }
 .hm-legend .hm-cell { width: 10px; height: 10px; }
 .set-theme-opt { justify-content: space-between; }
 .set-theme-opt .set-lang-check { color: var(--rose); font-weight: 700; opacity: 0; }
+/* Akzentfarbe-Auswahl */
+.acc-name { display: inline-flex; align-items: center; gap: 10px; }
+.acc-dot { width: 16px; height: 16px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.acc-dot[data-c="rose"] { background: #d96a8a; }
+.acc-dot[data-c="petrol"] { background: #3fa7c6; }
+.acc-dot[data-c="indigo"] { background: #6f68b8; }
+.set-accent-opt .set-lang-check { color: var(--rose); font-weight: 700; opacity: 0; }
+.set-accent-opt.active .set-lang-check { opacity: 1; }
 .set-theme-opt.active .set-lang-check { opacity: 1; }
 
 /* ---------- Status-Leisten (Offline / Update) ---------- */

@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 179, de: ['Akzentfarbe wählbar: Rosa, Petrol oder Indigo (Einstellungen → Erscheinungsbild)'], en: ['Pick your accent color: rose, petrol or indigo (Settings → Appearance)'] },
   { build: 178, de: ['„Was soll ich heute hören?" – neuer Zufalls-Knopf auf der Startseite zieht eine Platte aus deiner Sammlung'], en: ['"What should I play today?" — new shuffle button on home picks a record from your collection'] },
   { build: 177, de: ['Meilensteine auf dem Profil: Abzeichen für Platten, Bewertungen, Favoriten, Künstler und „Jahre dabei" – auch bei anderen sichtbar'], en: ['Milestones on your profile: badges for records, ratings, favorites, artists and years here — visible on other profiles too'] },
   { build: 176, de: ['Wunschzettel teilen: ein Link, der Freunden direkt deine Wunschliste zeigt'], en: ['Share your wishlist: one link that opens your wishlist for friends'] },
@@ -2625,6 +2626,7 @@ function openProfileSettings() {
   $('#ps-new-email').value = '';
   $('#ps-email-msg').textContent = '';
   $$('.set-theme-opt').forEach((b) => b.classList.toggle('active', b.dataset.theme === getTheme()));
+  $$('.set-accent-opt').forEach((b) => b.classList.toggle('active', b.dataset.accent === getAccent()));
   $('#ps-location').value = p.location || '';
   $('#ps-website').value = p.website || '';
   $('#ps-bio').value = p.bio || '';
@@ -3898,7 +3900,19 @@ function setTheme(t) {
   applyTheme();
   $$('.set-theme-opt').forEach((b) => b.classList.toggle('active', b.dataset.theme === t));
 }
+// Akzentfarbe (Rosa/Petrol/Indigo): setzt data-accent, den Rest macht CSS.
+const ACCENT_KEY = 'discend_accent';
+const ACCENTS = ['rose', 'petrol', 'indigo'];
+function getAccent() { const a = localStorage.getItem(ACCENT_KEY); return ACCENTS.includes(a) ? a : 'rose'; }
+function applyAccent() { document.documentElement.setAttribute('data-accent', getAccent()); }
+function setAccent(a) {
+  if (!ACCENTS.includes(a)) return;
+  try { localStorage.setItem(ACCENT_KEY, a); } catch { /* voll */ }
+  applyAccent();
+  $$('.set-accent-opt').forEach((b) => b.classList.toggle('active', b.dataset.accent === a));
+}
 applyTheme();
+applyAccent();
 // Bei „System": auf Hell/Dunkel-Wechsel des Geräts live reagieren.
 try { matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => { if (getTheme() === 'system') applyTheme(); }); } catch { /* alt */ }
 
@@ -3916,6 +3930,7 @@ $$('.set-lang-opt').forEach((b) => b.addEventListener('click', () => {
 $('#ps-theme-open').addEventListener('click', () => $('#profile-settings-dialog').classList.add('show-theme'));
 $('#ps-theme-back').addEventListener('click', () => $('#profile-settings-dialog').classList.remove('show-theme'));
 $$('.set-theme-opt').forEach((b) => b.addEventListener('click', () => setTheme(b.dataset.theme)));
+$$('.set-accent-opt').forEach((b) => b.addEventListener('click', () => setAccent(b.dataset.accent)));
 // Bei Sprachwechsel die sichtbare Ansicht neu aufbauen (dynamische Texte)
 document.addEventListener('langchange', () => { switchView(currentView); });
 
