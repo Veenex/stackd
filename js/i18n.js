@@ -144,6 +144,7 @@ export const DICT = {
   'a11y.viewLarge': { en: 'Large tiles', de: 'Große Kacheln' },
   'a11y.viewSmall': { en: 'Small tiles', de: 'Kleine Kacheln' },
   'a11y.viewList': { en: 'List view', de: 'Listenansicht' },
+  'a11y.viewShelf': { en: 'Shelf view', de: 'Regal-Ansicht' },
   'a11y.listSettings': { en: 'List settings', de: 'Listen-Einstellungen' },
   'a11y.moreOptions': { en: 'More options', de: 'Weitere Optionen' },
   'lbl.ratings': { en: 'Ratings', de: 'Bewertungen' },

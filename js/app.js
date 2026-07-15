@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 184, de: ['Neue Regal-Ansicht: deine Cover stehen nebeneinander wie Platten im Regal (Umschalter in der Sammlung)'], en: ['New shelf view: your covers stand side by side like records on a shelf (switch in your collection)'] },
   { build: 183, de: ['Sammlung sortieren nach Kaufdatum, Zustand, Regal/Standort und „Verliehene zuerst"'], en: ['Sort your collection by purchase date, condition, shelf/location and "lent out first"'] },
   { build: 182, de: ['„Ihr habt gemeinsam" auf fremden Profilen: zeigt, welche Platten ihr beide habt'], en: ['"You both have" on other profiles: see which records you share'] },
   { build: 181, de: ['Listen auf Startseite und in der Suche: Ranglisten-Nummern sichtbar, Antippen öffnet jetzt die Liste (statt des Profils)'], en: ['Lists on home and in search: ranking numbers visible, tapping opens the list (instead of the profile)'] },
@@ -325,7 +326,7 @@ function renderList(list) {
 
 // ---------- Sammlungs-Ansicht (große/kleine Kacheln, Liste) ----------
 const COLLECTION_VIEW_KEY = 'discend_collection_view';
-const COLLECTION_VIEWS = ['large', 'small', 'list'];
+const COLLECTION_VIEWS = ['large', 'small', 'list', 'shelf'];
 function getCollectionView() {
   const v = localStorage.getItem(COLLECTION_VIEW_KEY);
   return COLLECTION_VIEWS.includes(v) ? v : 'large';

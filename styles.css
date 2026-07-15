@@ -188,6 +188,22 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 .record-list.view-list .tile-title { font-size: 14px; margin-top: 0; }
 .record-list.view-list .tile-artist { font-size: 12.5px; }
 .record-list.view-list .tile-lent { left: 40px; right: auto; top: 2px; }
+/* Sammlungs-Ansicht: Regal (Cover stehen nebeneinander, unter jeder Reihe ein Brett).
+   Das Brett ist ein ::after je Kachel – so entsteht auch beim Umbrechen eine
+   durchgehende Linie, ohne dass man Reihenhöhen kennen muss. */
+.record-list.view-shelf { display: flex; flex-wrap: wrap; gap: 0; }
+.record-list.view-shelf .tile { width: 20%; padding: 0 4px; }
+@media (min-width: 520px) { .record-list.view-shelf .tile { width: 12.5%; } }
+@media (min-width: 960px) { .record-list.view-shelf .tile { width: 10%; } }
+.record-list.view-shelf .tile-cover { border-radius: 2px; box-shadow: 2px 3px 7px rgba(0, 0, 0, .45); }
+.record-list.view-shelf .tile-body, .record-list.view-shelf .tile-meta { display: none; }
+.record-list.view-shelf .tile::after {
+  content: ''; display: block; height: 5px; margin: 6px -4px 18px;
+  background: linear-gradient(to bottom, var(--surface-2), var(--border));
+  border-radius: 1px; box-shadow: 0 2px 5px rgba(0, 0, 0, .45);
+}
+html[data-theme="light"] .record-list.view-shelf .tile-cover { box-shadow: 1px 2px 5px rgba(0, 0, 0, .2); }
+
 /* Ansicht-Umschalter (segmentierte Icon-Knöpfe) */
 .view-switch { display: inline-flex; gap: 2px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 2px; }
 .vs-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 26px; border: none; background: none; color: var(--muted); border-radius: 6px; cursor: pointer; padding: 0; }
