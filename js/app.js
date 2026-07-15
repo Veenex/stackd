@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 187, de: ['Sparziel für Wunsch-Platten: trag ein, wie viel du schon gespart hast (privat, nur für dich sichtbar)'], en: ['Savings goal for wishlist records: track how much you have saved (private, only you can see it)'] },
   { build: 186, de: ['Verliehene Platten zeigen jetzt „seit wann" – und nach 3 Monaten eine Erinnerung zum Zurückfordern'], en: ['Lent records now show how long they have been out — after 3 months you get a reminder to ask for them back'] },
   { build: 185, de: ['Hör-Ziel fürs Jahr („50 Platten") mit Fortschrittsbalken auf dem Profil – gezählt werden deine Tagebuch-Einträge'], en: ['Yearly listening goal ("50 records") with a progress bar on your profile — your diary entries count'] },
   { build: 184, de: ['Neue Regal-Ansicht: deine Cover stehen nebeneinander wie Platten im Regal (Umschalter in der Sammlung)'], en: ['New shelf view: your covers stand side by side like records on a shelf (switch in your collection)'] },
@@ -662,6 +663,7 @@ function openDetail(list, id) {
   const lendSec = $('#dp-lend-section');
   if (lendSec) lendSec.style.display = list === 'collection' ? '' : 'none';
   if (list === 'collection') renderLend(item);
+  renderSavings(item, list);
   $('.dp-edit').open = false;
 
   $('#dp-move').textContent = list === 'collection' ? tr('btn.moveToWishlist') : tr('btn.moveToCollection');
@@ -1146,6 +1148,38 @@ $('#dp-play-add').addEventListener('click', async () => {
   $('#dp-play-note').value = '';
   renderDiaryPlays(editing.id);
   toast(tr('toast.diaryAdded'));
+});
+
+// ---------- Sparziel (nur Wunschzettel; privat, steht nur in items) ----------
+// Ziel ist der eingetragene Preis, „gespart" der Fortschritt darauf.
+function renderSavings(item, list) {
+  const sec = $('#dp-savings-section'); if (!sec) return;
+  const show = list === 'wishlist' && !!item;
+  sec.style.display = show ? '' : 'none';
+  if (!show) return;
+  const box = $('#dp-savings');
+  const goal = Number(item.price) || 0;
+  const saved = Number(item.saved) || 0;
+  if (!goal) { box.innerHTML = `<p class="hint">${escapeHtml(tr('savings.noPrice'))}</p>`; return; }
+  const pct = Math.min(100, Math.round((saved / goal) * 100));
+  const rest = Math.max(0, goal - saved);
+  const note = rest ? tr('savings.toGo', { amount: fmtEuro(rest) }) : tr('savings.done');
+  box.innerHTML = `<p class="goal-count">${escapeHtml(tr('savings.count', { saved: fmtEuro(saved), goal: fmtEuro(goal) }))}</p>`
+    + `<div class="ms-bar"><span style="width:${Math.max(2, pct)}%"></span></div>`
+    + `<p class="ms-next">${escapeHtml(note)} · ${pct} %</p>`;
+}
+$('#dp-savings-edit').addEventListener('click', () => {
+  if (!editing || editing.list !== 'wishlist') return;
+  const item = getList('wishlist').find((i) => i.id === editing.id);
+  if (!item) return;
+  if (!Number(item.price)) { toast(tr('savings.noPrice')); return; }
+  const inp = prompt(tr('savings.prompt', { goal: fmtEuro(Number(item.price)) }), String(Number(item.saved) || 0));
+  if (inp === null) return;
+  const n = Number(String(inp).replace(',', '.'));
+  if (!Number.isFinite(n) || n < 0) { toast(tr('savings.invalid')); return; }
+  updateItem('wishlist', item.id, { saved: Math.round(n * 100) / 100 });
+  const fresh = getList('wishlist').find((i) => i.id === item.id);
+  renderSavings(fresh, 'wishlist');
 });
 
 // ---------- Verleih (Leihliste) ----------

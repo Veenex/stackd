@@ -45,6 +45,7 @@ function toRow(item, list, u) {
     rating: Number(item.rating) || 0,
     liked: !!item.liked,
     price: Number(item.price) || 0,
+    saved: Number(item.saved) || null, // Sparziel-Fortschritt (privat, nur items)
     media_cond: item.mediaCond || null,
     sleeve_cond: item.sleeveCond || null,
     location: item.location || null,
@@ -66,7 +67,7 @@ function fromRow(r) {
     artist: r.artist || '', title: r.title || '', year: r.year || '',
     label: r.label || '', format: r.format || '', genre: r.genre || '', barcode: r.barcode || '',
     coverUrl: r.cover_url || '', note: r.note || '', review: r.review || '',
-    rating: Number(r.rating) || 0, liked: !!r.liked, price: Number(r.price) || 0,
+    rating: Number(r.rating) || 0, liked: !!r.liked, price: Number(r.price) || 0, saved: Number(r.saved) || 0,
     mediaCond: r.media_cond || '', sleeveCond: r.sleeve_cond || '',
     location: r.location || '', lentTo: r.lent_to || '', lentAt: r.lent_at ? new Date(r.lent_at).getTime() : 0,
     purchaseDate: r.purchase_date || '', purchasePlace: r.purchase_place || '',
@@ -89,7 +90,7 @@ export function addItem(list, item) {
   const record = {
     id: crypto.randomUUID(), addedAt: Date.now(),
     artist: '', title: '', year: '', label: '', format: '', genre: '', barcode: '',
-    coverUrl: '', note: '', review: '', rating: 0, liked: false, price: 0,
+    coverUrl: '', note: '', review: '', rating: 0, liked: false, price: 0, saved: 0,
     mediaCond: '', sleeveCond: '',
     location: '', lentTo: '', lentAt: 0,
     purchaseDate: '', purchasePlace: '', tags: [],
