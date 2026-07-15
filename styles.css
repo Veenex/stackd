@@ -980,21 +980,20 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .dp-meta { color: var(--muted); margin: 6px 0 0; font-size: 13px; }
 .dp-cond { color: var(--muted); margin: 4px 0 0; font-size: 13px; }
 .dp-cond:empty { display: none; }
-.dp-listen { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+/* Streaming: Spotify + Apple Music als prominente Marken-Buttons, Rest als kleine Icons */
+.dp-listen { display: flex; gap: 8px; justify-content: center; align-items: center; margin-top: 16px; flex-wrap: wrap; }
 .listen-btn {
-  flex: 1; max-width: 170px; text-align: center;
-  padding: 10px 14px; border-radius: 10px;
-  font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer;
+  padding: 9px 15px; border-radius: 999px;
+  font-size: 13.5px; font-weight: 700; text-decoration: none; cursor: pointer;
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
 }
+.listen-btn:active { filter: brightness(.92); }
 .listen-btn.spotify { background: #1db954; color: #fff; }
 .listen-btn.apple { background: #fa243c; color: #fff; }
-.listen-btn svg { width: 18px; height: 18px; }
-
-/* Streaming als kleine runde Icons */
-.dp-listen { display: flex; gap: 12px; justify-content: center; margin-top: 16px; }
+.listen-btn img { width: 18px; height: 18px; border-radius: 4px; display: block; }
 .listen-ico { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
-.listen-ico img { width: 36px; height: 36px; display: block; border-radius: 8px; object-fit: cover; }
+.listen-ico img { width: 34px; height: 34px; display: block; border-radius: 8px; object-fit: cover; }
 
 /* Bearbeiten-Panel (über ⋯ oben rechts) */
 .dp-edit-panel.hidden { display: none; }

@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 175, de: ['Album-Seite: Spotify und Apple Music jetzt als große Knöpfe zum Direkt-Anhören'], en: ['Album page: Spotify and Apple Music are now prominent listen buttons'] },
   { build: 174, de: ['Aktivitäts-Feed: neuer „Aktivität"-Tab auf der Startseite – was deine Freunde hinzufügen, hören, bewerten und an Listen erstellen'], en: ['Activity feed: new "Activity" tab on home — what people you follow add, play, rate and list'] },
   { build: 173, de: ['Sammlung exportieren: als CSV (Tabelle) und als Versicherungs-Report zum Ausdrucken/als PDF'], en: ['Export your collection: as CSV (spreadsheet) and as a printable insurance report (PDF)'] },
   { build: 172, de: ['Eigene Tags pro Platte (z. B. signiert, farbig) – antippen filtert die Sammlung'], en: ['Your own tags per record (e.g. signed, colored) — tap one to filter your collection'] },
