@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 177, de: ['Meilensteine auf dem Profil: Abzeichen für Platten, Bewertungen, Favoriten, Künstler und „Jahre dabei" – auch bei anderen sichtbar'], en: ['Milestones on your profile: badges for records, ratings, favorites, artists and years here — visible on other profiles too'] },
   { build: 176, de: ['Wunschzettel teilen: ein Link, der Freunden direkt deine Wunschliste zeigt'], en: ['Share your wishlist: one link that opens your wishlist for friends'] },
   { build: 175, de: ['Album-Seite: Spotify und Apple Music jetzt als große Knöpfe zum Direkt-Anhören'], en: ['Album page: Spotify and Apple Music are now prominent listen buttons'] },
   { build: 174, de: ['Aktivitäts-Feed: neuer „Aktivität"-Tab auf der Startseite – was deine Freunde hinzufügen, hören, bewerten und an Listen erstellen'], en: ['Activity feed: new "Activity" tab on home — what people you follow add, play, rate and list'] },
@@ -2103,6 +2104,7 @@ function renderProfile() {
   renderLentList();
   renderHisto();
   renderStatRows();
+  renderMilestones();
   renderValueRange();
   renderGenreStats();
 }
@@ -2159,6 +2161,79 @@ function renderStatRows() {
   ul.innerHTML = rows.map((r, idx) =>
     `<li${r.go ? ` data-i="${idx}"` : ''}><span>${r.label}</span><span class="stat-num">${r.val}${r.go ? ' ›' : ''}</span></li>`).join('');
   ul.querySelectorAll('li[data-i]').forEach((li) => li.addEventListener('click', () => rows[+li.dataset.i].go()));
+}
+
+// ---------- Meilensteine (Badges) ----------
+// Alles aus vorhandenen Daten gerechnet (Sammlung + Anmeldedatum) – keine neue Tabelle.
+const MS_KEY = 'discend.milestones';
+const MS_DEFS = [
+  { id: 'records', key: 'ms.records', tiers: [10, 25, 50, 100, 250, 500] },
+  { id: 'rated', key: 'ms.rated', tiers: [10, 50, 100, 250] },
+  { id: 'liked', key: 'ms.liked', tiers: [5, 25, 50, 100] },
+  { id: 'artists', key: 'ms.artists', tiers: [10, 50, 100, 200] },
+  { id: 'years', key: 'ms.years', tiers: [1, 2, 3, 5] },
+];
+function msCounts(coll, createdAt) {
+  const artists = new Set(coll.map((i) => String(i.artist || '').trim().toLowerCase()).filter(Boolean));
+  const days = createdAt ? Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000) : 0;
+  return {
+    records: coll.length,
+    rated: coll.filter((i) => Number(i.rating) > 0).length,
+    liked: coll.filter((i) => i.liked).length,
+    artists: artists.size,
+    years: Math.max(0, Math.floor(days / 365)),
+    days: Math.max(0, days), // nur für den Fortschritt innerhalb des laufenden Jahres
+  };
+}
+function msLabel(def, n) {
+  if (def.id === 'years') return tr(n === 1 ? 'ms.year1' : 'ms.years');
+  return tr(def.key);
+}
+function msTier(def, n) { return def.tiers.filter((t) => n >= t).pop() || 0; }
+// Neue Stufe erreicht? Einmal feiern und merken. Bei leerer Sammlung nichts tun –
+// dann sind die Daten meist nur noch nicht geladen (sonst „Meilenstein" nach jedem Login).
+function celebrateMilestones(c) {
+  if (!c.records) return;
+  let prev = null;
+  try { prev = JSON.parse(localStorage.getItem(MS_KEY)); } catch { prev = null; }
+  const now = {};
+  MS_DEFS.forEach((d) => { now[d.id] = msTier(d, c[d.id] || 0); });
+  if (prev) {
+    const d = MS_DEFS.find((x) => (now[x.id] || 0) > (prev[x.id] || 0));
+    if (d) toast(tr('ms.reached', { name: `${now[d.id]} ${msLabel(d, now[d.id])}` }));
+  }
+  try { localStorage.setItem(MS_KEY, JSON.stringify(now)); } catch { /* voll */ }
+}
+// earnedOnly: auf fremden Profilen nur Erreichtes zeigen (kein „noch 8 bis 100").
+// Gibt die Anzahl gezeigter Badges zurück (fürs Ein-/Ausblenden der Sektion).
+function renderMilestones(coll = getList('collection'), createdAt = (getProfile() || {}).created_at, sel = '#milestones', earnedOnly = false) {
+  const root = $(sel); if (!root) return 0;
+  const c = msCounts(coll, createdAt);
+  const cards = [];
+  for (const d of MS_DEFS) {
+    const n = c[d.id] || 0;
+    const cur = msTier(d, n);
+    if (earnedOnly && !cur) continue;
+    const next = d.tiers.find((t) => n < t) || 0;
+    // „Jahre dabei" wächst in Tagen – sonst stünde der Balken ein ganzes Jahr auf 0 %.
+    const [have, from, to] = d.id === 'years' ? [c.days, cur * 365, next * 365] : [n, cur, next];
+    const pct = next ? Math.min(100, Math.max(3, Math.round(((have - from) / (to - from)) * 100))) : 100;
+    const rest = next - n;
+    const nextTxt = !next ? tr('ms.maxed')
+      : d.id === 'years' ? tr(rest === 1 ? 'ms.toGoYear' : 'ms.toGoYears', { n: rest })
+        : tr('ms.toGo', { n: rest, goal: next });
+    const foot = earnedOnly ? ''
+      : `<div class="ms-bar"><span style="width:${pct}%"></span></div>`
+        + `<span class="ms-next">${escapeHtml(nextTxt)}</span>`;
+    cards.push(`<div class="ms-badge${cur ? ' earned' : ''}">
+      <div class="ms-medal">${cur || next}</div>
+      <span class="ms-label">${escapeHtml(msLabel(d, cur || next))}</span>
+      ${foot}
+    </div>`);
+  }
+  root.innerHTML = cards.join('');
+  if (!earnedOnly) celebrateMilestones(c);
+  return cards.length;
 }
 
 // ---------- Sammlungswert (Marktschätzung, min–max) ----------
@@ -3651,6 +3726,7 @@ async function openUserProfile(user) {
   $('#up-favorites-section').style.display = isBlocked ? 'none' : '';
   $('#up-stats-section').style.display = isBlocked ? 'none' : '';
   $('#up-rating-section').hidden = true;
+  $('#up-ms-section').hidden = true;
   $('#up-grid-page').classList.add('hidden');
   if (isBlocked) {
     fbtn.style.display = 'none';
@@ -3687,6 +3763,8 @@ async function openUserProfile(user) {
   // Rating-Diagramm (wie beim eigenen Profil), nur wenn es Bewertungen gibt
   $('#up-rating-section').hidden = rated.length === 0;
   if (rated.length) renderHisto(coll, '#up-rating-histo');
+  // Meilensteine des anderen: nur Erreichtes (kein Fortschritt zu fremden Zielen)
+  $('#up-ms-section').hidden = renderMilestones(coll, u.created_at, '#up-milestones', true) === 0;
   // Favoriten-Alben
   const favItems = (u.favorites || []).map((f) => resolveFav(f, coll)).filter(Boolean);
   let favHtml = '';
