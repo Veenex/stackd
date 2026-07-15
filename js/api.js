@@ -526,7 +526,11 @@ export async function fetchItunesTracklist(artist, title) {
       const cn = normTitle(a.collectionName), an = normTitle(a.artistName);
       if (!artistOk(an)) continue;
       let s = 0;
-      if (cn && cn === wt) s += 100; else if (wt && cn && (cn.includes(wt) || wt.includes(cn))) s += 50;
+      // Ohne Bezug zum gesuchten Albumtitel NICHT nehmen: sonst gewinnt allein wegen des
+      // Interpreten irgendein anderes Album (z. B. „Green Day – Stray Heart - Single" für „Dookie").
+      if (cn && cn === wt) s += 100;
+      else if (wt && cn && (cn.includes(wt) || wt.includes(cn))) s += 50;
+      else continue;
       if (an === wa) s += 40;
       if (s > best) { best = s; collectionId = a.collectionId; }
     }
@@ -535,7 +539,28 @@ export async function fetchItunesTracklist(artist, title) {
     if (!collectionId) {
       const ss = await itunesProxy('search', { entity: 'song', limit: 15, term });
       let bs = 0;
-      for (const c of (ss.results || [])) { const s = scoreSongMatch(c, artist, title); if (s > bs && c.collectionId) { bs = s; collectionId = c.collectionId; } }
+      for (const c of (ss.results || [])) {
+        // Interpret MUSS passen: sonst liefert ein gleichnamiger Song fremder Leute
+        // („Nevermind" von Dennis Lloyd) die Album-ID.
+        if (!c.collectionId || !artistOk(normTitle(c.artistName))) continue;
+        const s = scoreSongMatch(c, artist, title);
+        if (s > bs) { bs = s; collectionId = c.collectionId; }
+      }
+    }
+    // 3) Fallback: Apples Album-Suche findet manche Klassiker gar nicht („Green Day Dookie"
+    //    liefert nur Tribute-Alben). Dann die Top-Songs des INTERPRETEN holen und das Album
+    //    über den Albumnamen (collectionName) der Songs erkennen.
+    if (!collectionId && wa && wt) {
+      const as = await itunesProxy('search', { entity: 'song', limit: 50, term: String(artist || '').trim() });
+      let bs = -1;
+      for (const c of (as.results || [])) {
+        if (!c.collectionId || !artistOk(normTitle(c.artistName))) continue;
+        const cn = normTitle(c.collectionName);
+        if (!cn) continue;
+        let s = -1;
+        if (cn === wt) s = 100; else if (cn.includes(wt) || wt.includes(cn)) s = 50;
+        if (s > bs) { bs = s; collectionId = c.collectionId; }
+      }
     }
     if (!collectionId) return null;
     const sd = await itunesProxy('lookup', { id: collectionId, entity: 'song', limit: 200 });

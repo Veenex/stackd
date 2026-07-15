@@ -236,7 +236,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 179</p>
+        <p class="hint profile-version">Discend · Build 180</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -345,7 +345,12 @@
       </div>
 
       <div class="dp-section">
-        <span class="dp-label" data-i18n="lbl.tracklist">Tracklist</span>
+        <div class="dp-tracklist-head">
+          <span class="dp-label" data-i18n="lbl.tracklist">Tracklist</span>
+          <button id="dp-playall" class="playall-btn" hidden>
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span id="dp-playall-label" data-i18n="btn.playAll">Play all</span>
+          </button>
+        </div>
         <ol id="dp-tracklist" class="dp-tracklist"></ol>
         <p id="dp-tracklist-status" class="hint"></p>
       </div>

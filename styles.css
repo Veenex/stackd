@@ -746,6 +746,18 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 }
 .histo-bar:hover .histo-val, .histo-bar.show-val .histo-val { opacity: 1; }
 
+/* Ganze Tracklist abspielen */
+.dp-tracklist-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.playall-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
+  color: var(--text); font-size: 13px; padding: 6px 12px; cursor: pointer;
+}
+.playall-btn[hidden] { display: none; }
+.playall-btn svg { width: 14px; height: 14px; color: var(--rose); }
+.playall-btn.playing { border-color: var(--rose); color: var(--rose); }
+.playall-btn.playing svg { color: var(--rose); }
+
 /* Zufalls-Platte („Was soll ich heute hören?") */
 .random-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; }
 .random-btn svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--rose); }

@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 180, de: ['Ganze Tracklist am Stück anhören: neuer „Alle abspielen"-Knopf', 'Deutlich mehr Alben haben jetzt Hörproben (bessere Erkennung, z. B. Dookie, Nevermind, Dark Side of the Moon)'], en: ['Play the whole tracklist: new "Play all" button', 'Many more albums now have previews (better matching, e.g. Dookie, Nevermind, Dark Side of the Moon)'] },
   { build: 179, de: ['Akzentfarbe wählbar: Rosa, Petrol oder Indigo (Einstellungen → Erscheinungsbild)'], en: ['Pick your accent color: rose, petrol or indigo (Settings → Appearance)'] },
   { build: 178, de: ['„Was soll ich heute hören?" – neuer Zufalls-Knopf auf der Startseite zieht eine Platte aus deiner Sammlung'], en: ['"What should I play today?" — new shuffle button on home picks a record from your collection'] },
   { build: 177, de: ['Meilensteine auf dem Profil: Abzeichen für Platten, Bewertungen, Favoriten, Künstler und „Jahre dabei" – auch bei anderen sichtbar'], en: ['Milestones on your profile: badges for records, ratings, favorites, artists and years here — visible on other profiles too'] },
@@ -949,16 +950,20 @@ function showMiniPlayer(meta) {
   $('#mp-time').textContent = '';
   mp.classList.remove('paused', 'hidden');
 }
-function stopPreview() {
+// Nur den Ton stoppen – die Warteschlange („Alle abspielen") bleibt bestehen.
+function stopAudio() {
   if (previewAudio) { try { previewAudio.pause(); } catch { /* ignorieren */ } previewAudio = null; }
   previewBtn = null;
   document.querySelectorAll('.playing').forEach((b) => b.classList.remove('playing'));
   document.querySelectorAll('.prog-fill').forEach((f) => { f.style.width = '0%'; });
   hideMiniPlayer();
 }
-function togglePreview(url, btn, meta) {
+// Alles stoppen (Ton + Warteschlange) – für Schließen, Albumwechsel, Einzel-Klick.
+function stopPreview() { previewQueue = null; updatePlayAllBtn(); stopAudio(); }
+// keepQueue: nur der Warteschlangen-Aufruf behält sie; jeder andere Klick beendet sie.
+function togglePreview(url, btn, meta, keepQueue) {
   const wasPlaying = btn && btn.classList.contains('playing');
-  stopPreview();
+  if (keepQueue) stopAudio(); else stopPreview();
   if (wasPlaying) return;
   previewAudio = new Audio(url);
   previewBtn = btn || null;
@@ -983,8 +988,40 @@ function togglePreview(url, btn, meta) {
     if (fill) fill.style.width = '0%';
     previewAudio = null; previewBtn = null;
     hideMiniPlayer();
+    if (previewQueue) playQueueNext(); // „Alle abspielen": direkt weiter zum nächsten Song
   };
 }
+
+// ---------- Ganze Tracklist abspielen (Hörproben nacheinander) ----------
+let previewQueue = null;      // { items: [{ i, preview, title }], pos, artist }
+let tracklistTracks = [];     // aktuell angezeigte Tracks (für den „Alle abspielen"-Knopf)
+let tracklistItem = null;
+function updatePlayAllBtn() {
+  const btn = $('#dp-playall'); if (!btn) return;
+  const n = tracklistTracks.filter((t) => t.preview).length;
+  btn.hidden = n < 2; // erst ab 2 Hörproben sinnvoll
+  const lbl = $('#dp-playall-label');
+  if (lbl) lbl.textContent = previewQueue ? tr('btn.stopAll') : tr('btn.playAll');
+  btn.classList.toggle('playing', !!previewQueue);
+}
+function playQueueNext() {
+  const q = previewQueue; if (!q) return;
+  q.pos++;
+  if (q.pos >= q.items.length) { previewQueue = null; updatePlayAllBtn(); return; } // Album durch
+  const e = q.items[q.pos];
+  const btn = document.querySelector(`#dp-tracklist .trk-play[data-i="${e.i}"]`);
+  togglePreview(e.preview, btn, { title: e.title, artist: q.artist }, true);
+  updatePlayAllBtn();
+}
+function togglePlayAll() {
+  if (previewQueue) { stopPreview(); return; }
+  const items = tracklistTracks.map((t, i) => ({ i, preview: t.preview, title: t.title })).filter((e) => e.preview);
+  if (!items.length) return;
+  stopPreview();
+  previewQueue = { items, pos: -1, artist: (tracklistItem && tracklistItem.artist) || '' };
+  playQueueNext();
+}
+$('#dp-playall').addEventListener('click', togglePlayAll);
 // Mini-Player-Steuerung: Pause/Play, Spulen (Klick/Ziehen), Schließen.
 (function wireMiniPlayer() {
   const mp = $('#mini-player'); if (!mp) return;
@@ -1015,6 +1052,7 @@ async function loadTracklist(item) {
   const status = $('#dp-tracklist-status');
   ol.innerHTML = '';
   stopPreview();
+  tracklistTracks = []; tracklistItem = item; updatePlayAllBtn();
   renderAlbumInfo(null);
   if (item.source === 'manual' || !item.sourceId) {
     status.textContent = tr('track.noneManual');
@@ -1057,6 +1095,7 @@ async function loadTracklist(item) {
     } catch { /* ignorieren */ }
   }
   status.textContent = '';
+  tracklistTracks = tracks; updatePlayAllBtn();
   ol.innerHTML = tracks.map((t, i) => {
     const play = t.preview
       ? `<button class="trk-play" data-i="${i}" aria-label="${tr('a11y.preview')}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>`
