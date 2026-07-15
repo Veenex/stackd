@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 176, de: ['Wunschzettel teilen: ein Link, der Freunden direkt deine Wunschliste zeigt'], en: ['Share your wishlist: one link that opens your wishlist for friends'] },
   { build: 175, de: ['Album-Seite: Spotify und Apple Music jetzt als große Knöpfe zum Direkt-Anhören'], en: ['Album page: Spotify and Apple Music are now prominent listen buttons'] },
   { build: 174, de: ['Aktivitäts-Feed: neuer „Aktivität"-Tab auf der Startseite – was deine Freunde hinzufügen, hören, bewerten und an Listen erstellen'], en: ['Activity feed: new "Activity" tab on home — what people you follow add, play, rate and list'] },
   { build: 173, de: ['Sammlung exportieren: als CSV (Tabelle) und als Versicherungs-Report zum Ausdrucken/als PDF'], en: ['Export your collection: as CSV (spreadsheet) and as a printable insurance report (PDF)'] },
@@ -758,10 +759,15 @@ async function routeFromUrl() {
   let path = '/'; try { path = decodeURIComponent(location.pathname || '/'); } catch { path = location.pathname || '/'; }
   const mu = path.match(/^\/u\/([^/]+)\/?$/);
   if (mu) {
+    // Query VOR openUserProfile lesen – das setzt die Adresszeile auf /u/name um.
+    const wantList = new URLSearchParams(location.search || '').get('list');
     try {
       const prof = await fetchProfileByUsername(mu[1]);
-      if (prof) openUserProfile(prof);
-      else { toast(tr('deeplink.userNotFound')); resetUrl(); }
+      if (prof) {
+        await openUserProfile(prof);
+        // Geteilter Wunschzettel-Link: direkt die Wunschliste aufschlagen
+        if (wantList === 'wishlist') openUpGrid('wishlist');
+      } else { toast(tr('deeplink.userNotFound')); resetUrl(); }
     } catch { resetUrl(); }
     return;
   }
@@ -796,8 +802,15 @@ function shareAlbum() {
   if (!a) return;
   shareLink(`${a.artist || ''} – ${a.title || ''} ${tr('share.suffix')}`.replace(/^ – /, '').trim(), albumUrl(a));
 }
+// Wunschzettel teilen: Link aufs eigene Profil, der die Wunschliste direkt aufschlägt.
+function shareWishlist() {
+  const p = getProfile() || {};
+  if (!p.username) { toast(tr('toast.wishlistNeedsProfile')); return; }
+  shareLink(`${tr('share.myWishlist')} ${tr('share.suffix')}`, profileUrl(p.username) + '?list=wishlist');
+}
 $('#header-share').addEventListener('click', shareProfile);
 $('#as-share').addEventListener('click', shareAlbum);
+$('#share-wishlist').addEventListener('click', shareWishlist);
 
 // Community-Bewertung: Histogramm (0,5–5) + Schnitt aus ALLEN Profilen.
 let communityReq = 0;

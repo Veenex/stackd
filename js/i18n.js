@@ -485,6 +485,9 @@ export const DICT = {
   'btn.moveToWishlist': { en: 'To wishlist', de: 'In Wishlist' },
   'btn.moveToCollection': { en: 'To collection', de: 'In Collection' },
   'share.suffix': { en: 'on Discend', de: 'auf Discend' },
+  'share.myWishlist': { en: 'My wishlist', de: 'Meine Wunschliste' },
+  'btn.shareWishlist': { en: 'Share wishlist', de: 'Wunschzettel teilen' },
+  'toast.wishlistNeedsProfile': { en: 'Create a profile to share your wishlist.', de: 'Leg ein Profil an, um deinen Wunschzettel zu teilen.' },
 
   // Suche – Platzhalter/Hinweise & Browse-Titel
   'ph.searchGeneric': { en: 'Search…', de: 'Suchen…' },

@@ -60,6 +60,11 @@ export async function onRequest(context) {
     desc = (p.bio && p.bio.trim()) ? p.bio.trim() : `${title} · music collection on Discend`;
     if (p.avatar_url) image = p.avatar_url; // nur http(s) wird als og:image gesetzt (siehe ogTags)
   }
+  // Geteilter Wunschzettel-Link (/u/name?list=wishlist): Vorschau auf die Wunschliste muenzen.
+  if (url.searchParams.get('list') === 'wishlist') {
+    desc = `${title} · wishlist on Discend`;
+    title = `${title} · Wishlist`;
+  }
 
   return new HTMLRewriter()
     .on('head', new HeadInjector(ogTags({ title, desc, image, url: url.toString() })))

@@ -1134,6 +1134,8 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 
 /* Mehrfachauswahl in der Sammlung */
 .sel-toggle { margin-left: auto; }
+/* Wunschzettel teilen: rechts in der Filterleiste */
+.share-toggle { margin-left: auto; }
 .tile-sel { display: none; }
 #list-collection.selecting .tile { position: relative; }
 #list-collection.selecting .tile-sel {
