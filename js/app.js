@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 183, de: ['Sammlung sortieren nach Kaufdatum, Zustand, Regal/Standort und „Verliehene zuerst"'], en: ['Sort your collection by purchase date, condition, shelf/location and "lent out first"'] },
   { build: 182, de: ['„Ihr habt gemeinsam" auf fremden Profilen: zeigt, welche Platten ihr beide habt'], en: ['"You both have" on other profiles: see which records you share'] },
   { build: 181, de: ['Listen auf Startseite und in der Suche: Ranglisten-Nummern sichtbar, Antippen öffnet jetzt die Liste (statt des Profils)'], en: ['Lists on home and in search: ranking numbers visible, tapping opens the list (instead of the profile)'] },
   { build: 180, de: ['Ganze Tracklist am Stück anhören: neuer „Alle abspielen"-Knopf', 'Deutlich mehr Alben haben jetzt Hörproben (bessere Erkennung, z. B. Dookie, Nevermind, Dark Side of the Moon)'], en: ['Play the whole tracklist: new "Play all" button', 'Many more albums now have previews (better matching, e.g. Dookie, Nevermind, Dark Side of the Moon)'] },

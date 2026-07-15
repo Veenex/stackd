@@ -819,12 +819,35 @@ function artistTokens(artist) {
 function firstName(artist) { const p = artistTokens(artist); return p[0] || ''; }
 function lastName(artist) { const p = artistTokens(artist); return p.length ? p[p.length - 1] : ''; }
 
+// Zustands-Reihenfolge (Discogs-Skala): bester Zustand zuerst, Unbekanntes ans Ende.
+const COND_ORDER = ['(M)', '(NM)', '(VG+)', '(VG)', '(G+)', '(G)', '(F)', '(P)'];
+export function condRank(v) {
+  const s = String(v || '');
+  const i = COND_ORDER.findIndex((c) => s.includes(c));
+  return i < 0 ? 99 : i; // ohne Angabe nach hinten
+}
 export function sortItems(items, mode) {
   const cmp = (x, y) => String(x || '').localeCompare(String(y || ''), 'de', { sensitivity: 'base' });
   const by = (sel) => (a, b) => cmp(sel(a), sel(b));
+  // Leere Felder immer ans Ende, sonst stehen sie beim Sortieren vorne im Weg.
+  const emptyLast = (sel, rest) => (a, b) => {
+    const x = sel(a), y = sel(b);
+    if (!x && !y) return cmp(a.artist, b.artist);
+    if (!x) return 1;
+    if (!y) return -1;
+    return rest(x, y) || cmp(a.artist, b.artist);
+  };
   const copy = [...items];
   switch (mode) {
     case 'title': return copy.sort(by((i) => i.title));
+    case 'purchased': // Kaufdatum, neueste zuerst
+      return copy.sort(emptyLast((i) => i.purchaseDate, (x, y) => String(y).localeCompare(String(x))));
+    case 'cond': // Zustand, bester zuerst
+      return copy.sort(emptyLast((i) => i.mediaCond, (x, y) => condRank(x) - condRank(y)));
+    case 'location': // Standort/Regal A–Z
+      return copy.sort(emptyLast((i) => i.location, cmp));
+    case 'lent': // Verliehenes zuerst (längst verliehen oben)
+      return copy.sort(emptyLast((i) => i.lentTo, (x, y) => cmp(x, y)));
     case 'rating': return copy.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     case 'year': return copy.sort((a, b) => String(a.year || '').localeCompare(String(b.year || '')));
     case 'added': return copy.sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
