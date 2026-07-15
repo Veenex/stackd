@@ -488,6 +488,7 @@ export const DICT = {
   'share.myWishlist': { en: 'My wishlist', de: 'Meine Wunschliste' },
   'lbl.milestones': { en: 'Milestones', de: 'Meilensteine' },
   'home.whatToPlay': { en: 'What should I play today?', de: 'Was soll ich heute hören?' },
+  'pl.byWho': { en: 'by {who}', de: 'von {who}' },
   'btn.playAll': { en: 'Play all', de: 'Alle abspielen' },
   'btn.stopAll': { en: 'Stop', de: 'Stopp' },
   'set.accent': { en: 'Accent color', de: 'Akzentfarbe' },

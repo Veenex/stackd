@@ -746,6 +746,18 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 }
 .histo-bar:hover .histo-val, .histo-bar.show-val .histo-val { opacity: 1; }
 
+/* Ranglisten-Nummern auf Listen-Karten (Startseite/Suche) + „von …" in der Listen-Übersicht */
+.ll-cover { position: relative; }
+.ll-rank {
+  position: absolute; top: 2px; left: 2px; z-index: 2;
+  min-width: 15px; height: 15px; padding: 0 3px;
+  display: grid; place-items: center;
+  border-radius: 4px; background: rgba(20, 24, 28, .72);
+  color: #fff; font-size: 10px; font-weight: 700; line-height: 1;
+}
+.plv-by { background: none; border: none; padding: 0 0 2px; color: var(--rose); font-size: 13px; cursor: pointer; text-align: left; }
+.plv-by[hidden] { display: none; }
+
 /* Ganze Tracklist abspielen */
 .dp-tracklist-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .playall-btn {

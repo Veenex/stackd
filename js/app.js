@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 181, de: ['Listen auf Startseite und in der Suche: Ranglisten-Nummern sichtbar, Antippen öffnet jetzt die Liste (statt des Profils)'], en: ['Lists on home and in search: ranking numbers visible, tapping opens the list (instead of the profile)'] },
   { build: 180, de: ['Ganze Tracklist am Stück anhören: neuer „Alle abspielen"-Knopf', 'Deutlich mehr Alben haben jetzt Hörproben (bessere Erkennung, z. B. Dookie, Nevermind, Dark Side of the Moon)'], en: ['Play the whole tracklist: new "Play all" button', 'Many more albums now have previews (better matching, e.g. Dookie, Nevermind, Dark Side of the Moon)'] },
   { build: 179, de: ['Akzentfarbe wählbar: Rosa, Petrol oder Indigo (Einstellungen → Erscheinungsbild)'], en: ['Pick your accent color: rose, petrol or indigo (Settings → Appearance)'] },
   { build: 178, de: ['„Was soll ich heute hören?" – neuer Zufalls-Knopf auf der Startseite zieht eine Platte aus deiner Sammlung'], en: ['"What should I play today?" — new shuffle button on home picks a record from your collection'] },
@@ -2049,7 +2050,7 @@ async function runPlaylistSearch(q) {
   playlistSearchCache = lists;
   c.innerHTML = '<div class="lists-wrap">' + lists.map((l, i) => listCardHtml(l, i)).join('') + '</div>';
   c.querySelectorAll('.list-card').forEach((card) => card.addEventListener('click', () => {
-    const l = playlistSearchCache[+card.dataset.idx]; if (l && l.by) openUserProfile(l.by);
+    const l = playlistSearchCache[+card.dataset.idx]; if (l) openUserPlaylistView(l);
   }));
 }
 
@@ -3076,6 +3077,7 @@ function renderPlaylistView() {
   const p = getPlaylists().find((x) => x.id === plvId);
   if (!p) { $('#playlist-view-dialog').close(); return; }
   $('#plv-title').textContent = p.name;
+  { const byEl = $('#plv-by'); if (byEl) byEl.hidden = true; } // eigene Liste: kein „von …"
   const descEl = $('#plv-desc');
   descEl.textContent = p.description || '';
   descEl.style.display = p.description ? '' : 'none';
@@ -3407,13 +3409,16 @@ function reviewCardHtml(r, i) {
 
 // Eine Listen-Karte (für Lists-Home-Tab und Playlist-Suche).
 function listCardHtml(l, i) {
-  const covers = l.items.slice(0, 4).map((it) => (it && it.coverUrl)
-    ? `<div class="ll-cover"><img src="${escapeHtml(it.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" /></div>`
-    : '<div class="ll-cover placeholder"></div>').join('');
+  // Ranglisten-Nummern auch hier (Startseite/Suche), wenn der Ersteller sie anhat.
+  const rank = (n) => (l.ranked ? `<span class="ll-rank">${n}</span>` : '');
+  const covers = l.items.slice(0, 4).map((it, n) => (it && it.coverUrl)
+    ? `<div class="ll-cover">${rank(n + 1)}<img src="${escapeHtml(it.coverUrl)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('placeholder');this.remove();" /></div>`
+    : `<div class="ll-cover placeholder">${rank(n + 1)}</div>`).join('');
   const who = l.by ? (l.by.display_name || l.by.username || '') : '';
+  const rankNote = l.ranked ? ` · ${tr('pl.ranked')}` : '';
   return `<button class="list-card" data-idx="${i}">
       <div class="ll-covers">${covers || '<div class="ll-cover placeholder"></div>'}</div>
-      <div class="ll-meta"><span class="ll-name">${escapeHtml(l.name || tr('list.fallbackName'))}</span><span class="ll-by">${escapeHtml(who)} · ${tr('unit.albumsCount', { n: l.items.length })}</span></div>
+      <div class="ll-meta"><span class="ll-name">${escapeHtml(l.name || tr('list.fallbackName'))}</span><span class="ll-by">${escapeHtml(who)} · ${tr('unit.albumsCount', { n: l.items.length })}${rankNote}</span></div>
     </button>`;
 }
 
@@ -3436,9 +3441,10 @@ async function renderHomeLists(body) {
   }
   homeListsCache = lists;
   wrap.innerHTML = lists.map((l, i) => listCardHtml(l, i)).join('');
+  // Antippen öffnet die LISTE (wie auf den Profilen), nicht mehr das Profil des Erstellers.
   wrap.querySelectorAll('.list-card').forEach((c) => c.addEventListener('click', () => {
     const l = homeListsCache[+c.dataset.idx];
-    if (l && l.by) openUserProfile(l.by);
+    if (l) openUserPlaylistView(l);
   }));
 }
 
@@ -3863,6 +3869,14 @@ function openUserPlaylistView(list) {
   $('#btn-plv-settings').style.display = 'none'; // read-only: kein Zahnrad
   $('#plv-settings').hidden = true;
   $('#plv-title').textContent = list.name || '';
+  // „von …" – aus Startseite/Suche kommt man sonst nicht mehr zum Ersteller.
+  const byEl = $('#plv-by');
+  if (byEl) {
+    const who = list.by ? (list.by.display_name || list.by.username || '') : '';
+    byEl.hidden = !who;
+    byEl.textContent = who ? tr('pl.byWho', { who }) : '';
+    byEl.onclick = () => { $('#playlist-view-dialog').close(); if (list.by) openUserProfile(list.by); };
+  }
   const descEl = $('#plv-desc');
   descEl.textContent = list.description || '';
   descEl.style.display = list.description ? '' : 'none';
