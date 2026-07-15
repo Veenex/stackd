@@ -790,6 +790,11 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .random-btn { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; }
 .random-btn svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--rose); }
 
+/* Hör-Ziel (Challenge) */
+.goal-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.goal-count { margin: 0 0 8px; font-size: 15px; font-weight: 600; }
+#goal-body .ms-next { display: block; margin-top: 6px; }
+
 /* Meilensteine (Badges): erreichte Stufe als Medaille, darunter Fortschritt zur nächsten */
 .ms-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 14px 10px; }
 .ms-badge { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; min-width: 0; }

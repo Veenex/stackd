@@ -137,6 +137,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 185, de: ['Hör-Ziel fürs Jahr („50 Platten") mit Fortschrittsbalken auf dem Profil – gezählt werden deine Tagebuch-Einträge'], en: ['Yearly listening goal ("50 records") with a progress bar on your profile — your diary entries count'] },
   { build: 184, de: ['Neue Regal-Ansicht: deine Cover stehen nebeneinander wie Platten im Regal (Umschalter in der Sammlung)'], en: ['New shelf view: your covers stand side by side like records on a shelf (switch in your collection)'] },
   { build: 183, de: ['Sammlung sortieren nach Kaufdatum, Zustand, Regal/Standort und „Verliehene zuerst"'], en: ['Sort your collection by purchase date, condition, shelf/location and "lent out first"'] },
   { build: 182, de: ['„Ihr habt gemeinsam" auf fremden Profilen: zeigt, welche Platten ihr beide habt'], en: ['"You both have" on other profiles: see which records you share'] },
@@ -2149,6 +2150,7 @@ function renderProfile() {
   renderLentList();
   renderHisto();
   renderStatRows();
+  renderListenGoal();
   renderMilestones();
   renderValueRange();
   renderGenreStats();
@@ -2207,6 +2209,50 @@ function renderStatRows() {
     `<li${r.go ? ` data-i="${idx}"` : ''}><span>${r.label}</span><span class="stat-num">${r.val}${r.go ? ' ›' : ''}</span></li>`).join('');
   ul.querySelectorAll('li[data-i]').forEach((li) => li.addEventListener('click', () => rows[+li.dataset.i].go()));
 }
+
+// ---------- Hör-Ziel („50 Alben dieses Jahr") ----------
+// Ziel steht in profiles.settings (jsonb) → gilt auf allen Geräten.
+// Fortschritt = verschiedene Alben mit Tagebuch-Eintrag im laufenden Jahr.
+const GOAL_MIN = 1, GOAL_MAX = 2000;
+function listenGoal() { return Number(((getProfile() || {}).settings || {}).listenGoal) || 0; }
+function playsThisYear(plays) {
+  const y = String(new Date().getFullYear());
+  const ids = new Set();
+  (plays || []).forEach((p) => { if (String(p.played_on || '').startsWith(y) && p.item_id) ids.add(p.item_id); });
+  return ids.size;
+}
+function goalBodyHtml(done, goal) {
+  const year = new Date().getFullYear();
+  if (!goal) return `<p class="hint">${escapeHtml(tr('goal.none', { year }))}</p>`;
+  const pct = Math.min(100, Math.round((done / goal) * 100));
+  const rest = Math.max(0, goal - done);
+  const note = rest ? tr('goal.toGo', { n: rest }) : tr('goal.done');
+  return `<p class="goal-count">${escapeHtml(tr('goal.count', { done, goal, year }))}</p>`
+    + `<div class="ms-bar"><span style="width:${Math.max(2, pct)}%"></span></div>`
+    + `<p class="ms-next">${escapeHtml(note)} · ${pct} %</p>`;
+}
+async function renderListenGoal() {
+  const body = $('#goal-body'); if (!body) return;
+  const goal = listenGoal();
+  const u = getUser();
+  if (!u) { body.innerHTML = ''; return; }
+  body.innerHTML = goalBodyHtml(0, goal); // sofort etwas zeigen, Zahl kommt gleich
+  let plays = [];
+  try { plays = await fetchUserPlays(u.id); } catch { /* ignorieren */ }
+  if (!$('#goal-body')) return;
+  $('#goal-body').innerHTML = goalBodyHtml(playsThisYear(plays), listenGoal());
+}
+$('#goal-edit').addEventListener('click', () => {
+  if (!requireAuth()) return;
+  const cur = listenGoal();
+  const inp = prompt(tr('goal.prompt', { year: new Date().getFullYear() }), cur ? String(cur) : '50');
+  if (inp === null) return;
+  const n = Math.round(Number(String(inp).replace(',', '.')));
+  if (!n) { updateProfile({ settings: { ...((getProfile() || {}).settings || {}), listenGoal: 0 } }); renderListenGoal(); return; }
+  if (!Number.isFinite(n) || n < GOAL_MIN || n > GOAL_MAX) { toast(tr('goal.invalid', { max: GOAL_MAX })); return; }
+  updateProfile({ settings: { ...((getProfile() || {}).settings || {}), listenGoal: n } });
+  renderListenGoal();
+});
 
 // ---------- Meilensteine (Badges) ----------
 // Alles aus vorhandenen Daten gerechnet (Sammlung + Anmeldedatum) – keine neue Tabelle.
