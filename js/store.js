@@ -433,6 +433,42 @@ export async function deleteComment(id) {
   await sb.from('comments').delete().eq('id', id).eq('user_id', u);
 }
 
+// ---------- Album-Kommentare (öffentliche Diskussion, albumübergreifend) ----------
+// Schlüssel identisch zu util.js dedupeKey (masterId > sourceId > artist|title).
+export function albumKey(it) {
+  if (!it) return '';
+  if (it.masterId && Number(it.masterId) > 0) return 'm' + it.masterId;
+  if (it.sourceId) return 's' + it.sourceId;
+  return (String(it.artist || '') + '|' + String(it.title || '')).toLowerCase().trim();
+}
+export async function fetchAlbumComments(item, limit = 100) {
+  const sb = await cloud(); const key = albumKey(item);
+  if (!sb || !key || key === '|') return [];
+  const { data } = await sb.from('album_comments').select('*')
+    .eq('album_key', key).order('created_at', { ascending: true }).limit(limit);
+  let rows = data || [];
+  rows = dropBlocked(rows, (r) => r.user_id);
+  if (!rows.length) return [];
+  const ids = [...new Set(rows.map((r) => r.user_id))];
+  const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
+  const pm = {}; (profs || []).forEach((p) => { pm[p.id] = p; });
+  return rows.map((r) => ({ id: r.id, userId: r.user_id, text: r.text, createdAt: r.created_at, by: pm[r.user_id] || null }));
+}
+export async function addAlbumComment(item, text) {
+  const sb = await cloud(); const u = uid(); const key = albumKey(item);
+  if (!sb || !u || !key || key === '|' || !text.trim()) return null;
+  const { data, error } = await sb.from('album_comments')
+    .insert({ album_key: key, album_artist: item.artist || null, album_title: item.title || null, user_id: u, text: text.trim() })
+    .select().maybeSingle();
+  if (error) { console.warn('album comment:', error.message); return null; }
+  return data;
+}
+export async function deleteAlbumComment(id) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u) return;
+  await sb.from('album_comments').delete().eq('id', id).eq('user_id', u);
+}
+
 // ---------- Benachrichtigungen ----------
 // Werden serverseitig per Trigger angelegt (Folgen/Likes/Kommentare). Der Client
 // liest nur die eigenen und markiert sie als gelesen.

@@ -11,6 +11,7 @@ import {
   fetchReviewsFeed, fetchFriendsLists, searchReviews, searchPlaylists,
   fetchUserProfile, fetchProfileByUsername, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
+  fetchAlbumComments, addAlbumComment, deleteAlbumComment,
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
@@ -137,6 +138,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 188, de: ['Album-Kommentare: unter jedem Album könnt ihr jetzt diskutieren – öffentlich, für alle sichtbar'], en: ['Album comments: discuss under any album now — public, visible to everyone'] },
   { build: 187, de: ['Sparziel für Wunsch-Platten: trag ein, wie viel du schon gespart hast (privat, nur für dich sichtbar)'], en: ['Savings goal for wishlist records: track how much you have saved (private, only you can see it)'] },
   { build: 186, de: ['Verliehene Platten zeigen jetzt „seit wann" – und nach 3 Monaten eine Erinnerung zum Zurückfordern'], en: ['Lent records now show how long they have been out — after 3 months you get a reminder to ask for them back'] },
   { build: 185, de: ['Hör-Ziel fürs Jahr („50 Platten") mit Fortschrittsbalken auf dem Profil – gezählt werden deine Tagebuch-Einträge'], en: ['Yearly listening goal ("50 records") with a progress bar on your profile — your diary entries count'] },
@@ -674,6 +676,7 @@ function openDetail(list, id) {
   loadTracklist(item);
   renderCommunityRating(item);
   renderAlbumReviews(item);
+  renderAlbumComments(item);
 
   { const as0 = $('#dp-actions'); if (as0 && as0.open) as0.close(); }
   bringOverlayFront(detailPage); detailPage.classList.remove('hidden');
@@ -873,6 +876,48 @@ async function renderAlbumReviews(item) {
   }));
 }
 
+// ---------- Album-Kommentare (öffentliche Diskussion unter dem Album) ----------
+let albumCommentsReq = 0;
+let albumCommentItem = null;
+async function renderAlbumComments(item) {
+  albumCommentItem = item;
+  const box = $('#dp-comments'); if (!box) return;
+  const rq = ++albumCommentsReq;
+  box.innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
+  let comments = [];
+  try { comments = await fetchAlbumComments(item); } catch { /* ignorieren */ }
+  if (rq !== albumCommentsReq) return; // ein neueres Album wurde geöffnet
+  const me = getUser();
+  if (!comments.length) { box.innerHTML = `<p class="hint">${tr('albumComments.none')}</p>`; return; }
+  box.innerHTML = comments.map((c) => {
+    const name = c.by ? (c.by.display_name || c.by.username || '?') : '?';
+    const av = (c.by && c.by.avatar_url) ? `style="background-image:url('${escapeHtml(c.by.avatar_url)}')"` : '';
+    const del = (me && me.id === c.userId) ? `<button class="ac-del" data-id="${escapeHtml(c.id)}" aria-label="${tr('a11y.delete')}">×</button>` : '';
+    return `<div class="ac-comment">
+        <button class="ac-av${(c.by && c.by.avatar_url) ? '' : ' placeholder'}" data-uid="${escapeHtml(c.userId)}" ${av} aria-label="${escapeHtml(name)}"></button>
+        <div class="ac-body"><span class="ac-name">${escapeHtml(name)}</span><span class="ac-text">${escapeHtml(c.text)}</span></div>${del}
+      </div>`;
+  }).join('');
+  box.querySelectorAll('.ac-av[data-uid]').forEach((b) => b.addEventListener('click', () => {
+    const c = comments.find((x) => x.userId === b.dataset.uid);
+    if (c && c.by) openUserProfile(c.by);
+  }));
+  box.querySelectorAll('.ac-del').forEach((b) => b.addEventListener('click', async () => {
+    await deleteAlbumComment(b.dataset.id); renderAlbumComments(albumCommentItem);
+  }));
+}
+async function sendAlbumComment() {
+  if (!requireAuth()) return;
+  const inp = $('#dp-comment-input'); const t = (inp.value || '').trim();
+  if (!t || !albumCommentItem) return;
+  inp.value = '';
+  const res = await addAlbumComment(albumCommentItem, t);
+  if (res === null) { toast(tr('albumComments.failed')); inp.value = t; return; }
+  renderAlbumComments(albumCommentItem);
+}
+$('#dp-comment-send').addEventListener('click', sendAlbumComment);
+$('#dp-comment-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendAlbumComment(); } });
+
 // Album aus der Suche/Datenbank ansehen (noch nicht gespeichert) -> Detailseite mit Tracklist
 function openPreview(result) {
   if (!result) return;
@@ -897,6 +942,7 @@ function openPreview(result) {
   loadTracklist(result);
   renderCommunityRating(result);
   renderAlbumReviews(result);
+  renderAlbumComments(result);
   { const as0 = $('#dp-actions'); if (as0 && as0.open) as0.close(); }
   bringOverlayFront(detailPage); detailPage.classList.remove('hidden');
   $('#detail-scroll').scrollTop = 0;

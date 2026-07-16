@@ -1093,6 +1093,19 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .ar-rating { margin-left: auto; }
 .ar-text { margin: 6px 0 0; font-size: 14px; color: var(--text); line-height: 1.45; white-space: pre-wrap; }
 
+/* Album-Kommentare (öffentliche Diskussion unter dem Album) */
+.ac-comment { display: flex; gap: 9px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.ac-comment:last-of-type { border-bottom: none; }
+.ac-av { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-2) center/cover; border: none; padding: 0; flex: 0 0 auto; cursor: pointer; }
+.ac-av.placeholder { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e97ad' stroke-width='1.6'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7'/%3E%3C/svg%3E"); background-size: 66%; background-repeat: no-repeat; background-position: center; }
+.ac-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ac-name { font-weight: 600; font-size: 13px; color: var(--text); }
+.ac-text { font-size: 14px; color: var(--text); line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+.ac-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; flex: 0 0 auto; padding: 0 2px; }
+.ac-compose { display: flex; gap: 8px; margin-top: 12px; }
+.ac-input { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 10px 12px; font-size: 14px; }
+.ac-send { flex: 0 0 auto; }
+
 /* Album-Aktions-Sheet (⋯) */
 .actions-sheet { border: none; padding: 0; background: transparent; margin: auto auto 0; width: min(100vw, 700px); max-height: 90vh; }
 .actions-sheet::backdrop { background: rgba(0, 0, 0, .6); }

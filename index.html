@@ -251,7 +251,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 187</p>
+        <p class="hint profile-version">Discend · Build 188</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -373,6 +373,15 @@
       <div class="dp-section" id="dp-reviews-section">
         <span class="dp-label" data-i18n="lbl.reviews">Reviews</span>
         <div id="dp-reviews"></div>
+      </div>
+
+      <div class="dp-section" id="dp-comments-section">
+        <span class="dp-label" data-i18n="lbl.albumComments">Comments</span>
+        <div id="dp-comments"></div>
+        <div class="ac-compose">
+          <input type="text" id="dp-comment-input" class="ac-input" maxlength="500" data-i18n-ph="ph.writeComment" placeholder="Write a comment…" />
+          <button type="button" id="dp-comment-send" class="btn ac-send" data-i18n="btn.post">Post</button>
+        </div>
       </div>
 
       <dialog id="dp-actions" class="actions-sheet">
