@@ -208,6 +208,8 @@ export const DICT = {
   'dp.changeCover': { en: 'Change cover', de: 'Cover ändern' },
   'lbl.ratings': { en: 'Ratings', de: 'Bewertungen' },
   'lbl.info': { en: 'Info', de: 'Infos' },
+  'info.showMore': { en: 'Show description ⌄', de: 'Beschreibung anzeigen ⌄' },
+  'info.showLess': { en: 'Show less ⌃', de: 'Weniger anzeigen ⌃' },
   'lbl.tracklist': { en: 'Tracklist', de: 'Tracklist' },
   'lbl.reviews': { en: 'Reviews', de: 'Reviews' },
   'lbl.albumComments': { en: 'Comments', de: 'Kommentare' },

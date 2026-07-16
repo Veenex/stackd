@@ -1200,6 +1200,9 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .info-k { flex: 0 0 84px; color: var(--muted); }
 .info-v { flex: 1; color: var(--text); }
 .info-notes { margin: 8px 0 0; font-size: 13px; color: var(--muted); line-height: 1.45; white-space: pre-wrap; }
+/* Eingeklappte Beschreibung: max. 3 Zeilen, Rest per „ausklappen" */
+.info-notes.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.info-toggle { margin: 4px 0 0; padding: 0; font-size: 13px; }
 .dp-edit { margin-top: 24px; border-top: 1px solid var(--border); }
 .dp-edit summary { cursor: pointer; color: var(--muted); font-size: 14px; padding: 12px 0; }
 .dp-edit .form { margin-top: 6px; }

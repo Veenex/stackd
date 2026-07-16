@@ -138,6 +138,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 190, de: ['Albumseite aufgeräumt: die lange Beschreibung wird nur noch kurz gezeigt und lässt sich ausklappen – so rückt die Tracklist nach oben'], en: ['Cleaner album page: the long description is shortened and expandable, so the tracklist moves up'] },
   { build: 189, de: ['Platten-Übersicht: Tippst du in deiner Sammlung auf ein Album, siehst du erst deine Infos dazu (hinzugefügt, wie oft gehört, Notiz, Regal, Review, wer sie geliked hat). Tipp aufs Cover führt zur Albumseite.', 'Bei Freundes-Aktivität siehst du genauso deren Infos zur Platte'], en: ['Record overview: tapping an album in your collection now shows your info first (added, plays, note, shelf, review, who liked it). Tap the cover to reach the album page.', 'Friends’ activity shows their info for the record the same way'] },
   { build: 188, de: ['Album-Kommentare: unter jedem Album könnt ihr jetzt diskutieren – öffentlich, für alle sichtbar'], en: ['Album comments: discuss under any album now — public, visible to everyone'] },
   { build: 187, de: ['Sparziel für Wunsch-Platten: trag ein, wie viel du schon gespart hast (privat, nur für dich sichtbar)'], en: ['Savings goal for wishlist records: track how much you have saved (private, only you can see it)'] },
@@ -1133,10 +1134,24 @@ function renderAlbumInfo(info) {
     if (info.country) rows.push([tr('info.country'), info.country]);
     if (info.year) rows.push([tr('field.year'), String(info.year)]);
   }
-  if (!rows.length) { el.innerHTML = ''; sec.classList.add('hidden'); return; }
+  const notes = (info && info.notes || '').trim();
+  if (!rows.length && !notes) { el.innerHTML = ''; sec.classList.add('hidden'); return; }
   sec.classList.remove('hidden');
-  el.innerHTML = rows.map(([k, v]) => `<div class="info-row"><span class="info-k">${k}</span><span class="info-v">${escapeHtml(v)}</span></div>`).join('')
-    + (info.notes ? `<p class="info-notes">${escapeHtml(info.notes.slice(0, 400))}${info.notes.length > 400 ? '…' : ''}</p>` : '');
+  // Kurze Fakten immer sichtbar; die lange Beschreibung wird eingeklappt (3 Zeilen)
+  // und lässt sich ausklappen – so bleibt die Seite kompakt und die Tracklist rutscht hoch.
+  const rowsHtml = rows.map(([k, v]) => `<div class="info-row"><span class="info-k">${k}</span><span class="info-v">${escapeHtml(v)}</span></div>`).join('');
+  const longNotes = notes.length > 160;
+  const notesHtml = notes
+    ? (longNotes
+        ? `<p class="info-notes clamp" id="dp-info-notes">${escapeHtml(notes)}</p><button type="button" class="link-btn info-toggle" id="dp-info-toggle">${tr('info.showMore')}</button>`
+        : `<p class="info-notes">${escapeHtml(notes)}</p>`)
+    : '';
+  el.innerHTML = rowsHtml + notesHtml;
+  const tgl = $('#dp-info-toggle');
+  if (tgl) tgl.addEventListener('click', () => {
+    const clamped = $('#dp-info-notes').classList.toggle('clamp');
+    tgl.textContent = clamped ? tr('info.showMore') : tr('info.showLess');
+  });
 }
 
 // Audio-Hörprobe (30s) – es spielt immer nur eine; gesteuert über den Mini-Player.
