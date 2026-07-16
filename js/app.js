@@ -10,7 +10,7 @@ import {
   getBlocked, blockUser, unblockUser, reportTarget,
   fetchReviewsFeed, fetchFriendsLists, searchReviews, searchPlaylists,
   fetchUserProfile, fetchProfileByUsername, fetchUserItems, fetchUserPlaylists,
-  toggleActivityLike, fetchLikeInfo, fetchComments, addComment, deleteComment,
+  toggleActivityLike, fetchLikeInfo, fetchLikers, fetchComments, addComment, deleteComment,
   fetchAlbumComments, addAlbumComment, deleteAlbumComment,
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
@@ -138,6 +138,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 189, de: ['Platten-Übersicht: Tippst du in deiner Sammlung auf ein Album, siehst du erst deine Infos dazu (hinzugefügt, wie oft gehört, Notiz, Regal, Review, wer sie geliked hat). Tipp aufs Cover führt zur Albumseite.', 'Bei Freundes-Aktivität siehst du genauso deren Infos zur Platte'], en: ['Record overview: tapping an album in your collection now shows your info first (added, plays, note, shelf, review, who liked it). Tap the cover to reach the album page.', 'Friends’ activity shows their info for the record the same way'] },
   { build: 188, de: ['Album-Kommentare: unter jedem Album könnt ihr jetzt diskutieren – öffentlich, für alle sichtbar'], en: ['Album comments: discuss under any album now — public, visible to everyone'] },
   { build: 187, de: ['Sparziel für Wunsch-Platten: trag ein, wie viel du schon gespart hast (privat, nur für dich sichtbar)'], en: ['Savings goal for wishlist records: track how much you have saved (private, only you can see it)'] },
   { build: 186, de: ['Verliehene Platten zeigen jetzt „seit wann" – und nach 3 Monaten eine Erinnerung zum Zurückfordern'], en: ['Lent records now show how long they have been out — after 3 months you get a reminder to ask for them back'] },
@@ -351,6 +352,8 @@ function attachTileMenu(el, list) {
   el.addEventListener('click', () => {
     if (longFired) { longFired = false; return; } // Langdruck-Klick unterdrücken
     if (selMode && list === 'collection') { toggleSel(el); return; } // Auswahlmodus
+    // Sammlung: erst die eigene Übersicht (Cover führt zur Albumseite). Wishlist: direkt bearbeiten.
+    if (list === 'collection') { const it = getList('collection').find((i) => i.id === el.dataset.id); if (it) { openRecord(it, true); return; } }
     openDetail(list, el.dataset.id);
   });
   const startHold = (x, y) => {
@@ -597,7 +600,7 @@ function setConditionDisplay(media, sleeve) {
 
 // Overlays (#detail-page, #user-page, #up-grid-page) teilen sich z-index 40 und stapeln sonst
 // nur nach DOM-Reihenfolge. Das zuletzt geöffnete nach vorne holen (bleibt unter Dialogen/Toast).
-const OVERLAY_SELS = ['#detail-page', '#user-page', '#up-grid-page'];
+const OVERLAY_SELS = ['#detail-page', '#user-page', '#up-grid-page', '#record-page'];
 function bringOverlayFront(el) {
   OVERLAY_SELS.forEach((s) => { const o = $(s); if (o) o.style.zIndex = ''; });
   if (el) el.style.zIndex = '45';
@@ -917,6 +920,156 @@ async function sendAlbumComment() {
 }
 $('#dp-comment-send').addEventListener('click', sendAlbumComment);
 $('#dp-comment-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendAlbumComment(); } });
+
+// ---------- Platten-Übersicht (eigene / Freundes-Infos zur Platte) ----------
+// Klick auf ein Sammlungs-Album ODER auf Freundes-Aktivität öffnet erst diese
+// Übersicht; das Cover führt von hier auf die echte Albumseite.
+let recordCtx = null; // { item, mine }
+function fmtRecDate(v) {
+  if (!v) return '';
+  const d = new Date(typeof v === 'number' ? v : (String(v).length <= 10 ? v + 'T00:00:00' : v));
+  if (isNaN(d)) return '';
+  return d.toLocaleDateString(getLang() === 'de' ? 'de-DE' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+async function openRecord(item, mine) {
+  if (!item) return;
+  recordCtx = { item, mine: !!mine };
+  const cover = $('#rec-cover');
+  cover.className = 'rec-cover' + (item.coverUrl ? '' : ' placeholder');
+  cover.innerHTML = item.coverUrl ? `<img src="${escapeHtml(item.coverUrl)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.remove()">` : '';
+  $('#rec-bar-title').textContent = item.title || tr('misc.untitled');
+  $('#rec-title').textContent = item.title || tr('misc.untitled');
+  $('#rec-artist').textContent = item.artist || '';
+  // „von …" nur bei fremden Platten
+  const byEl = $('#rec-by');
+  if (!mine && item.by) {
+    const who = item.by.display_name || item.by.username || '';
+    byEl.textContent = tr('rec.by', { who });
+    byEl.hidden = false;
+    byEl.onclick = () => openUserProfile(item.by);
+  } else { byEl.hidden = true; byEl.onclick = null; }
+  $('#rec-rating').innerHTML = Number(item.rating) > 0 ? ratingDisplayHtml(item.rating) : `<span class="hint">${tr('stat.noRating')}</span>`;
+
+  // Info-Zeilen zusammenstellen
+  const rows = [];
+  const addedTs = item.addedAt || item.added_at;
+  if (item.kind === 'play' && item.playedOn) rows.push([tr('feed.listenedOn'), fmtRecDate(item.playedOn)]);
+  if (addedTs) rows.push([tr('rec.added'), fmtRecDate(addedTs)]);
+  const cond = [item.mediaCond, item.sleeveCond].filter(Boolean).join(' · ');
+  if (cond) rows.push([tr('cond.label').replace(/:$/, ''), cond]);
+  if (mine) {
+    if ((item.location || '').trim()) rows.push([tr('field.location'), item.location.trim()]);
+    if ((item.purchaseDate || '').trim()) rows.push([tr('field.purchaseDate'), fmtRecDate(item.purchaseDate)]);
+    if ((item.purchasePlace || '').trim()) rows.push([tr('field.purchasePlace'), item.purchasePlace.trim()]);
+    if ((item.tags || []).length) rows.push([tr('field.tags'), item.tags.join(', ')]);
+  }
+  // Hörzähler (nur eigene Platte – fremde Plays sind nicht pro Nutzer abrufbar)
+  const infoEl = $('#rec-info');
+  infoEl.innerHTML = rows.map(([k, v]) => `<li><span>${escapeHtml(k)}</span><span class="stat-num">${escapeHtml(v)}</span></li>`).join('');
+  if (mine) {
+    fetchPlays(item.id).then((plays) => {
+      if (!recordCtx || recordCtx.item !== item) return;
+      const li = document.createElement('li');
+      li.innerHTML = `<span>${escapeHtml(tr('rec.plays'))}</span><span class="stat-num">${plays.length}</span>`;
+      infoEl.appendChild(li);
+    }).catch(() => {});
+  }
+
+  // Notiz (nur eigene)
+  const noteSec = $('#rec-note-section');
+  const note = mine ? (item.note || '').trim() : '';
+  const playNote = (item.kind === 'play' && item.playNote) ? item.playNote.trim() : '';
+  const noteText = [playNote ? '🎧 ' + playNote : '', note].filter(Boolean).join('\n');
+  if (noteText) { noteSec.hidden = false; $('#rec-note').textContent = noteText; }
+  else noteSec.hidden = true;
+
+  // Review + Likes
+  const revSec = $('#rec-review-section');
+  const review = (item.review || '').trim();
+  if (review) {
+    revSec.hidden = false;
+    $('#rec-review').textContent = review;
+  } else revSec.hidden = true;
+
+  // Cover / „Albumseite öffnen" → echte Albumseite
+  cover.onclick = () => openRecordAlbum();
+  $('#rec-openalbum').onclick = () => openRecordAlbum();
+
+  bringOverlayFront($('#record-page'));
+  $('#record-page').classList.remove('hidden');
+  $('#rec-scroll').scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+
+  // Likes/Kommentare hängen an der Eintrags-ID (nur wenn in der Cloud vorhanden)
+  renderRecordLikes(item);
+  renderRecordComments(item);
+}
+function openRecordAlbum() {
+  if (!recordCtx) return;
+  const { item, mine } = recordCtx;
+  if (mine) openDetail('collection', item.id);
+  else openPreview(item);
+}
+async function renderRecordLikes(item) {
+  const box = $('#rec-likers'); const btn = $('#rec-like');
+  box.innerHTML = ''; btn.classList.remove('liked');
+  if (!$('#rec-review-section') || $('#rec-review-section').hidden) { btn.onclick = null; return; }
+  btn.onclick = async () => {
+    if (!requireAuth()) return;
+    const res = await toggleActivityLike(item.id);
+    if (res !== null) { btn.classList.toggle('liked', res); if (res) popHeart(btn); renderRecordLikes(item); }
+  };
+  let info = { likers: [], liked: false };
+  try { info = await fetchLikers(item.id); } catch { /* ignorieren */ }
+  if (!recordCtx || recordCtx.item !== item) return;
+  btn.classList.toggle('liked', info.liked);
+  if (!info.likers.length) { box.innerHTML = `<span class="hint">${tr('rec.noLikes')}</span>`; return; }
+  const names = info.likers.map((p) => p.display_name || p.username || '?');
+  const shown = names.slice(0, 3).join(', ');
+  const more = names.length > 3 ? tr('rec.andMore', { n: names.length - 3 }) : '';
+  box.textContent = tr('rec.likedBy', { who: shown }) + more;
+}
+let recordCommentsReq = 0;
+async function renderRecordComments(item) {
+  const rq = ++recordCommentsReq;
+  const box = $('#rec-comments');
+  box.innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
+  let comments = [];
+  try { comments = await fetchComments(item.id); } catch { /* ignorieren */ }
+  if (rq !== recordCommentsReq) return;
+  const me = getUser();
+  if (!comments.length) { box.innerHTML = `<p class="hint">${tr('albumComments.none')}</p>`; return; }
+  box.innerHTML = comments.map((c) => {
+    const name = c.by ? (c.by.display_name || c.by.username || '?') : '?';
+    const av = (c.by && c.by.avatar_url) ? `style="background-image:url('${escapeHtml(c.by.avatar_url)}')"` : '';
+    const del = (me && me.id === c.userId) ? `<button class="ac-del" data-id="${escapeHtml(c.id)}" aria-label="${tr('a11y.delete')}">×</button>` : '';
+    return `<div class="ac-comment">
+        <button class="ac-av${(c.by && c.by.avatar_url) ? '' : ' placeholder'}" data-uid="${escapeHtml(c.userId)}" ${av} aria-label="${escapeHtml(name)}"></button>
+        <div class="ac-body"><span class="ac-name">${escapeHtml(name)}</span><span class="ac-text">${escapeHtml(c.text)}</span></div>${del}
+      </div>`;
+  }).join('');
+  box.querySelectorAll('.ac-av[data-uid]').forEach((b) => b.addEventListener('click', () => {
+    const c = comments.find((x) => x.userId === b.dataset.uid); if (c && c.by) openUserProfile(c.by);
+  }));
+  box.querySelectorAll('.ac-del').forEach((b) => b.addEventListener('click', async () => {
+    await deleteComment(b.dataset.id); renderRecordComments(item);
+  }));
+}
+async function sendRecordComment() {
+  if (!requireAuth()) return;
+  const inp = $('#rec-comment-input'); const t = (inp.value || '').trim();
+  if (!t || !recordCtx) return;
+  inp.value = '';
+  const res = await addComment(recordCtx.item.id, t);
+  if (res === null) { toast(tr('albumComments.failed')); inp.value = t; return; }
+  renderRecordComments(recordCtx.item);
+}
+$('#rec-comment-send').addEventListener('click', sendRecordComment);
+$('#rec-comment-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendRecordComment(); } });
+$('#rec-back').addEventListener('click', () => {
+  $('#record-page').classList.add('hidden');
+  if ($('#user-page').classList.contains('hidden') && $('#detail-page').classList.contains('hidden')) document.body.style.overflow = '';
+});
 
 // Album aus der Suche/Datenbank ansehen (noch nicht gespeichert) -> Detailseite mit Tracklist
 function openPreview(result) {
@@ -3518,7 +3671,7 @@ async function renderHomeActivity(body) {
   wrap.querySelectorAll('.act-open[data-i]').forEach((b) => b.addEventListener('click', () => {
     const e = homeActivityCache[+b.dataset.i]; if (!e) return;
     if (e.kind === 'list') openUserPlaylistView(e.list);
-    else openPreview(e);
+    else openRecord(e, false); // Freundes-Infos zur Platte (Cover → echte Albumseite)
   }));
 }
 
@@ -3730,7 +3883,7 @@ async function renderFriendsRow() {
       </button>`;
   }).join('');
   el.querySelectorAll('.friend-item').forEach((b) =>
-    b.addEventListener('click', () => openActivity(friendsFeedCache[+b.dataset.idx])));
+    b.addEventListener('click', () => openRecord(friendsFeedCache[+b.dataset.idx], false)));
 }
 
 // ---------- Benachrichtigungen ----------

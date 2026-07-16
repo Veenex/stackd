@@ -410,6 +410,18 @@ export async function fetchLikeInfo(itemId) {
   const arr = data || [];
   return { count: arr.length, liked: u ? arr.some((r) => r.user_id === u) : false };
 }
+// Wer hat diesen Eintrag/diese Review geliked? Gibt Profile + eigenes Like zurück.
+export async function fetchLikers(itemId) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !itemId) return { likers: [], liked: false };
+  const { data } = await sb.from('activity_likes').select('user_id').eq('item_id', itemId);
+  let rows = dropBlocked(data || [], (r) => r.user_id);
+  const liked = u ? rows.some((r) => r.user_id === u) : false;
+  if (!rows.length) return { likers: [], liked };
+  const ids = [...new Set(rows.map((r) => r.user_id))];
+  const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
+  return { likers: profs || [], liked };
+}
 export async function fetchComments(itemId) {
   const sb = await cloud(); if (!sb) return [];
   const { data } = await sb.from('comments').select('*').eq('item_id', itemId).order('created_at', { ascending: true });

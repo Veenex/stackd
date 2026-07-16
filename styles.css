@@ -1093,6 +1093,25 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .ar-rating { margin-left: auto; }
 .ar-text { margin: 6px 0 0; font-size: 14px; color: var(--text); line-height: 1.45; white-space: pre-wrap; }
 
+/* Platten-Übersicht (eigene / Freundes-Infos zur Platte) */
+.rec-top { display: flex; gap: 16px; padding: 4px 0 8px; }
+.rec-cover { width: 42%; max-width: 200px; aspect-ratio: 1 / 1; flex: 0 0 auto; border: none; padding: 0; border-radius: 10px; overflow: hidden; background: var(--surface-2); box-shadow: 2px 4px 12px rgba(0, 0, 0, .4); cursor: pointer; }
+.rec-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rec-cover.placeholder { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e97ad' stroke-width='1.4'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Ccircle cx='12' cy='12' r='2.4'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: center; background-size: 40%; }
+.rec-top-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rec-title { margin: 2px 0 0; font-size: 19px; font-weight: 700; line-height: 1.2; }
+.rec-artist { margin: 0; color: var(--muted); font-size: 15px; }
+.rec-by { margin: 2px 0 0; color: var(--rose); font-size: 14px; cursor: pointer; }
+.rec-by[hidden] { display: none; }
+.rec-rating { margin-top: 4px; }
+.rec-openalbum { align-self: flex-start; margin-top: 8px; padding: 0; }
+.rec-note, .rec-review { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--text); white-space: pre-wrap; }
+.rec-like-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.rec-like { width: 34px; height: 34px; border: none; background: none; color: var(--muted); cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.rec-like svg { width: 22px; height: 22px; }
+.rec-like.liked { color: var(--rose); }
+.rec-likers { font-size: 13px; color: var(--muted); min-width: 0; }
+
 /* Album-Kommentare (öffentliche Diskussion unter dem Album) */
 .ac-comment { display: flex; gap: 9px; align-items: flex-start; padding: 9px 0; border-bottom: 1px solid var(--border); }
 .ac-comment:last-of-type { border-bottom: none; }
