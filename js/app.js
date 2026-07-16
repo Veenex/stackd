@@ -1140,17 +1140,22 @@ function renderAlbumInfo(info) {
   // Kurze Fakten immer sichtbar; die lange Beschreibung wird eingeklappt (3 Zeilen)
   // und lässt sich ausklappen – so bleibt die Seite kompakt und die Tracklist rutscht hoch.
   const rowsHtml = rows.map(([k, v]) => `<div class="info-row"><span class="info-k">${k}</span><span class="info-v">${escapeHtml(v)}</span></div>`).join('');
+  // Beschriftung direkt hier (nicht über i18n-Schlüssel), damit ein alt
+  // gecachtes i18n.js nie den Roh-Schlüssel „info.showMore" anzeigen kann.
+  const infoLabel = (more) => getLang() === 'de'
+    ? (more ? 'Mehr anzeigen ⌄' : 'Weniger anzeigen ⌃')
+    : (more ? 'Show more ⌄' : 'Show less ⌃');
   const longNotes = notes.length > 160;
   const notesHtml = notes
     ? (longNotes
-        ? `<p class="info-notes clamp" id="dp-info-notes">${escapeHtml(notes)}</p><button type="button" class="link-btn info-toggle" id="dp-info-toggle">${tr('info.showMore')}</button>`
+        ? `<p class="info-notes clamp" id="dp-info-notes">${escapeHtml(notes)}</p><button type="button" class="link-btn info-toggle" id="dp-info-toggle">${infoLabel(true)}</button>`
         : `<p class="info-notes">${escapeHtml(notes)}</p>`)
     : '';
   el.innerHTML = rowsHtml + notesHtml;
   const tgl = $('#dp-info-toggle');
   if (tgl) tgl.addEventListener('click', () => {
     const clamped = $('#dp-info-notes').classList.toggle('clamp');
-    tgl.textContent = clamped ? tr('info.showMore') : tr('info.showLess');
+    tgl.textContent = infoLabel(clamped);
   });
 }
 
