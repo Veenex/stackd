@@ -251,7 +251,12 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 193</p>
+        <div class="legal-links">
+          <button type="button" id="btn-impressum" class="link-btn" data-i18n="legal.impressum">Imprint</button>
+          <span class="legal-dot">·</span>
+          <button type="button" id="btn-credits" class="link-btn" data-i18n="legal.sources">Data sources</button>
+        </div>
+        <p class="hint profile-version">Discend · Build 194</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -383,6 +388,8 @@
           <button type="button" id="dp-comment-send" class="btn ac-send" data-i18n="btn.post">Post</button>
         </div>
       </div>
+
+      <button type="button" id="dp-credits" class="dp-credits" data-i18n="credits.line">Data &amp; covers: Discogs · Apple Music</button>
 
       <dialog id="dp-actions" class="actions-sheet">
       <div class="as-sheet">
@@ -699,6 +706,52 @@
         </span>
       </div>
       <div id="wrapped-body"></div>
+    </div>
+  </dialog>
+
+  <!-- Impressum (Pflichtangaben nach § 5 DDG). Platzhalter [ … ] vor dem Launch ausfüllen. -->
+  <dialog id="impressum-dialog" class="dialog">
+    <div class="wrapped-sheet legal-sheet">
+      <div class="friends-head">
+        <span data-i18n="legal.impressum">Imprint</span>
+        <button id="btn-impressum-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+      </div>
+      <div class="legal-body">
+        <h3>Impressum</h3>
+        <p>Angaben gemäß § 5 DDG</p>
+        <p><span class="legal-ph">[Vollständiger Name]</span><br>
+           <span class="legal-ph">[Straße und Hausnummer]</span><br>
+           <span class="legal-ph">[PLZ und Ort]</span></p>
+        <p><strong>Kontakt</strong><br>
+           E-Mail: <span class="legal-ph">[Kontakt-E-Mail]</span></p>
+        <p><strong>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</strong><br>
+           <span class="legal-ph">[Vollständiger Name, Anschrift wie oben]</span></p>
+        <p><strong>Streitschlichtung</strong><br>
+           Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit:
+           <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener">https://ec.europa.eu/consumers/odr/</a>.
+           Wir sind nicht bereit oder verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+        <p class="legal-note" data-i18n="legal.fillNote">Note: the fields in brackets must be completed before going live.</p>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Datenquellen / Credits – Attribution wie von den APIs verlangt. -->
+  <dialog id="credits-dialog" class="dialog">
+    <div class="wrapped-sheet legal-sheet">
+      <div class="friends-head">
+        <span data-i18n="legal.sources">Data sources</span>
+        <button id="btn-credits-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+      </div>
+      <div class="legal-body">
+        <p data-i18n="credits.intro">Discend uses data and media from third parties. Rights to covers, previews and trademarks remain with their owners.</p>
+        <ul class="credits-list">
+          <li><a href="https://www.discogs.com" target="_blank" rel="noopener">Discogs</a><span data-i18n="credits.discogs"> — album data, covers and market-value estimates.</span></li>
+          <li><a href="https://www.apple.com/apple-music/" target="_blank" rel="noopener">Apple Music / iTunes</a><span data-i18n="credits.apple"> — covers, tracklists and 30-second previews.</span></li>
+          <li><a href="https://musicbrainz.org" target="_blank" rel="noopener">MusicBrainz</a><span data-i18n="credits.musicbrainz"> — music metadata.</span></li>
+          <li><a href="https://coverartarchive.org" target="_blank" rel="noopener">Cover Art Archive</a><span data-i18n="credits.caa"> — some cover images.</span></li>
+        </ul>
+        <p class="legal-note" data-i18n="credits.disclaimer">Discend is not affiliated with these services and does not present third-party content as its own.</p>
+      </div>
     </div>
   </dialog>
 

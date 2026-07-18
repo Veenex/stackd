@@ -138,6 +138,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 194, de: ['Rechtliches: Impressum und Datenquellen/Credits (Discogs, Apple Music u. a.) im Profil, plus Quellenhinweis auf jeder Albumseite'], en: ['Legal: imprint and data sources/credits (Discogs, Apple Music, etc.) in your profile, plus a source note on every album page'] },
   { build: 193, de: ['Teilbare Statistik-Karte: In „Discend Wrapped" oben rechts auf das Teilen-Symbol tippen – erzeugt ein hübsches Bild mit deinen Zahlen, Top-Genres und Top-Künstler zum Teilen'], en: ['Shareable stats card: in "Discend Wrapped", tap the share icon (top right) to create a nice image of your numbers, top genres and top artist'] },
   { build: 190, de: ['Albumseite aufgeräumt: die lange Beschreibung wird nur noch kurz gezeigt und lässt sich ausklappen – so rückt die Tracklist nach oben'], en: ['Cleaner album page: the long description is shortened and expandable, so the tracklist moves up'] },
   { build: 189, de: ['Platten-Übersicht: Tippst du in deiner Sammlung auf ein Album, siehst du erst deine Infos dazu (hinzugefügt, wie oft gehört, Notiz, Regal, Review, wer sie geliked hat). Tipp aufs Cover führt zur Albumseite.', 'Bei Freundes-Aktivität siehst du genauso deren Infos zur Platte'], en: ['Record overview: tapping an album in your collection now shows your info first (added, plays, note, shelf, review, who liked it). Tap the cover to reach the album page.', 'Friends’ activity shows their info for the record the same way'] },
@@ -1691,6 +1692,13 @@ async function shareWrappedCard() {
   toast(tr('card.saved'));
 }
 $('#btn-wrapped-share').addEventListener('click', shareWrappedCard);
+
+// ---------- Rechtliches: Impressum + Datenquellen ----------
+$('#btn-impressum').addEventListener('click', () => $('#impressum-dialog').showModal());
+$('#btn-impressum-close').addEventListener('click', () => $('#impressum-dialog').close());
+$('#btn-credits').addEventListener('click', () => $('#credits-dialog').showModal());
+$('#btn-credits-close').addEventListener('click', () => $('#credits-dialog').close());
+{ const dc = $('#dp-credits'); if (dc) dc.addEventListener('click', () => $('#credits-dialog').showModal()); }
 
 $('#detail-back').addEventListener('click', closeDetail);
 $('#dp-rating-clear').addEventListener('click', () => detailRating && detailRating.setValue(0));
