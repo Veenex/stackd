@@ -139,7 +139,8 @@ function appBuild() {
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
   { build: 194, de: ['Rechtliches: Impressum und Datenquellen/Credits (Discogs, Apple Music u. a.) im Profil, plus Quellenhinweis auf jeder Albumseite'], en: ['Legal: imprint and data sources/credits (Discogs, Apple Music, etc.) in your profile, plus a source note on every album page'] },
-  { build: 193, de: ['Teilbare Statistik-Karte: In „Discend Wrapped" oben rechts auf das Teilen-Symbol tippen – erzeugt ein hübsches Bild mit deinen Zahlen, Top-Genres und Top-Künstler zum Teilen'], en: ['Shareable stats card: in "Discend Wrapped", tap the share icon (top right) to create a nice image of your numbers, top genres and top artist'] },
+  { build: 195, de: ['„Discend Wrapped" heißt jetzt „Discend Jahresrückblick"'], en: ['"Discend Wrapped" is now called "Discend Year in Review"'] },
+  { build: 193, de: ['Teilbare Statistik-Karte: Im „Discend Jahresrückblick" oben rechts auf das Teilen-Symbol tippen – erzeugt ein hübsches Bild mit deinen Zahlen, Top-Genres und Top-Künstler zum Teilen'], en: ['Shareable stats card: in "Discend Year in Review", tap the share icon (top right) to create a nice image of your numbers, top genres and top artist'] },
   { build: 190, de: ['Albumseite aufgeräumt: die lange Beschreibung wird nur noch kurz gezeigt und lässt sich ausklappen – so rückt die Tracklist nach oben'], en: ['Cleaner album page: the long description is shortened and expandable, so the tracklist moves up'] },
   { build: 189, de: ['Platten-Übersicht: Tippst du in deiner Sammlung auf ein Album, siehst du erst deine Infos dazu (hinzugefügt, wie oft gehört, Notiz, Regal, Review, wer sie geliked hat). Tipp aufs Cover führt zur Albumseite.', 'Bei Freundes-Aktivität siehst du genauso deren Infos zur Platte'], en: ['Record overview: tapping an album in your collection now shows your info first (added, plays, note, shelf, review, who liked it). Tap the cover to reach the album page.', 'Friends’ activity shows their info for the record the same way'] },
   { build: 188, de: ['Album-Kommentare: unter jedem Album könnt ihr jetzt diskutieren – öffentlich, für alle sichtbar'], en: ['Album comments: discuss under any album now — public, visible to everyone'] },
@@ -1501,7 +1502,7 @@ function listenHeatmap(playsThisYear, year) {
 async function openWrapped() {
   if (!requireAuth()) return;
   const year = new Date().getFullYear();
-  $('#wrapped-title').textContent = 'Discend Wrapped ' + year;
+  $('#wrapped-title').textContent = tr('dlg.wrapped') + ' ' + year;
   $('#wrapped-body').innerHTML = `<p class="hint">${tr('msg.loading')}</p>`;
   $('#wrapped-dialog').showModal();
   const coll = getList('collection');
@@ -1610,9 +1611,10 @@ function drawWrappedCard(s) {
   grad.addColorStop(0, accent + '55'); grad.addColorStop(1, BG + '00');
   ctx.fillStyle = grad; ctx.fillRect(0, 0, W, 700);
   ctx.textAlign = 'center';
-  // Kopf
-  ctx.fillStyle = accent; ctx.font = '700 44px -apple-system, "Segoe UI", Roboto, sans-serif';
-  ctx.fillText('DISCEND WRAPPED', W / 2, 158);
+  // Kopf (Name je Sprache – hart, unabhängig von i18n.js)
+  const headLabel = getLang() === 'de' ? 'DISCEND · JAHRESRÜCKBLICK' : 'DISCEND · YEAR IN REVIEW';
+  ctx.fillStyle = accent; ctx.font = '700 40px -apple-system, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(ctxTrim(ctx, headLabel, W - 80), W / 2, 158);
   ctx.fillStyle = TEXT; ctx.font = '800 132px -apple-system, "Segoe UI", Roboto, sans-serif';
   ctx.fillText(String(s.year), W / 2, 292);
   if (s.name) { ctx.fillStyle = MUTED; ctx.font = '500 40px -apple-system, "Segoe UI", Roboto, sans-serif'; ctx.fillText(ctxTrim(ctx, s.name, W - 160), W / 2, 356); }
@@ -1676,10 +1678,10 @@ async function shareWrappedCard() {
   const canvas = drawWrappedCard(lastWrapped);
   const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
   if (!blob) { toast(tr('card.failed')); return; }
-  const file = new File([blob], `discend-wrapped-${lastWrapped.year}.png`, { type: 'image/png' });
+  const file = new File([blob], `discend-rueckblick-${lastWrapped.year}.png`, { type: 'image/png' });
   try {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Discend Wrapped ' + lastWrapped.year, text: tr('card.shareText', { year: lastWrapped.year }) });
+      await navigator.share({ files: [file], title: tr('dlg.wrapped') + ' ' + lastWrapped.year, text: tr('card.shareText', { year: lastWrapped.year }) });
       return;
     }
   } catch { return; /* Nutzer hat abgebrochen */ }

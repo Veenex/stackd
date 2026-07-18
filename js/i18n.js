@@ -182,7 +182,7 @@ export const DICT = {
   'lbl.recentAdded': { en: 'Recently added', de: 'Zuletzt hinzugefügt' },
   'lbl.collectionValue': { en: 'Collection value (market estimate)', de: 'Sammlungswert (Marktschätzung)' },
   'lbl.yourGenres': { en: 'Your genres', de: 'Deine Genres' },
-  'btn.wrapped': { en: '📊 Discend Wrapped', de: '📊 Discend Wrapped' },
+  'btn.wrapped': { en: '📊 Discend Year in Review', de: '📊 Discend Jahresrückblick' },
   'sum.backup': { en: 'Backup', de: 'Backup' },
   'btn.exportData': { en: 'Export data (JSON)', de: 'Daten exportieren (JSON)' },
   'btn.importData': { en: 'Import data', de: 'Daten importieren' },
@@ -221,7 +221,7 @@ export const DICT = {
   'credits.line': { en: 'Data & covers: Discogs · Apple Music', de: 'Daten & Cover: Discogs · Apple Music' },
   'card.topGenres': { en: 'Top genres', de: 'Top-Genres' },
   'card.topArtist': { en: 'Top artist', de: 'Top-Künstler' },
-  'card.shareText': { en: 'My year in records — Discend Wrapped {year}', de: 'Mein Platten-Jahr – Discend Wrapped {year}' },
+  'card.shareText': { en: 'My year in records — Discend Year in Review {year}', de: 'Mein Platten-Jahr – Discend Jahresrückblick {year}' },
   'card.saved': { en: 'Image saved.', de: 'Bild gespeichert.' },
   'card.failed': { en: 'Could not create the image.', de: 'Bild konnte nicht erstellt werden.' },
   'info.showMore': { en: 'Show more ⌄', de: 'Mehr anzeigen ⌄' },
@@ -272,7 +272,7 @@ export const DICT = {
   'lbl.comments': { en: 'Comments', de: 'Kommentare' },
   'ph.writeComment': { en: 'Write a comment…', de: 'Kommentar schreiben…' },
   'btn.send': { en: 'Send', de: 'Senden' },
-  'dlg.wrapped': { en: 'Discend Wrapped', de: 'Discend Wrapped' },
+  'dlg.wrapped': { en: 'Discend Year in Review', de: 'Discend Jahresrückblick' },
 
   // Einstellungs-Sheet
   'set.title': { en: 'Settings', de: 'Einstellungen' },
