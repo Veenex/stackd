@@ -138,6 +138,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 193, de: ['Teilbare Statistik-Karte: In „Discend Wrapped" oben rechts auf das Teilen-Symbol tippen – erzeugt ein hübsches Bild mit deinen Zahlen, Top-Genres und Top-Künstler zum Teilen'], en: ['Shareable stats card: in "Discend Wrapped", tap the share icon (top right) to create a nice image of your numbers, top genres and top artist'] },
   { build: 190, de: ['Albumseite aufgeräumt: die lange Beschreibung wird nur noch kurz gezeigt und lässt sich ausklappen – so rückt die Tracklist nach oben'], en: ['Cleaner album page: the long description is shortened and expandable, so the tracklist moves up'] },
   { build: 189, de: ['Platten-Übersicht: Tippst du in deiner Sammlung auf ein Album, siehst du erst deine Infos dazu (hinzugefügt, wie oft gehört, Notiz, Regal, Review, wer sie geliked hat). Tipp aufs Cover führt zur Albumseite.', 'Bei Freundes-Aktivität siehst du genauso deren Infos zur Platte'], en: ['Record overview: tapping an album in your collection now shows your info first (added, plays, note, shelf, review, who liked it). Tap the cover to reach the album page.', 'Friends’ activity shows their info for the record the same way'] },
   { build: 188, de: ['Album-Kommentare: unter jedem Album könnt ihr jetzt diskutieren – öffentlich, für alle sichtbar'], en: ['Album comments: discuss under any album now — public, visible to everyone'] },
@@ -1528,6 +1529,13 @@ async function openWrapped() {
   // Längste Hör-Streak (aufeinanderfolgende Tage mit Tagebuch-Eintrag) dieses Jahr
   const streakDates = [...new Set(playsThisYear.map((p) => String(p.played_on || '').slice(0, 10)).filter(Boolean))].sort();
   const streak = longestDayStreak(streakDates);
+  // Für die teilbare Bild-Karte merken
+  lastWrapped = {
+    year, name: profileName(),
+    albumsTotal: coll.length, addedThisYear, listenEntries: playsThisYear.length,
+    avg: avg ? avg.toFixed(1) : null, streak,
+    topGenres: topGenres.slice(0, 3), topArtist: topArtists[0] ? topArtists[0][0] : null,
+  };
   const cards = [
     { label: tr('wrapped.albumsAdded'), val: addedThisYear },
     { label: tr('wrapped.listenEntries'), val: playsThisYear.length },
@@ -1577,6 +1585,112 @@ async function openWrapped() {
 }
 $('#btn-wrapped').addEventListener('click', openWrapped);
 $('#btn-wrapped-close').addEventListener('click', () => $('#wrapped-dialog').close());
+
+// ---------- Teilbare Statistik-Karte (Bild) ----------
+let lastWrapped = null;
+// Text auf Breite kürzen (Ellipse), damit nichts über den Rand läuft.
+function ctxTrim(ctx, text, maxW) {
+  let t = String(text || '');
+  if (ctx.measureText(t).width <= maxW) return t;
+  while (t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+  return t + '…';
+}
+function drawWrappedCard(s) {
+  const W = 1080, H = 1350;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const cs = getComputedStyle(document.documentElement);
+  const accent = (cs.getPropertyValue('--rose').trim() || '#d96a8a');
+  const BG = '#14181C', SURF = '#1f2937', TEXT = '#f3f4f6', MUTED = '#8e97ad';
+  // Hintergrund + dezenter Akzent-Schimmer oben
+  ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+  const grad = ctx.createRadialGradient(W / 2, -120, 80, W / 2, -120, 900);
+  grad.addColorStop(0, accent + '55'); grad.addColorStop(1, BG + '00');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, W, 700);
+  ctx.textAlign = 'center';
+  // Kopf
+  ctx.fillStyle = accent; ctx.font = '700 44px -apple-system, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('DISCEND WRAPPED', W / 2, 158);
+  ctx.fillStyle = TEXT; ctx.font = '800 132px -apple-system, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText(String(s.year), W / 2, 292);
+  if (s.name) { ctx.fillStyle = MUTED; ctx.font = '500 40px -apple-system, "Segoe UI", Roboto, sans-serif'; ctx.fillText(ctxTrim(ctx, s.name, W - 160), W / 2, 356); }
+  // 2×2 Statistik-Kacheln
+  const stats = [
+    [String(s.albumsTotal), tr('wrapped.albumsTotal')],
+    [String(s.addedThisYear), tr('wrapped.albumsAdded')],
+    [String(s.listenEntries), tr('wrapped.listenEntries')],
+    [s.avg ? s.avg + ' ♪' : '–', tr('wrapped.avgRating')],
+  ];
+  const gx = 70, gy = 420, cw = (W - gx * 2 - 26) / 2, ch = 188, gap = 26;
+  stats.forEach((st, i) => {
+    const x = gx + (i % 2) * (cw + gap), y = gy + Math.floor(i / 2) * (ch + gap);
+    ctx.fillStyle = SURF; roundRect(ctx, x, y, cw, ch, 26); ctx.fill();
+    ctx.fillStyle = accent; ctx.font = '800 78px -apple-system, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(ctxTrim(ctx, st[0], cw - 40), x + cw / 2, y + 100);
+    ctx.fillStyle = MUTED; ctx.font = '500 33px -apple-system, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(ctxTrim(ctx, st[1], cw - 40), x + cw / 2, y + 150);
+  });
+  // Top-Genres (Balken)
+  let y = gy + 2 * ch + gap + 62;
+  ctx.textAlign = 'left';
+  if (s.topGenres && s.topGenres.length) {
+    ctx.fillStyle = accent; ctx.font = '700 38px -apple-system, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(tr('card.topGenres'), gx, y);
+    const maxG = s.topGenres[0][1] || 1, barX = gx, barW = W - gx * 2;
+    s.topGenres.forEach(([g, n]) => {
+      y += 58;
+      ctx.fillStyle = '#2a3647'; roundRect(ctx, barX, y, barW, 44, 22); ctx.fill();
+      ctx.fillStyle = accent; roundRect(ctx, barX, y, Math.max(60, barW * (n / maxG)), 44, 22); ctx.fill();
+      ctx.fillStyle = TEXT; ctx.font = '600 31px -apple-system, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText(ctxTrim(ctx, g, barW - 120), barX + 22, y + 31);
+      ctx.textAlign = 'right'; ctx.fillText(String(n), barX + barW - 22, y + 31); ctx.textAlign = 'left';
+    });
+    y += 44 + 56;
+  }
+  // Top-Künstler
+  if (s.topArtist) {
+    ctx.fillStyle = accent; ctx.font = '700 38px -apple-system, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(tr('card.topArtist'), gx, y); y += 58;
+    ctx.fillStyle = TEXT; ctx.font = '700 50px -apple-system, "Segoe UI", Roboto, sans-serif';
+    ctx.fillText(ctxTrim(ctx, s.topArtist, W - gx * 2), gx, y);
+  }
+  // Fußzeile
+  ctx.textAlign = 'center'; ctx.fillStyle = MUTED; ctx.font = '600 34px -apple-system, "Segoe UI", Roboto, sans-serif';
+  ctx.fillText('discend.app', W / 2, H - 54);
+  return canvas;
+}
+function roundRect(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+async function shareWrappedCard() {
+  if (!lastWrapped) return;
+  const canvas = drawWrappedCard(lastWrapped);
+  const blob = await new Promise((res) => canvas.toBlob(res, 'image/png'));
+  if (!blob) { toast(tr('card.failed')); return; }
+  const file = new File([blob], `discend-wrapped-${lastWrapped.year}.png`, { type: 'image/png' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Discend Wrapped ' + lastWrapped.year, text: tr('card.shareText', { year: lastWrapped.year }) });
+      return;
+    }
+  } catch { return; /* Nutzer hat abgebrochen */ }
+  // Fallback (kein Datei-Teilen möglich): Bild herunterladen
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = file.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast(tr('card.saved'));
+}
+$('#btn-wrapped-share').addEventListener('click', shareWrappedCard);
 
 $('#detail-back').addEventListener('click', closeDetail);
 $('#dp-rating-clear').addEventListener('click', () => detailRating && detailRating.setValue(0));

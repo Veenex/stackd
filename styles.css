@@ -1338,6 +1338,7 @@ body.logged-in .logout-btn { display: block; }
 #friends-dialog { width: min(94vw, 460px); }
 .friends-pick { padding: 16px; }
 .friends-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 12px; }
+.wrapped-head-actions { display: inline-flex; align-items: center; gap: 4px; }
 #friends-search { width: 100%; margin-bottom: 12px; }
 .friends-results { display: flex; flex-direction: column; gap: 8px; max-height: 62vh; overflow-y: auto; }
 .friend-row { display: flex; align-items: center; gap: 10px; }

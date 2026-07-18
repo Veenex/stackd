@@ -251,7 +251,7 @@
           </div>
         </details>
         <button id="btn-logout" class="btn ghost logout-btn" data-i18n="btn.signOut">Sign out</button>
-        <p class="hint profile-version">Discend · Build 192</p>
+        <p class="hint profile-version">Discend · Build 193</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -691,7 +691,12 @@
     <div class="wrapped-sheet">
       <div class="friends-head">
         <span id="wrapped-title" data-i18n="dlg.wrapped">Discend Wrapped</span>
-        <button id="btn-wrapped-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+        <span class="wrapped-head-actions">
+          <button id="btn-wrapped-share" class="icon-btn" data-i18n-title="btn.shareCard" aria-label="Share card">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+          </button>
+          <button id="btn-wrapped-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+        </span>
       </div>
       <div id="wrapped-body"></div>
     </div>
