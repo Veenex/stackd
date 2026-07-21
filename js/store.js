@@ -46,6 +46,7 @@ function toRow(item, list, u) {
     liked: !!item.liked,
     price: Number(item.price) || 0,
     saved: Number(item.saved) || null, // Sparziel-Fortschritt (privat, nur items)
+    photos: (Array.isArray(item.photos) && item.photos.length) ? item.photos : null, // eigene Fotos (privat)
     media_cond: item.mediaCond || null,
     sleeve_cond: item.sleeveCond || null,
     location: item.location || null,
@@ -72,6 +73,7 @@ function fromRow(r) {
     location: r.location || '', lentTo: r.lent_to || '', lentAt: r.lent_at ? new Date(r.lent_at).getTime() : 0,
     purchaseDate: r.purchase_date || '', purchasePlace: r.purchase_place || '',
     tags: Array.isArray(r.tags) ? r.tags : [],
+    photos: Array.isArray(r.photos) ? r.photos : [],
     source: r.source || '', sourceId: r.source_id || '', masterId: r.master_id || 0,
   };
 }
@@ -93,7 +95,7 @@ export function addItem(list, item) {
     coverUrl: '', note: '', review: '', rating: 0, liked: false, price: 0, saved: 0,
     mediaCond: '', sleeveCond: '',
     location: '', lentTo: '', lentAt: 0,
-    purchaseDate: '', purchasePlace: '', tags: [],
+    purchaseDate: '', purchasePlace: '', tags: [], photos: [],
     source: 'manual', sourceId: '',
     ...item,
   };
@@ -443,6 +445,29 @@ export async function deleteComment(id) {
   const sb = await cloud(); const u = uid();
   if (!sb || !u) return;
   await sb.from('comments').delete().eq('id', id).eq('user_id', u);
+}
+
+// ---------- Eigene Fotos der Platte (privat, Bucket item-photos) ----------
+// Pfad: <user-id>/<item-id>/<zeitstempel>.jpg – Schreiben/Löschen nur im eigenen Ordner (RLS).
+export async function uploadItemPhoto(itemId, blob) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u || !itemId || !blob) return null;
+  const path = `${u}/${itemId}/${Date.now()}.jpg`;
+  const { error } = await sb.storage.from('item-photos')
+    .upload(path, blob, { contentType: 'image/jpeg', cacheControl: '3600' });
+  if (error) { console.warn('photo upload:', error.message); return null; }
+  const { data } = sb.storage.from('item-photos').getPublicUrl(path);
+  return (data && data.publicUrl) || null;
+}
+// Datei im Storage löschen (Pfad aus der öffentlichen URL zurückrechnen).
+export async function deleteItemPhoto(url) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u || !url) return;
+  const m = String(url).split('/item-photos/')[1];
+  if (!m) return;
+  const path = decodeURIComponent(m.split('?')[0]);
+  if (!path.startsWith(u + '/')) return; // nur eigene Dateien
+  await sb.storage.from('item-photos').remove([path]);
 }
 
 // ---------- Album-Kommentare (öffentliche Diskussion, albumübergreifend) ----------

@@ -12,6 +12,7 @@ import {
   fetchUserProfile, fetchProfileByUsername, fetchUserItems, fetchUserPlaylists,
   toggleActivityLike, fetchLikeInfo, fetchLikers, fetchComments, addComment, deleteComment,
   fetchAlbumComments, addAlbumComment, deleteAlbumComment,
+  uploadItemPhoto, deleteItemPhoto,
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
@@ -139,6 +140,7 @@ function appBuild() {
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
   { build: 194, de: ['Rechtliches: Impressum und Datenquellen/Credits (Discogs, Apple Music u. a.) im Profil, plus Quellenhinweis auf jeder Albumseite'], en: ['Legal: imprint and data sources/credits (Discogs, Apple Music, etc.) in your profile, plus a source note on every album page'] },
+  { build: 197, de: ['Eigene Fotos: Fotografier dein echtes Exemplar – bis zu 6 Fotos pro Platte, nur für dich sichtbar (Albumseite → „Meine Fotos")'], en: ['Your own photos: capture your actual copy — up to 6 photos per record, visible only to you (album page → "My photos")'] },
   { build: 196, de: ['Datenschutzerklärung und Nutzungsbedingungen (Entwürfe) im Profil ergänzt – neben Impressum und Datenquellen'], en: ['Privacy policy and terms of use (drafts) added to your profile — next to imprint and data sources'] },
   { build: 195, de: ['„Discend Wrapped" heißt jetzt „Discend Jahresrückblick"'], en: ['"Discend Wrapped" is now called "Discend Year in Review"'] },
   { build: 193, de: ['Teilbare Statistik-Karte: Im „Discend Jahresrückblick" oben rechts auf das Teilen-Symbol tippen – erzeugt ein hübsches Bild mit deinen Zahlen, Top-Genres und Top-Künstler zum Teilen'], en: ['Shareable stats card: in "Discend Year in Review", tap the share icon (top right) to create a nice image of your numbers, top genres and top artist'] },
@@ -673,6 +675,7 @@ function openDetail(list, id) {
   const lendSec = $('#dp-lend-section');
   if (lendSec) lendSec.style.display = list === 'collection' ? '' : 'none';
   if (list === 'collection') renderLend(item);
+  renderItemPhotos(item, list);
   renderSavings(item, list);
   $('.dp-edit').open = false;
 
@@ -1085,6 +1088,7 @@ function openPreview(result) {
   setUrl(albumUrl(result)); // Deep-Link in der Adresszeile
   detailPage.classList.add('preview');
   { const ls = document.getElementById('dp-lend-section'); if (ls) ls.style.display = 'none'; }
+  renderItemPhotos(null, null); // fremdes/ungespeichertes Album: keine eigenen Fotos
   renderTagChips([]); // Vorschau (fremdes/ungespeichertes Album): keine eigenen Tags
   setDetailCover(result.coverUrl);
   $('#dp-title').textContent = result.title || tr('misc.untitled');
@@ -1371,6 +1375,51 @@ $('#dp-play-add').addEventListener('click', async () => {
   $('#dp-play-note').value = '';
   renderDiaryPlays(editing.id);
   toast(tr('toast.diaryAdded'));
+});
+
+// ---------- Eigene Fotos der Platte (privat) ----------
+const MAX_ITEM_PHOTOS = 6;
+function renderItemPhotos(item, list) {
+  const sec = $('#dp-photos-section'); if (!sec) return;
+  // Nur bei eigenen, gespeicherten Platten (nicht in der Vorschau fremder Alben)
+  const show = !!item && !!editing && list === 'collection';
+  sec.style.display = show ? '' : 'none';
+  if (!show) return;
+  const photos = item.photos || [];
+  const box = $('#dp-photos');
+  box.innerHTML = photos.length
+    ? photos.map((u, i) => `<div class="photo-thumb"><img src="${escapeHtml(u)}" alt="" loading="lazy" onerror="this.parentElement.classList.add('broken')"><button class="photo-del" data-i="${i}" aria-label="${tr('a11y.delete')}">×</button></div>`).join('')
+    : `<p class="hint">${tr('photos.none')}</p>`;
+  box.querySelectorAll('.photo-del').forEach((b) => b.addEventListener('click', async () => {
+    const idx = +b.dataset.i;
+    const cur = (getList('collection').find((x) => x.id === item.id) || {}).photos || [];
+    const url = cur[idx]; if (!url) return;
+    const next = cur.filter((_, i) => i !== idx);
+    updateItem('collection', item.id, { photos: next });
+    deleteItemPhoto(url).catch(() => {}); // Datei im Hintergrund entfernen
+    const fresh = getList('collection').find((x) => x.id === item.id);
+    renderItemPhotos(fresh, 'collection');
+  }));
+  $('#dp-photo-add').style.display = photos.length >= MAX_ITEM_PHOTOS ? 'none' : '';
+}
+$('#dp-photo-add').addEventListener('click', () => { if (requireAuth()) $('#dp-photo-file').click(); });
+$('#dp-photo-file').addEventListener('change', async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if (!file || !editing || editing.list !== 'collection') return;
+  const item = getList('collection').find((i) => i.id === editing.id);
+  if (!item) return;
+  if ((item.photos || []).length >= MAX_ITEM_PHOTOS) { toast(tr('photos.max', { n: MAX_ITEM_PHOTOS })); return; }
+  toast(tr('photos.uploading'));
+  const blob = await downscaleImageBlob(file, 1400, 0.82);
+  if (!blob) { toast(tr('photos.failed')); return; }
+  const url = await uploadItemPhoto(item.id, blob);
+  if (!url) { toast(tr('photos.failed')); return; }
+  const cur = (getList('collection').find((i) => i.id === item.id) || {}).photos || [];
+  updateItem('collection', item.id, { photos: [...cur, url] });
+  const fresh = getList('collection').find((i) => i.id === item.id);
+  renderItemPhotos(fresh, 'collection');
+  toast(tr('photos.added'));
 });
 
 // ---------- Sparziel (nur Wunschzettel; privat, steht nur in items) ----------

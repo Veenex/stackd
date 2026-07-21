@@ -260,7 +260,7 @@
           <span class="legal-dot">·</span>
           <button type="button" id="btn-credits" class="link-btn" data-i18n="legal.sources">Data sources</button>
         </div>
-        <p class="hint profile-version">Discend · Build 196</p>
+        <p class="hint profile-version">Discend · Build 197</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -444,6 +444,16 @@
       <div class="dp-section" id="dp-lend-section">
         <span class="dp-label" data-i18n="lbl.lending">Lending</span>
         <div id="dp-lend"></div>
+      </div>
+
+      <div class="dp-section" id="dp-photos-section">
+        <div class="goal-head">
+          <span class="dp-label" data-i18n="lbl.myPhotos">My photos</span>
+          <button type="button" id="dp-photo-add" class="link-btn" data-i18n="btn.addPhoto">Add photo</button>
+        </div>
+        <input type="file" id="dp-photo-file" accept="image/*" hidden />
+        <div id="dp-photos" class="dp-photos"></div>
+        <p class="hint" data-i18n="hint.photosPrivate">Only you can see your photos.</p>
       </div>
 
       <div class="dp-section" id="dp-savings-section">
