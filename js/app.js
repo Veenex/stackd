@@ -1378,6 +1378,8 @@ $('#dp-play-add').addEventListener('click', async () => {
 });
 
 // ---------- Eigene Fotos der Platte (privat) ----------
+// SPÄTER PREMIUM: Hier kommt die Bezahlschranke hin (nur NEUE Uploads begrenzen –
+// bereits hochgeladene Fotos müssen für alle sichtbar/löschbar bleiben).
 const MAX_ITEM_PHOTOS = 6;
 function renderItemPhotos(item, list) {
   const sec = $('#dp-photos-section'); if (!sec) return;
