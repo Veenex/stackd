@@ -140,7 +140,7 @@ function appBuild() {
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
   { build: 194, de: ['Rechtliches: Impressum und Datenquellen/Credits (Discogs, Apple Music u. a.) im Profil, plus Quellenhinweis auf jeder Albumseite'], en: ['Legal: imprint and data sources/credits (Discogs, Apple Music, etc.) in your profile, plus a source note on every album page'] },
-  { build: 198, de: ['Privates Profil: In den Einstellungen aktivierbar – dann sehen nur deine Follower Sammlung, Listen und Höreinträge. Name und Bild bleiben sichtbar, damit man dir folgen kann'], en: ['Private profile: switch it on in settings — then only your followers see your collection, lists and listening entries. Name and picture stay visible so people can follow you'] },
+  { build: 198, de: ['Privates Profil: In den Einstellungen aktivierbar – dann sieht niemand außer dir mehr als Username und Bio. Sammlung, Listen, Fotos, Bewertungen und Höreinträge bleiben privat'], en: ['Private profile: switch it on in settings — then nobody but you sees more than your username and bio. Collection, lists, photos, ratings and listening entries stay private'] },
   { build: 197, de: ['Eigene Fotos: Fotografier dein echtes Exemplar – bis zu 6 Fotos pro Platte, nur für dich sichtbar (Albumseite → „Meine Fotos")'], en: ['Your own photos: capture your actual copy — up to 6 photos per record, visible only to you (album page → "My photos")'] },
   { build: 196, de: ['Datenschutzerklärung und Nutzungsbedingungen (Entwürfe) im Profil ergänzt – neben Impressum und Datenquellen'], en: ['Privacy policy and terms of use (drafts) added to your profile — next to imprint and data sources'] },
   { build: 195, de: ['„Discend Wrapped" heißt jetzt „Discend Jahresrückblick"'], en: ['"Discend Wrapped" is now called "Discend Year in Review"'] },
@@ -4291,15 +4291,14 @@ async function openUserProfile(user) {
     friendsFollowing.add(u.id); await follow(u.id);
     fbtn.style.display = 'none';
     if (currentView === 'home') renderFriendsRow();
-    // Privates Profil: jetzt sind wir Follower – Seite neu aufbauen, damit die Inhalte kommen
-    if (u.is_private) openUserProfile(u);
   };
   setFollowBtn(fbtn, false);
   fbtn.style.display = (isMe || isBlocked || friendsFollowing.has(u.id)) ? 'none' : '';
   upMenuUser = isMe ? null : u;
   { const mb = $('#up-menu-btn'); if (mb) mb.style.display = isMe ? 'none' : ''; }
-  // Privates Profil: Inhalte sieht nur, wer folgt (die Datenbank liefert sonst ohnehin nichts).
-  const isPrivate = !!u.is_private && !isMe && !isBlocked && !friendsFollowing.has(u.id);
+  // Privates Profil: zeigt NUR Username + Bio – für alle, auch für Follower.
+  // Die Datenbank liefert ohnehin nichts anderes; hier nur die passende Darstellung.
+  const isPrivate = !!u.is_private && !isMe && !isBlocked;
   // Bei Blockierung: Hinweis zeigen, Inhalte ausblenden und nicht laden
   $('#up-blocked-note').classList.toggle('hidden', !isBlocked);
   $('#up-private-note').classList.toggle('hidden', !isPrivate);
@@ -4309,8 +4308,9 @@ async function openUserProfile(user) {
   $('#up-ms-section').hidden = true;
   $('#up-grid-page').classList.add('hidden');
   if (isBlocked || isPrivate) {
-    if (isBlocked) fbtn.style.display = 'none'; // bei „privat" bleibt Folgen möglich
+    fbtn.style.display = 'none'; // Folgen bringt bei privaten Konten keinen Zugang -> nicht anbieten
     $('#up-songs').innerHTML = '';
+    $('#up-meta').innerHTML = '';
     $('#up-lists').innerHTML = ''; $('#up-lists-section').hidden = true;
     bringOverlayFront($('#user-page')); $('#user-page').classList.remove('hidden');
     $('#user-scroll').scrollTop = 0;

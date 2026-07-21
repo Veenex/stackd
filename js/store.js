@@ -331,7 +331,7 @@ export async function searchUsers(query) {
   const sb = await cloud(); const u = uid();
   const q = (query || '').trim();
   if (!sb || !q) return [];
-  const { data } = await sb.from('profiles')
+  const { data } = await sb.from('public_profiles')
     .select('id,username,display_name,avatar_url')
     .ilike('username', '%' + ilikeEsc(q) + '%').limit(20);
   return (data || []).filter((p) => p.id !== u && !blockedSet.has(p.id)); // sich selbst + blockierte ausblenden
@@ -421,7 +421,7 @@ export async function fetchLikers(itemId) {
   const liked = u ? rows.some((r) => r.user_id === u) : false;
   if (!rows.length) return { likers: [], liked };
   const ids = [...new Set(rows.map((r) => r.user_id))];
-  const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
+  const { data: profs } = await sb.from('public_profiles').select('id,username,display_name,avatar_url').in('id', ids);
   return { likers: profs || [], liked };
 }
 export async function fetchComments(itemId) {
@@ -430,7 +430,7 @@ export async function fetchComments(itemId) {
   const rows = data || [];
   if (!rows.length) return [];
   const ids = [...new Set(rows.map((r) => r.user_id))];
-  const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
+  const { data: profs } = await sb.from('public_profiles').select('id,username,display_name,avatar_url').in('id', ids);
   const pm = {}; (profs || []).forEach((p) => { pm[p.id] = p; });
   return rows.map((r) => ({ id: r.id, userId: r.user_id, text: r.text, createdAt: r.created_at, by: pm[r.user_id] || null }));
 }
@@ -487,7 +487,7 @@ export async function fetchAlbumComments(item, limit = 100) {
   rows = dropBlocked(rows, (r) => r.user_id);
   if (!rows.length) return [];
   const ids = [...new Set(rows.map((r) => r.user_id))];
-  const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
+  const { data: profs } = await sb.from('public_profiles').select('id,username,display_name,avatar_url').in('id', ids);
   const pm = {}; (profs || []).forEach((p) => { pm[p.id] = p; });
   return rows.map((r) => ({ id: r.id, userId: r.user_id, text: r.text, createdAt: r.created_at, by: pm[r.user_id] || null }));
 }
@@ -518,7 +518,7 @@ export async function fetchNotifications(limit = 40) {
   const ids = [...new Set(rows.map((r) => r.actor_id).filter(Boolean))];
   const pm = {};
   if (ids.length) {
-    const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
+    const { data: profs } = await sb.from('public_profiles').select('id,username,display_name,avatar_url').in('id', ids);
     (profs || []).forEach((p) => { pm[p.id] = p; });
   }
   const mapped = rows.map((r) => ({
@@ -572,7 +572,7 @@ export async function fetchUserPlays(userId) {
 // Vollständiges Profil eines anderen Nutzers (öffentlich lesbar).
 export async function fetchUserProfile(userId) {
   const sb = await cloud(); if (!sb || !userId) return null;
-  const { data } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+  const { data } = await sb.from('public_profiles').select('*').eq('id', userId).maybeSingle();
   return data || null;
 }
 
@@ -580,7 +580,7 @@ export async function fetchUserProfile(userId) {
 export async function fetchProfileByUsername(username) {
   const sb = await cloud(); if (!sb || !username) return null;
   const esc = String(username).replace(/[%_\\]/g, (m) => '\\' + m);
-  const { data } = await sb.from('profiles').select('*').ilike('username', esc).limit(1).maybeSingle();
+  const { data } = await sb.from('public_profiles').select('*').ilike('username', esc).limit(1).maybeSingle();
   return data || null;
 }
 
@@ -642,7 +642,7 @@ export async function fetchFriendsFeed(limit = 20) {
   const userIds = [...new Set([...itemRows.map((i) => i.user_id), ...playRows.map((p) => p.user_id)])];
   const pmap = {};
   if (userIds.length) {
-    const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', userIds);
+    const { data: profs } = await sb.from('public_profiles').select('id,username,display_name,avatar_url').in('id', userIds);
     (profs || []).forEach((p) => { pmap[p.id] = p; });
   }
   const adds = itemRows.map((it) => ({ ...fromRow(it), by: pmap[it.user_id] || null, kind: 'add', ts: it.added_at ? new Date(it.added_at).getTime() : 0 }));
@@ -667,7 +667,7 @@ export async function fetchReviewsFeed(limit = 30) {
     const withRev = (rows || []).filter((it) => (it.review || '').trim() && !seen.has(it.id));
     if (!withRev.length) return;
     const userIds = [...new Set(withRev.map((i) => i.user_id))];
-    const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', userIds);
+    const { data: profs } = await sb.from('public_profiles').select('id,username,display_name,avatar_url').in('id', userIds);
     const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
     for (const it of withRev) {
       seen.add(it.id);
@@ -704,7 +704,7 @@ export async function fetchFriendsLists(limit = 20) {
   const [{ data: plItems }, { data: items }, { data: profs }] = await Promise.all([
     sb.from('playlist_items').select('*').in('playlist_id', plIds),
     sb.from('public_items').select('*').in('user_id', ownerIds),
-    sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ownerIds),
+    sb.from('public_profiles').select('id,username,display_name,avatar_url').in('id', ownerIds),
   ]);
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
   const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
@@ -726,7 +726,7 @@ export async function searchReviews(q, limit = 30) {
   const rows = dropBlocked((data || []).filter((it) => (it.review || '').trim()), (it) => it.user_id);
   if (!rows.length) return [];
   const userIds = [...new Set(rows.map((i) => i.user_id))];
-  const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', userIds);
+  const { data: profs } = await sb.from('public_profiles').select('id,username,display_name,avatar_url').in('id', userIds);
   const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
   return rows.slice(0, limit).map((it) => ({ ...fromRow(it), by: pmap[it.user_id] || null }));
 }
@@ -744,7 +744,7 @@ export async function searchPlaylists(q, limit = 30) {
   const [{ data: plItems }, { data: items }, { data: profs }] = await Promise.all([
     sb.from('playlist_items').select('*').in('playlist_id', plIds),
     sb.from('public_items').select('*').in('user_id', ownerIds),
-    sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ownerIds),
+    sb.from('public_profiles').select('id,username,display_name,avatar_url').in('id', ownerIds),
   ]);
   const map = {}; (items || []).forEach((it) => { map[it.id] = fromRow(it); });
   const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
@@ -827,7 +827,7 @@ export async function fetchAlbumReviews(item, limit = 30) {
   uniq = dropBlocked(uniq, (r) => r.user_id);
   if (!uniq.length) return [];
   const ids = [...new Set(uniq.map((r) => r.user_id))];
-  const { data: profs } = await sb.from('profiles').select('id,username,display_name,avatar_url').in('id', ids);
+  const { data: profs } = await sb.from('public_profiles').select('id,username,display_name,avatar_url').in('id', ids);
   const pmap = {}; (profs || []).forEach((p) => { pmap[p.id] = p; });
   return uniq.slice(0, limit).map((r) => ({ by: pmap[r.user_id] || null, rating: Number(r.rating) || 0, review: r.review }));
 }
