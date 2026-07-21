@@ -1352,6 +1352,9 @@ body.logged-in .logout-btn { display: block; }
 .friends-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 12px; }
 .wrapped-head-actions { display: inline-flex; align-items: center; gap: 4px; }
 
+/* Erklärtext unter einem Schalter in den Einstellungen */
+.set-check-hint { margin: 4px 0 10px; font-size: 12.5px; line-height: 1.45; }
+
 /* Rechtliches: Links auf dem Profil + Impressum/Datenquellen-Dialoge */
 .legal-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 8px; margin: 6px 0 2px; }
 /* Entwurfs-Hinweis oben in Datenschutz/AGB */

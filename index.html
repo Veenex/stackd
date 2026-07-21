@@ -260,7 +260,7 @@
           <span class="legal-dot">·</span>
           <button type="button" id="btn-credits" class="link-btn" data-i18n="legal.sources">Data sources</button>
         </div>
-        <p class="hint profile-version">Discend · Build 197</p>
+        <p class="hint profile-version">Discend · Build 198</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -569,6 +569,7 @@
     </header>
     <div class="detail-scroll" id="user-scroll">
       <p id="up-blocked-note" class="empty-hint hidden" data-i18n="mod.blockedNote">You have blocked this user. Their content is hidden.</p>
+      <p id="up-private-note" class="empty-hint hidden" data-i18n="mod.privateNote">This profile is private. Follow to see the collection.</p>
       <div class="up-head">
         <div class="up-left">
           <div id="up-songs" class="up-songs"></div>
@@ -929,6 +930,8 @@
             <label class="set-field"><span data-i18n="set.website">Website</span><input type="url" id="ps-website" placeholder="https://…" /></label>
             <label class="set-field set-field-bio"><span data-i18n="set.bio">Bio</span><textarea id="ps-bio" rows="3" data-i18n-ph="ph.bio" placeholder="About you or your collection"></textarea></label>
             <label class="set-field set-check"><span data-i18n="set.hideValue">Hide collection value</span><input type="checkbox" id="ps-hide-value" /></label>
+            <label class="set-field set-check"><span data-i18n="set.privateProfile">Private profile</span><input type="checkbox" id="ps-private" /></label>
+            <p class="hint set-check-hint" data-i18n="hint.privateProfile">When on, only your followers can see your collection, lists and listening entries. Your name and picture stay visible so people can find and follow you.</p>
           </div>
 
           <div class="set-section-label" data-i18n="set.favAlbums">Favorite albums</div>

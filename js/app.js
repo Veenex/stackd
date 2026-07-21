@@ -140,6 +140,7 @@ function appBuild() {
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
   { build: 194, de: ['Rechtliches: Impressum und Datenquellen/Credits (Discogs, Apple Music u. a.) im Profil, plus Quellenhinweis auf jeder Albumseite'], en: ['Legal: imprint and data sources/credits (Discogs, Apple Music, etc.) in your profile, plus a source note on every album page'] },
+  { build: 198, de: ['Privates Profil: In den Einstellungen aktivierbar – dann sehen nur deine Follower Sammlung, Listen und Höreinträge. Name und Bild bleiben sichtbar, damit man dir folgen kann'], en: ['Private profile: switch it on in settings — then only your followers see your collection, lists and listening entries. Name and picture stay visible so people can follow you'] },
   { build: 197, de: ['Eigene Fotos: Fotografier dein echtes Exemplar – bis zu 6 Fotos pro Platte, nur für dich sichtbar (Albumseite → „Meine Fotos")'], en: ['Your own photos: capture your actual copy — up to 6 photos per record, visible only to you (album page → "My photos")'] },
   { build: 196, de: ['Datenschutzerklärung und Nutzungsbedingungen (Entwürfe) im Profil ergänzt – neben Impressum und Datenquellen'], en: ['Privacy policy and terms of use (drafts) added to your profile — next to imprint and data sources'] },
   { build: 195, de: ['„Discend Wrapped" heißt jetzt „Discend Jahresrückblick"'], en: ['"Discend Wrapped" is now called "Discend Year in Review"'] },
@@ -3172,6 +3173,7 @@ function openProfileSettings() {
   $('#ps-website').value = p.website || '';
   $('#ps-bio').value = p.bio || '';
   $('#ps-hide-value').checked = !!p.hide_value;
+  $('#ps-private').checked = !!p.is_private;
   renderFavoritesEdit();
   renderFavoriteSongsEdit();
   $$('.set-lang-opt').forEach((b) => b.classList.toggle('active', b.dataset.lang === getLang()));
@@ -3239,6 +3241,7 @@ $('#ps-save').addEventListener('click', () => {
     website: $('#ps-website').value.trim(),
     bio: $('#ps-bio').value.trim(),
     hide_value: $('#ps-hide-value').checked,
+    is_private: $('#ps-private').checked,
   });
   if (currentView === 'settings') $('#view-title').textContent = profileName() || tr('title.profile');
   $('#profile-settings-dialog').close();
@@ -4288,26 +4291,31 @@ async function openUserProfile(user) {
     friendsFollowing.add(u.id); await follow(u.id);
     fbtn.style.display = 'none';
     if (currentView === 'home') renderFriendsRow();
+    // Privates Profil: jetzt sind wir Follower – Seite neu aufbauen, damit die Inhalte kommen
+    if (u.is_private) openUserProfile(u);
   };
   setFollowBtn(fbtn, false);
   fbtn.style.display = (isMe || isBlocked || friendsFollowing.has(u.id)) ? 'none' : '';
   upMenuUser = isMe ? null : u;
   { const mb = $('#up-menu-btn'); if (mb) mb.style.display = isMe ? 'none' : ''; }
+  // Privates Profil: Inhalte sieht nur, wer folgt (die Datenbank liefert sonst ohnehin nichts).
+  const isPrivate = !!u.is_private && !isMe && !isBlocked && !friendsFollowing.has(u.id);
   // Bei Blockierung: Hinweis zeigen, Inhalte ausblenden und nicht laden
   $('#up-blocked-note').classList.toggle('hidden', !isBlocked);
-  $('#up-favorites-section').style.display = isBlocked ? 'none' : '';
-  $('#up-stats-section').style.display = isBlocked ? 'none' : '';
+  $('#up-private-note').classList.toggle('hidden', !isPrivate);
+  $('#up-favorites-section').style.display = (isBlocked || isPrivate) ? 'none' : '';
+  $('#up-stats-section').style.display = (isBlocked || isPrivate) ? 'none' : '';
   $('#up-rating-section').hidden = true;
   $('#up-ms-section').hidden = true;
   $('#up-grid-page').classList.add('hidden');
-  if (isBlocked) {
-    fbtn.style.display = 'none';
+  if (isBlocked || isPrivate) {
+    if (isBlocked) fbtn.style.display = 'none'; // bei „privat" bleibt Folgen möglich
     $('#up-songs').innerHTML = '';
     $('#up-lists').innerHTML = ''; $('#up-lists-section').hidden = true;
     bringOverlayFront($('#user-page')); $('#user-page').classList.remove('hidden');
     $('#user-scroll').scrollTop = 0;
     document.body.style.overflow = 'hidden';
-    return; // Inhalte blockierter Nutzer nicht laden
+    return; // Inhalte blockierter/privater Nutzer nicht laden
   }
   $('#up-stats').innerHTML = '';
   $('#up-favorites').innerHTML = '';
