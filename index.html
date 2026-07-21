@@ -254,9 +254,13 @@
         <div class="legal-links">
           <button type="button" id="btn-impressum" class="link-btn" data-i18n="legal.impressum">Imprint</button>
           <span class="legal-dot">·</span>
+          <button type="button" id="btn-datenschutz" class="link-btn" data-i18n="legal.privacy">Privacy</button>
+          <span class="legal-dot">·</span>
+          <button type="button" id="btn-agb" class="link-btn" data-i18n="legal.terms">Terms</button>
+          <span class="legal-dot">·</span>
           <button type="button" id="btn-credits" class="link-btn" data-i18n="legal.sources">Data sources</button>
         </div>
-        <p class="hint profile-version">Discend · Build 195</p>
+        <p class="hint profile-version">Discend · Build 196</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -751,6 +755,118 @@
           <li><a href="https://coverartarchive.org" target="_blank" rel="noopener">Cover Art Archive</a><span data-i18n="credits.caa"> — some cover images.</span></li>
         </ul>
         <p class="legal-note" data-i18n="credits.disclaimer">Discend is not affiliated with these services and does not present third-party content as its own.</p>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Datenschutzerklärung – ENTWURF, vor Launch anwaltlich prüfen lassen. -->
+  <dialog id="datenschutz-dialog" class="dialog">
+    <div class="wrapped-sheet legal-sheet">
+      <div class="friends-head">
+        <span data-i18n="legal.privacy">Privacy</span>
+        <button id="btn-datenschutz-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+      </div>
+      <div class="legal-body">
+        <p class="legal-draft" data-i18n="legal.draft">Draft — must be reviewed by a lawyer before launch.</p>
+        <h3>Datenschutzerklärung</h3>
+
+        <p><strong>1. Verantwortlicher</strong><br>
+          Verantwortlich für die Datenverarbeitung ist der im Impressum genannte Anbieter.
+          Kontakt für Datenschutzanfragen: <span class="legal-ph">[Datenschutz-E-Mail]</span></p>
+
+        <p><strong>2. Welche Daten wir verarbeiten</strong><br>
+          <em>Kontodaten:</em> E-Mail-Adresse und ein verschlüsselt gespeichertes Passwort.<br>
+          <em>Profil:</em> Anzeigename, Benutzername, Bio, Ort, Website und Profilbild – soweit du sie angibst.<br>
+          <em>Inhalte:</em> deine Sammlung und Wunschliste, Listen, Bewertungen, Reviews, Kommentare, Höreinträge, Notizen sowie Angaben zu Kauf, Zustand und Standort.<br>
+          <em>Technische Daten:</em> beim Aufruf verarbeiten unsere Dienstleister IP-Adresse und Zeitpunkt in Server-Protokollen.</p>
+
+        <p><strong>3. Zwecke und Rechtsgrundlagen</strong><br>
+          Bereitstellung deines Kontos und der Funktionen: Art. 6 Abs. 1 lit. b DSGVO (Vertrag).<br>
+          Öffentliche Anzeige von Profil, Sammlung und Reviews, soweit du sie teilst: auf Grundlage deiner Nutzung bzw. Einwilligung.<br>
+          Sicherheit und Missbrauchsvermeidung: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse).</p>
+
+        <p><strong>4. Speicherort und Auftragsverarbeiter</strong><br>
+          Datenbank, Anmeldung und Datei-Speicher: Supabase, Server in der EU (Region Irland).<br>
+          Hosting und Auslieferung der App: Cloudflare.<br>
+          <span class="legal-ph">[Vor dem Launch: Auftragsverarbeitungs-Verträge (Art. 28 DSGVO) mit beiden Anbietern abschließen und hier bestätigen.]</span></p>
+
+        <p><strong>5. Inhalte von Drittanbietern</strong><br>
+          Zum Anzeigen von Cover-Bildern, Titellisten, Hörproben und Alben-Daten ruft die App Inhalte von
+          Discogs, Apple/iTunes, MusicBrainz und dem Cover Art Archive ab. Dabei wird deine IP-Adresse an
+          diese Dienste übermittelt; es gelten deren Datenschutzbestimmungen. Eine Übersicht findest du
+          unter „Datenquellen".</p>
+
+        <p><strong>6. Lokale Speicherung / Cookies</strong><br>
+          Die App speichert Einstellungen und eine Kopie deiner Sammlung lokal auf deinem Gerät, damit sie
+          auch offline funktioniert. Wir setzen keine Werbe- oder Tracking-Cookies ein.</p>
+
+        <p><strong>7. Speicherdauer</strong><br>
+          Wir speichern deine Daten, solange dein Konto besteht. Du kannst dein Konto samt Daten jederzeit
+          in den Einstellungen löschen.</p>
+
+        <p><strong>8. Deine Rechte</strong><br>
+          Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
+          Datenübertragbarkeit und Widerspruch. Außerdem kannst du dich bei einer
+          Datenschutz-Aufsichtsbehörde beschweren.</p>
+
+        <p class="legal-note" data-i18n="legal.draftNote">This text is a draft and does not replace legal advice.</p>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Nutzungsbedingungen / AGB – ENTWURF, vor Launch anwaltlich prüfen lassen. -->
+  <dialog id="agb-dialog" class="dialog">
+    <div class="wrapped-sheet legal-sheet">
+      <div class="friends-head">
+        <span data-i18n="legal.terms">Terms</span>
+        <button id="btn-agb-close" class="dialog-close" data-i18n-aria="a11y.close" aria-label="Close">×</button>
+      </div>
+      <div class="legal-body">
+        <p class="legal-draft" data-i18n="legal.draft">Draft — must be reviewed by a lawyer before launch.</p>
+        <h3>Nutzungsbedingungen</h3>
+
+        <p><strong>1. Geltungsbereich und Anbieter</strong><br>
+          Diese Bedingungen gelten für die Nutzung von Discend. Anbieter ist der im Impressum genannte Betreiber.</p>
+
+        <p><strong>2. Leistung</strong><br>
+          Discend ist eine App zum Verwalten, Bewerten und Teilen der eigenen Musiksammlung. Die Nutzung ist
+          derzeit kostenlos. Ein Anspruch auf ununterbrochene Verfügbarkeit besteht nicht; Wartung und
+          Weiterentwicklung können zu Unterbrechungen führen.</p>
+
+        <p><strong>3. Konto</strong><br>
+          Für die meisten Funktionen ist ein Konto nötig. Deine Angaben müssen zutreffend sein, deine
+          Zugangsdaten hältst du geheim. Das Mindestalter für ein Konto beträgt 16 Jahre.</p>
+
+        <p><strong>4. Deine Inhalte</strong><br>
+          Für Inhalte, die du einstellst – Bewertungen, Reviews, Kommentare, Listen, Bilder – bist du selbst
+          verantwortlich. Du sicherst zu, keine rechtswidrigen, beleidigenden oder rechteverletzenden Inhalte
+          einzustellen. Du räumst uns das einfache Recht ein, deine Inhalte im Rahmen der App darzustellen.
+          Du kannst deine Inhalte jederzeit selbst löschen.</p>
+
+        <p><strong>5. Umgang miteinander</strong><br>
+          Unangemessene Inhalte und Personen kannst du in der App melden oder blockieren. Rechtswidrige
+          Inhalte entfernen wir, sobald wir davon Kenntnis erlangen.</p>
+
+        <p><strong>6. Rechte Dritter</strong><br>
+          Cover-Bilder, Hörproben und Alben-Daten stammen von Drittanbietern; die Rechte liegen bei den
+          jeweiligen Inhabern (siehe „Datenquellen").</p>
+
+        <p><strong>7. Haftung und Gewährleistung</strong><br>
+          Die App wird ohne Gewähr für Fehlerfreiheit und ständige Verfügbarkeit bereitgestellt. Angezeigte
+          Marktwerte sind unverbindliche Schätzungen und keine Wertgutachten.<br>
+          <span class="legal-ph">[Haftungsklauseln vom Anwalt prüfen und ergänzen lassen.]</span></p>
+
+        <p><strong>8. Beendigung</strong><br>
+          Du kannst dein Konto jederzeit löschen. Wir können Konten bei schweren oder wiederholten Verstößen
+          gegen diese Bedingungen sperren.</p>
+
+        <p><strong>9. Änderungen</strong><br>
+          Wir können diese Bedingungen anpassen. Über wesentliche Änderungen informieren wir in der App.</p>
+
+        <p><strong>10. Anwendbares Recht</strong><br>
+          Es gilt deutsches Recht. <span class="legal-ph">[Weitere Schlussbestimmungen vom Anwalt ergänzen lassen.]</span></p>
+
+        <p class="legal-note" data-i18n="legal.draftNote">This text is a draft and does not replace legal advice.</p>
       </div>
     </div>
   </dialog>

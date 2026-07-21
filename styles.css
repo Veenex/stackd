@@ -1341,7 +1341,10 @@ body.logged-in .logout-btn { display: block; }
 .wrapped-head-actions { display: inline-flex; align-items: center; gap: 4px; }
 
 /* Rechtliches: Links auf dem Profil + Impressum/Datenquellen-Dialoge */
-.legal-links { display: flex; justify-content: center; align-items: center; gap: 8px; margin: 6px 0 2px; }
+.legal-links { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px 8px; margin: 6px 0 2px; }
+/* Entwurfs-Hinweis oben in Datenschutz/AGB */
+.legal-draft { background: var(--surface-2); border-left: 3px solid var(--rose); border-radius: 6px; padding: 9px 12px; font-size: 13px; color: var(--text); }
+.legal-body h3 + p { margin-top: 0; }
 .legal-links .link-btn { font-size: 13px; }
 .legal-dot { color: var(--muted); }
 .legal-sheet { max-height: 82vh; overflow-y: auto; }

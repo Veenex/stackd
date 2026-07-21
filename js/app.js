@@ -139,6 +139,7 @@ function appBuild() {
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
   { build: 194, de: ['Rechtliches: Impressum und Datenquellen/Credits (Discogs, Apple Music u. a.) im Profil, plus Quellenhinweis auf jeder Albumseite'], en: ['Legal: imprint and data sources/credits (Discogs, Apple Music, etc.) in your profile, plus a source note on every album page'] },
+  { build: 196, de: ['Datenschutzerklärung und Nutzungsbedingungen (Entwürfe) im Profil ergänzt – neben Impressum und Datenquellen'], en: ['Privacy policy and terms of use (drafts) added to your profile — next to imprint and data sources'] },
   { build: 195, de: ['„Discend Wrapped" heißt jetzt „Discend Jahresrückblick"'], en: ['"Discend Wrapped" is now called "Discend Year in Review"'] },
   { build: 193, de: ['Teilbare Statistik-Karte: Im „Discend Jahresrückblick" oben rechts auf das Teilen-Symbol tippen – erzeugt ein hübsches Bild mit deinen Zahlen, Top-Genres und Top-Künstler zum Teilen'], en: ['Shareable stats card: in "Discend Year in Review", tap the share icon (top right) to create a nice image of your numbers, top genres and top artist'] },
   { build: 190, de: ['Albumseite aufgeräumt: die lange Beschreibung wird nur noch kurz gezeigt und lässt sich ausklappen – so rückt die Tracklist nach oben'], en: ['Cleaner album page: the long description is shortened and expandable, so the tracklist moves up'] },
@@ -1700,6 +1701,10 @@ $('#btn-impressum').addEventListener('click', () => $('#impressum-dialog').showM
 $('#btn-impressum-close').addEventListener('click', () => $('#impressum-dialog').close());
 $('#btn-credits').addEventListener('click', () => $('#credits-dialog').showModal());
 $('#btn-credits-close').addEventListener('click', () => $('#credits-dialog').close());
+$('#btn-datenschutz').addEventListener('click', () => $('#datenschutz-dialog').showModal());
+$('#btn-datenschutz-close').addEventListener('click', () => $('#datenschutz-dialog').close());
+$('#btn-agb').addEventListener('click', () => $('#agb-dialog').showModal());
+$('#btn-agb-close').addEventListener('click', () => $('#agb-dialog').close());
 { const dc = $('#dp-credits'); if (dc) dc.addEventListener('click', () => $('#credits-dialog').showModal()); }
 
 $('#detail-back').addEventListener('click', closeDetail);
