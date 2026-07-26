@@ -1,7 +1,7 @@
 // service-worker.js – einfacher App-Shell-Cache, damit die App offline startet.
 // Daten (Sammlung/Wishlist) liegen in localStorage und sind ohnehin offline.
 
-const CACHE = 'platten-v199';
+const CACHE = 'platten-v200';
 const IMG_CACHE = 'platten-img-v1'; // Cover/Bilder separat, cache-first
 const IMG_MAX = 400;                // max. gecachte Bilder (älteste fliegen raus)
 const ASSETS = [
@@ -35,6 +35,32 @@ self.addEventListener('install', (e) => {
 // Vom Update-Hinweis ausgelöst: wartende Version sofort aktivieren.
 self.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+// Echte Push-Nachricht empfangen und anzeigen.
+self.addEventListener('push', (e) => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch { data = { body: (e.data && e.data.text()) || '' }; }
+  const title = data.title || 'Discend';
+  const options = {
+    body: data.body || '',
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-192.png',
+    data: { url: data.url || './' },
+    tag: 'discend',
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Antippen: offenes App-Fenster in den Vordergrund holen oder neu öffnen.
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || './';
+  e.waitUntil((async () => {
+    const all = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) { if ('focus' in c) { c.focus(); return; } }
+    if (clients.openWindow) await clients.openWindow(target);
+  })());
 });
 
 self.addEventListener('activate', (e) => {

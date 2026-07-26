@@ -447,6 +447,26 @@ export async function deleteComment(id) {
   await sb.from('comments').delete().eq('id', id).eq('user_id', u);
 }
 
+// ---------- Push-Abo (echte Benachrichtigungen) ----------
+export async function savePushSubscription(sub) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u || !sub) return false;
+  const json = sub.toJSON ? sub.toJSON() : sub;
+  const { error } = await sb.from('push_subscriptions').upsert({
+    user_id: u,
+    endpoint: json.endpoint,
+    p256dh: json.keys && json.keys.p256dh,
+    auth: json.keys && json.keys.auth,
+  }, { onConflict: 'endpoint' });
+  if (error) { console.warn('push sub:', error.message); return false; }
+  return true;
+}
+export async function deletePushSubscription(endpoint) {
+  const sb = await cloud(); const u = uid();
+  if (!sb || !u || !endpoint) return;
+  await sb.from('push_subscriptions').delete().eq('endpoint', endpoint).eq('user_id', u);
+}
+
 // ---------- Eigene Fotos der Platte (privat, Bucket item-photos) ----------
 // Pfad: <user-id>/<item-id>/<zeitstempel>.jpg – Schreiben/Löschen nur im eigenen Ordner (RLS).
 export async function uploadItemPhoto(itemId, blob) {

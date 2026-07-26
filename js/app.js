@@ -13,6 +13,7 @@ import {
   toggleActivityLike, fetchLikeInfo, fetchLikers, fetchComments, addComment, deleteComment,
   fetchAlbumComments, addAlbumComment, deleteAlbumComment,
   uploadItemPhoto, deleteItemPhoto,
+  savePushSubscription, deletePushSubscription,
   addPlay, fetchPlays, deletePlay, fetchUserPlays,
   recordValueSnapshot, fetchValueHistory, fetchAlbumRatings, fetchAlbumReviews,
   fetchSongLikes, toggleSongLike, fetchMyLikedSongs,
@@ -139,6 +140,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 200, de: ['Echte Push-Benachrichtigungen: In den Einstellungen aktivierbar – dann meldet sich dein Gerät bei Follow, Like oder Kommentar, auch wenn die App zu ist (iPhone: erst zum Home-Bildschirm hinzufügen)'], en: ['Real push notifications: switch on in settings — your device notifies you on follows, likes and comments even when the app is closed (iPhone: add to home screen first)'] },
   { build: 194, de: ['Rechtliches: Impressum und Datenquellen/Credits (Discogs, Apple Music u. a.) im Profil, plus Quellenhinweis auf jeder Albumseite'], en: ['Legal: imprint and data sources/credits (Discogs, Apple Music, etc.) in your profile, plus a source note on every album page'] },
   { build: 198, de: ['Privates Profil: In den Einstellungen aktivierbar – dann sieht niemand außer dir mehr als Username und Bio. Sammlung, Listen, Fotos, Bewertungen und Höreinträge bleiben privat'], en: ['Private profile: switch it on in settings — then nobody but you sees more than your username and bio. Collection, lists, photos, ratings and listening entries stay private'] },
   { build: 197, de: ['Eigene Fotos: Fotografier dein echtes Exemplar – bis zu 6 Fotos pro Platte, nur für dich sichtbar (Albumseite → „Meine Fotos")'], en: ['Your own photos: capture your actual copy — up to 6 photos per record, visible only to you (album page → "My photos")'] },
@@ -3174,6 +3176,7 @@ function openProfileSettings() {
   $('#ps-bio').value = p.bio || '';
   $('#ps-hide-value').checked = !!p.hide_value;
   $('#ps-private').checked = !!p.is_private;
+  refreshPushToggle();
   renderFavoritesEdit();
   renderFavoriteSongsEdit();
   $$('.set-lang-opt').forEach((b) => b.classList.toggle('active', b.dataset.lang === getLang()));
@@ -3400,6 +3403,65 @@ function showUpdateBar(reg) {
     else location.reload();
   };
 }
+// ---------- Echte Push-Benachrichtigungen ----------
+const VAPID_PUBLIC = 'BBvZQE94nUhf-nB-7ugYHUVQlUWUi7T6EChIB95OqtO7sPk-WtBqBkZvEK80Oo7t9zv1iy18SHS_ih0I0DQu9Ww';
+function urlBase64ToUint8Array(base64) {
+  const pad = '='.repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(b64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+function pushSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+async function currentPushSub() {
+  if (!pushSupported()) return null;
+  try { const reg = await navigator.serviceWorker.ready; return await reg.pushManager.getSubscription(); }
+  catch { return null; }
+}
+// Schalter-Stand in den Einstellungen setzen (nicht unterstützt -> ausblenden).
+async function refreshPushToggle() {
+  const row = $('#ps-push'); if (!row) return;
+  const label = row.closest('label'); const hint = $('#ps-push-hint');
+  if (!pushSupported()) { if (label) label.style.display = 'none'; if (hint) hint.style.display = 'none'; return; }
+  const sub = await currentPushSub();
+  row.checked = !!sub && Notification.permission === 'granted';
+}
+async function enablePush() {
+  if (!requireAuth()) return false;
+  if (!pushSupported()) { toast(tr('push.unsupported')); return false; }
+  let perm = Notification.permission;
+  if (perm === 'default') perm = await Notification.requestPermission();
+  if (perm !== 'granted') { toast(tr('push.denied')); return false; }
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC) });
+    }
+    const ok = await savePushSubscription(sub);
+    if (!ok) { toast(tr('push.failed')); return false; }
+    toast(tr('push.on'));
+    return true;
+  } catch (e) { console.warn('push subscribe:', e); toast(tr('push.failed')); return false; }
+}
+async function disablePush() {
+  try {
+    const sub = await currentPushSub();
+    if (sub) { await deletePushSubscription(sub.endpoint); await sub.unsubscribe(); }
+    toast(tr('push.off'));
+  } catch { /* ignorieren */ }
+}
+{
+  const row = $('#ps-push');
+  if (row) row.addEventListener('change', async () => {
+    if (row.checked) { const ok = await enablePush(); row.checked = ok; }
+    else { await disablePush(); }
+  });
+}
+
 if ('serviceWorker' in navigator) {
   let refreshing = false;
   // Sobald die neue Version die Kontrolle übernimmt: einmal neu laden.
