@@ -159,6 +159,8 @@ function applyMode() {
   show('#auth-username-field', mode === 'register');
   show('#auth-email-field', mode !== 'update');
   show('#auth-password-field', mode === 'login' || mode === 'register' || mode === 'update');
+  show('#auth-consent-field', mode === 'register');
+  if (mode === 'register') { const c = $('#auth-consent'); if (c) c.checked = false; }
   show('#auth-forgot', mode === 'login');
   const labels = { login: 'auth.login', register: 'auth.title.register', forgot: 'auth.label.forgot', update: 'set.savePassword' };
   $('#auth-submit').textContent = tr(labels[mode]);
@@ -173,6 +175,10 @@ function wireUI() {
   if ($('#auth-guest')) $('#auth-guest').addEventListener('click', closeAuth);
   if ($('#auth-close')) $('#auth-close').addEventListener('click', closeAuth);
   if ($('#auth-form')) $('#auth-form').addEventListener('submit', onSubmit);
+  // AGB/Datenschutz aus dem Registrieren-Formular öffnen (Dialoge liegen im DOM).
+  const openDlg = (id) => { const d = document.getElementById(id); if (d && d.showModal) d.showModal(); };
+  if ($('#auth-terms-link')) $('#auth-terms-link').addEventListener('click', () => openDlg('agb-dialog'));
+  if ($('#auth-privacy-link')) $('#auth-privacy-link').addEventListener('click', () => openDlg('datenschutz-dialog'));
 }
 
 async function onSubmit(e) {
@@ -193,6 +199,7 @@ async function onSubmit(e) {
     } else if (mode === 'register') {
       if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) return setMsg(tr('auth.err.usernameRule'), 'error');
       if (password.length < 6) return setMsg(tr('auth.err.pwMin'), 'error');
+      if (!$('#auth-consent') || !$('#auth-consent').checked) return setMsg(tr('auth.err.consent'), 'error');
       if (await usernameTaken(username)) return setMsg(tr('auth.err.usernameTaken'), 'error');
       const { data, error } = await sb.auth.signUp({ email, password, options: { data: { username, display_name: username }, emailRedirectTo: location.origin + '/' } });
       if (error) return setMsg(/already|registered|exists/i.test(error.message) ? tr('auth.err.emailRegistered') : error.message, 'error');

@@ -140,6 +140,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 201, de: ['Bei der Registrierung muss man jetzt AGB und Datenschutz zustimmen (mit Links zum Nachlesen)'], en: ['Sign-up now requires accepting the terms and privacy policy (with links to read them)'] },
   { build: 200, de: ['Echte Push-Benachrichtigungen: In den Einstellungen aktivierbar – dann meldet sich dein Gerät bei Follow, Like oder Kommentar, auch wenn die App zu ist (iPhone: erst zum Home-Bildschirm hinzufügen)'], en: ['Real push notifications: switch on in settings — your device notifies you on follows, likes and comments even when the app is closed (iPhone: add to home screen first)'] },
   { build: 194, de: ['Rechtliches: Impressum und Datenquellen/Credits (Discogs, Apple Music u. a.) im Profil, plus Quellenhinweis auf jeder Albumseite'], en: ['Legal: imprint and data sources/credits (Discogs, Apple Music, etc.) in your profile, plus a source note on every album page'] },
   { build: 198, de: ['Privates Profil: In den Einstellungen aktivierbar – dann sieht niemand außer dir mehr als Username und Bio. Sammlung, Listen, Fotos, Bewertungen und Höreinträge bleiben privat'], en: ['Private profile: switch it on in settings — then nobody but you sees more than your username and bio. Collection, lists, photos, ratings and listening entries stay private'] },

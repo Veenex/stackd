@@ -1352,6 +1352,12 @@ body.logged-in .logout-btn { display: block; }
 .friends-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 12px; }
 .wrapped-head-actions { display: inline-flex; align-items: center; gap: 4px; }
 
+/* Zustimmung zu AGB/Datenschutz bei der Registrierung */
+.auth-consent { display: flex; align-items: flex-start; gap: 9px; margin: 2px 0 4px; font-size: 13px; color: var(--muted); line-height: 1.45; cursor: pointer; }
+.auth-consent input { margin-top: 2px; flex: 0 0 auto; width: 18px; height: 18px; accent-color: var(--rose); }
+.auth-consent-text { flex: 1; }
+.link-inline { background: none; border: none; padding: 0; color: var(--rose); font: inherit; cursor: pointer; text-decoration: underline; }
+
 /* Erklärtext unter einem Schalter in den Einstellungen */
 .set-check-hint { margin: 4px 0 10px; font-size: 12.5px; line-height: 1.45; }
 

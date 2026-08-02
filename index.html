@@ -260,7 +260,7 @@
           <span class="legal-dot">·</span>
           <button type="button" id="btn-credits" class="link-btn" data-i18n="legal.sources">Data sources</button>
         </div>
-        <p class="hint profile-version">Discend · Build 200</p>
+        <p class="hint profile-version">Discend · Build 201</p>
         </div><!-- /ptab-profile -->
 
         <div id="ptab-playlist" class="ptab-panel">
@@ -320,6 +320,13 @@
         </label>
         <label id="auth-password-field" class="auth-field"><span data-i18n="auth.password">Password</span>
           <input id="auth-password" type="password" autocomplete="current-password" data-i18n-ph="ph.min6" placeholder="at least 6 characters" />
+        </label>
+        <label id="auth-consent-field" class="auth-consent" style="display:none">
+          <input type="checkbox" id="auth-consent" />
+          <span class="auth-consent-text"><span data-i18n="auth.consentPre">I accept the</span>
+            <button type="button" id="auth-terms-link" class="link-inline" data-i18n="legal.terms">Terms</button>
+            <span data-i18n="auth.consentAnd">and</span>
+            <button type="button" id="auth-privacy-link" class="link-inline" data-i18n="legal.privacy">Privacy Policy</button>.</span>
         </label>
         <button type="submit" id="auth-submit" class="btn primary auth-submit" data-i18n="auth.login">Sign in</button>
         <button type="button" id="auth-forgot" class="link-btn auth-forgot" data-i18n="auth.forgot">Forgot password?</button>
