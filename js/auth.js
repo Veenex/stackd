@@ -28,6 +28,15 @@ export function updateProfile(patch) {
   }
   return currentProfile;
 }
+// Wie updateProfile, aber wartet auf die DB und meldet Fehler zurück (für kritische
+// Speichervorgänge wie das Profilbild, damit ein Fehlschlag nicht als „gespeichert" gilt).
+export async function updateProfileAwait(patch) {
+  currentProfile = { ...(currentProfile || {}), ...patch };
+  if (!currentUser || !sb) return { error: { message: 'nicht angemeldet' } };
+  const { error } = await sb.from('profiles').update(patch).eq('id', currentUser.id);
+  if (error) console.warn('profile update:', error.message);
+  return { error: error || null };
+}
 
 // Blob -> data:-URI (base64). Selbstenthaltend, wird direkt im Profil gespeichert.
 function blobToDataUrl(blob) {

@@ -21,7 +21,7 @@ import {
   sendFeedback,
 } from './store.js';
 import { lookupBarcode, fetchTracklist, fetchReleaseInfo, fetchItunesTracklist, fetchSongPreview, fetchItunesSongs, discogsSearch, fetchCoverArt, fetchCoverCandidates, fetchVinylColors, fetchPriceRange, fetchGenre, fetchDiscogsCollection, normTitle } from './api.js';
-import { initAuth, getUser, getProfile, updateProfile, requireAuth, openAuth, signOut, changePassword, changeEmail, sendPasswordReset, deleteAccount, uploadProfileImage } from './auth.js';
+import { initAuth, getUser, getProfile, updateProfile, updateProfileAwait, requireAuth, openAuth, signOut, changePassword, changeEmail, sendPasswordReset, deleteAccount, uploadProfileImage } from './auth.js';
 import { startScanner, stopScanner, isRunning, isSupported } from './scanner.js';
 import { t as tr, applyI18n, getLang, setLang } from './i18n.js';
 import {
@@ -140,6 +140,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 203, de: ['Profilbild-Fehler behoben: iPhone-Fotos (HEIC) werden jetzt richtig verarbeitet, und „gespeichert" erscheint nur, wenn es wirklich gespeichert wurde'], en: ['Profile picture fix: iPhone (HEIC) photos are now handled correctly, and "saved" only shows when it really saved'] },
   { build: 202, de: ['Fehler behoben: Profilbild ließ sich nicht ändern/anzeigen. Das Bild wird jetzt zuverlässig gespeichert und ist für alle sichtbar'], en: ['Bug fix: profile picture could not be changed/shown. It now saves reliably and is visible to everyone'] },
   { build: 201, de: ['Bei der Registrierung muss man jetzt AGB und Datenschutz zustimmen (mit Links zum Nachlesen)'], en: ['Sign-up now requires accepting the terms and privacy policy (with links to read them)'] },
   { build: 200, de: ['Echte Push-Benachrichtigungen: In den Einstellungen aktivierbar – dann meldet sich dein Gerät bei Follow, Like oder Kommentar, auch wenn die App zu ist (iPhone: erst zum Home-Bildschirm hinzufügen)'], en: ['Real push notifications: switch on in settings — your device notifies you on follows, likes and comments even when the app is closed (iPhone: add to home screen first)'] },
@@ -3141,22 +3142,36 @@ function openFavPicker(slot) {
   };
 }
 
-// Bild verkleinern/komprimieren und als Blob zurückgeben (für den Storage-Upload).
-function downscaleImageBlob(file, maxW, quality) {
-  return new Promise((resolve) => {
+// Bild verkleinern/komprimieren und als JPEG-Blob zurückgeben.
+// createImageBitmap zuerst (dekodiert auch iPhone-HEIC-Fotos direkt aus der Datei);
+// wenn das scheitert, klassischer <img>+FileReader-Weg als Fallback.
+function drawToJpeg(src, natW, natH, maxW, quality) {
+  const scale = Math.min(1, maxW / natW);
+  const w = Math.max(1, Math.round(natW * scale));
+  const h = Math.max(1, Math.round(natH * scale));
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(src, 0, 0, w, h);
+  return new Promise((res) => c.toBlob((b) => res(b), 'image/jpeg', quality));
+}
+async function downscaleImageBlob(file, maxW, quality) {
+  // 1) createImageBitmap – robust über Formate (HEIC/HEIF, PNG, JPEG …)
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bmp = await createImageBitmap(file);
+      const blob = await drawToJpeg(bmp, bmp.width, bmp.height, maxW, quality);
+      if (bmp.close) bmp.close();
+      if (blob) return blob;
+    } catch { /* Fallback unten */ }
+  }
+  // 2) Fallback: <img> + FileReader
+  return await new Promise((resolve) => {
     const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, maxW / img.naturalWidth);
-      const w = Math.round(img.naturalWidth * scale);
-      const h = Math.round(img.naturalHeight * scale);
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      c.toBlob((b) => resolve(b), 'image/jpeg', quality);
-    };
+    img.onload = async () => resolve(await drawToJpeg(img, img.naturalWidth, img.naturalHeight, maxW, quality));
     img.onerror = () => resolve(null);
     const fr = new FileReader();
     fr.onload = () => { img.src = fr.result; };
+    fr.onerror = () => resolve(null);
     fr.readAsDataURL(file);
   });
 }
@@ -3261,8 +3276,11 @@ $('#avatar-file').addEventListener('change', async (e) => {
   // Kompakt halten (300px) – falls als base64 im Profil gespeichert, bleibt es klein.
   const blob = await downscaleImageBlob(file, 300, 0.8);
   const url = blob ? await uploadProfileImage('avatar', blob) : null;
-  if (url) { updateProfile({ avatar_url: url }); renderProfile(); toast(tr('toast.saved')); }
-  else { toast(tr('toast.uploadFailed')); }
+  if (!url) { toast(tr('toast.uploadFailed')); e.target.value = ''; return; }
+  // Auf die DB warten: nur bei echtem Erfolg „gespeichert" melden.
+  const res = await updateProfileAwait({ avatar_url: url });
+  if (res.error) { toast(tr('toast.uploadFailed')); }
+  else { renderProfile(); toast(tr('toast.saved')); }
   e.target.value = '';
 });
 
