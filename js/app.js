@@ -140,6 +140,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 202, de: ['Fehler behoben: Profilbild ließ sich nicht ändern/anzeigen. Das Bild wird jetzt zuverlässig gespeichert und ist für alle sichtbar'], en: ['Bug fix: profile picture could not be changed/shown. It now saves reliably and is visible to everyone'] },
   { build: 201, de: ['Bei der Registrierung muss man jetzt AGB und Datenschutz zustimmen (mit Links zum Nachlesen)'], en: ['Sign-up now requires accepting the terms and privacy policy (with links to read them)'] },
   { build: 200, de: ['Echte Push-Benachrichtigungen: In den Einstellungen aktivierbar – dann meldet sich dein Gerät bei Follow, Like oder Kommentar, auch wenn die App zu ist (iPhone: erst zum Home-Bildschirm hinzufügen)'], en: ['Real push notifications: switch on in settings — your device notifies you on follows, likes and comments even when the app is closed (iPhone: add to home screen first)'] },
   { build: 194, de: ['Rechtliches: Impressum und Datenquellen/Credits (Discogs, Apple Music u. a.) im Profil, plus Quellenhinweis auf jeder Albumseite'], en: ['Legal: imprint and data sources/credits (Discogs, Apple Music, etc.) in your profile, plus a source note on every album page'] },
@@ -3257,7 +3258,8 @@ $('#avatar-file').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   toast(tr('toast.uploadingImage'));
-  const blob = await downscaleImageBlob(file, 400, 0.85);
+  // Kompakt halten (300px) – falls als base64 im Profil gespeichert, bleibt es klein.
+  const blob = await downscaleImageBlob(file, 300, 0.8);
   const url = blob ? await uploadProfileImage('avatar', blob) : null;
   if (url) { updateProfile({ avatar_url: url }); renderProfile(); toast(tr('toast.saved')); }
   else { toast(tr('toast.uploadFailed')); }

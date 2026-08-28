@@ -29,15 +29,34 @@ export function updateProfile(patch) {
   return currentProfile;
 }
 
-// Profilbild in den Storage-Bucket laden (eigener Ordner = user-id). Gibt die öffentliche URL zurück (oder null).
+// Blob -> data:-URI (base64). Selbstenthaltend, wird direkt im Profil gespeichert.
+function blobToDataUrl(blob) {
+  return new Promise((resolve) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(fr.result);
+    fr.onerror = () => resolve(null);
+    fr.readAsDataURL(blob);
+  });
+}
+
+// Profilbild speichern. Bevorzugt der Storage-Bucket (kurze URL); klappt der Upload
+// nicht (z. B. Storage-Regeln), wird das Bild als base64-data:-URI zurückgegeben und
+// direkt im Profil gespeichert – so wird es überall zuverlässig angezeigt.
 export async function uploadProfileImage(kind, blob) {
   if (!sb || !currentUser || !blob) return null;
   const path = `${currentUser.id}/${kind}.jpg`;
-  const { error } = await sb.storage.from('profile-images')
-    .upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
-  if (error) { console.warn('upload:', error.message); return null; }
-  const { data } = sb.storage.from('profile-images').getPublicUrl(path);
-  return data && data.publicUrl ? data.publicUrl + '?v=' + Date.now() : null;
+  try {
+    const { error } = await sb.storage.from('profile-images')
+      .upload(path, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+    if (!error) {
+      const { data } = sb.storage.from('profile-images').getPublicUrl(path);
+      if (data && data.publicUrl) return data.publicUrl + '?v=' + Date.now();
+    } else {
+      console.warn('avatar storage upload:', error.message, '– nutze base64-Fallback');
+    }
+  } catch (e) { console.warn('avatar storage upload:', e); }
+  // Fallback: Bild direkt im Profil ablegen (base64)
+  return await blobToDataUrl(blob);
 }
 
 // Von app.js beim Start aufgerufen.
