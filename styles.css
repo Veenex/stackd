@@ -1117,6 +1117,9 @@ dialog::backdrop { background: rgba(0,0,0,.6); }
 .rec-by[hidden] { display: none; }
 .rec-rating { margin-top: 4px; }
 .rec-openalbum { align-self: flex-start; margin-top: 8px; padding: 0; }
+.rec-value { margin: 6px 0 0; font-size: 15px; font-weight: 600; color: var(--text); }
+.rec-value[hidden] { display: none; }
+.rec-value-ico { color: var(--muted); font-weight: 400; }
 .rec-note, .rec-review { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--text); white-space: pre-wrap; }
 .rec-like-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 .rec-like { width: 34px; height: 34px; border: none; background: none; color: var(--muted); cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }

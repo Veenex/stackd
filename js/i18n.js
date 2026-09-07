@@ -470,6 +470,10 @@ export const DICT = {
   'value.updating': { en: '· updating…', de: '· aktualisiere…' },
   'value.noMarketData': { en: 'No market data yet. Tip: enter your own prices in the album under "Edit details".', de: 'Noch keine Marktdaten. Tipp: eigene Preise im Album unter „Details bearbeiten" eintragen.' },
   'value.to': { en: 'to', de: 'bis' },
+  'value.paid': { en: '{amount} (paid)', de: '{amount} (Kaufpreis)' },
+  'value.estimating': { en: 'Estimating value…', de: 'Wert wird geschätzt…' },
+  'value.noSingle': { en: 'No market data for this record.', de: 'Keine Marktdaten für diese Platte.' },
+  'sort.value': { en: 'Value (high → low)', de: 'Wert (hoch → niedrig)' },
   'stat.notes': { en: 'Notes', de: 'Notizen' },
 
   // Statistiken

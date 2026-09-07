@@ -140,6 +140,7 @@ function appBuild() {
 }
 // Pro Build ein paar nutzerfreundliche Zeilen (zweisprachig, neueste zuerst).
 const CHANGELOG = [
+  { build: 204, de: ['Marktwert pro Platte: auf der Platten-Übersicht steht jetzt der geschätzte Wert, und in der Sammlung kannst du nach „Wert (hoch → niedrig)" sortieren'], en: ['Per-record value: each record page now shows its estimated value, and you can sort your collection by "Value (high → low)"'] },
   { build: 203, de: ['Profilbild-Fehler behoben: iPhone-Fotos (HEIC) werden jetzt richtig verarbeitet, und „gespeichert" erscheint nur, wenn es wirklich gespeichert wurde'], en: ['Profile picture fix: iPhone (HEIC) photos are now handled correctly, and "saved" only shows when it really saved'] },
   { build: 202, de: ['Fehler behoben: Profilbild ließ sich nicht ändern/anzeigen. Das Bild wird jetzt zuverlässig gespeichert und ist für alle sichtbar'], en: ['Bug fix: profile picture could not be changed/shown. It now saves reliably and is visible to everyone'] },
   { build: 201, de: ['Bei der Registrierung muss man jetzt AGB und Datenschutz zustimmen (mit Links zum Nachlesen)'], en: ['Sign-up now requires accepting the terms and privacy policy (with links to read them)'] },
@@ -316,7 +317,13 @@ function renderList(list) {
   let items = filterItems(getList(list), query);
   if (favOnly) items = items.filter((i) => i.liked);
   if (rv > 0) items = items.filter((i) => (Number(i.rating) || 0) === rv);
-  items = sortItems(items, mode);
+  if (mode === 'value') {
+    const cache = readPriceCache();
+    items = [...items].sort((a, b) => itemValueSortKey(b, cache) - itemValueSortKey(a, cache));
+    ensureCollectionValues(); // fehlende Werte im Hintergrund nachladen
+  } else {
+    items = sortItems(items, mode);
+  }
 
   const ul = $(`#list-${list}`);
   ul.innerHTML = items.map(recordItemHtml).join('');
@@ -963,6 +970,7 @@ async function openRecord(item, mine) {
     byEl.onclick = () => openUserProfile(item.by);
   } else { byEl.hidden = true; byEl.onclick = null; }
   $('#rec-rating').innerHTML = Number(item.rating) > 0 ? ratingDisplayHtml(item.rating) : `<span class="hint">${tr('stat.noRating')}</span>`;
+  renderRecordValue(item);
 
   // Info-Zeilen zusammenstellen
   const rows = [];
@@ -1023,6 +1031,24 @@ function openRecordAlbum() {
   const { item, mine } = recordCtx;
   if (mine) openDetail('collection', item.id);
   else openPreview(item);
+}
+// Geschätzten Marktwert auf der Platten-Übersicht zeigen; fehlt er, einmal nachladen.
+async function renderRecordValue(item) {
+  const el = $('#rec-value'); if (!el) return;
+  const show = (txt) => { el.hidden = !txt; el.innerHTML = txt; };
+  const v = itemValueRange(item);
+  if (v.known) { show(escapeHtml(fmtItemValue(v))); return; }
+  if (v.noData) { show(`<span class="hint">${tr('value.noSingle')}</span>`); return; }
+  if (!v.fetchable) { show(''); return; }
+  show(`<span class="hint">${tr('value.estimating')}</span>`);
+  let r = null;
+  try { r = await fetchPriceRange(item); } catch { /* ignorieren */ }
+  if (!recordCtx || recordCtx.item !== item) return;
+  const cur = readPriceCache();
+  cur[item.sourceId] = r ? { min: r.min, max: r.max, at: Date.now() } : { min: null, max: null, at: Date.now() };
+  writePriceCache(cur);
+  const v2 = itemValueRange(item);
+  show(v2.known ? escapeHtml(fmtItemValue(v2)) : `<span class="hint">${tr('value.noSingle')}</span>`);
 }
 async function renderRecordLikes(item) {
   const box = $('#rec-likers'); const btn = $('#rec-like');
@@ -2920,6 +2946,61 @@ async function importDiscogs() {
   toast(tr('toast.importedSummary', { added, dup: items.length - added }));
 }
 $('#btn-import-discogs').addEventListener('click', importDiscogs);
+
+// Geschätzter Marktwert EINER Platte (aus Kaufpreis-Übersteuerung oder Preis-Cache).
+// Gibt { known, min, max, mid, manual } zurück.
+function itemValueRange(item, cache) {
+  if (!item) return { known: false };
+  if (Number(item.price) > 0) { const p = Number(item.price); return { known: true, manual: true, min: p, max: p, mid: p }; }
+  if (item.source === 'discogs' && item.sourceId) {
+    const c = (cache || readPriceCache())[item.sourceId];
+    if (c && (Date.now() - c.at) < PRICE_TTL) {
+      if (c.min != null) return { known: true, min: c.min, max: c.max, mid: Math.round((c.min + c.max) / 2) };
+      return { known: false, noData: true }; // frisch geprüft, aber keine Marktdaten
+    }
+    return { known: false, fetchable: true };
+  }
+  return { known: false };
+}
+// Wert als Text: „18–32 €", „≈ 25 €" oder Kaufpreis.
+function fmtItemValue(v) {
+  if (!v || !v.known) return '';
+  if (v.manual) return tr('value.paid', { amount: fmtEuro(v.mid) });
+  if (v.min === v.max) return '≈ ' + fmtEuro(v.mid);
+  return '≈ ' + fmtEuro(v.min) + ' – ' + fmtEuro(v.max);
+}
+// Sortierschlüssel Wert (unbekannt -> ans Ende).
+function itemValueSortKey(item, cache) {
+  const v = itemValueRange(item, cache);
+  return v.known ? v.mid : -1;
+}
+
+// Fehlende Einzelwerte der Sammlung im Hintergrund nachladen (für die Wert-Sortierung).
+let collValuesReq = 0;
+async function ensureCollectionValues() {
+  const coll = getList('collection');
+  const now = Date.now(); const cache = readPriceCache();
+  const toFetch = coll.filter((it) => !(Number(it.price) > 0) && it.source === 'discogs' && it.sourceId
+    && !(cache[it.sourceId] && (now - cache[it.sourceId].at) < PRICE_TTL));
+  if (!toFetch.length) return;
+  const reqId = ++collValuesReq;
+  const cap = toFetch.slice(0, 40);
+  let idx = 0;
+  const worker = async () => {
+    while (idx < cap.length) {
+      if (reqId !== collValuesReq) return;
+      const it = cap[idx++];
+      let r = null;
+      try { r = await fetchPriceRange(it); } catch { /* ignorieren */ }
+      const cur = readPriceCache();
+      cur[it.sourceId] = r ? { min: r.min, max: r.max, at: Date.now() } : { min: null, max: null, at: Date.now() };
+      writePriceCache(cur);
+    }
+  };
+  await Promise.all([worker(), worker(), worker()]);
+  // Wenn noch nach Wert sortiert wird: Reihenfolge mit den neuen Werten aktualisieren.
+  if (reqId === collValuesReq && currentView === 'collection' && $('#sort-collection').value === 'value') renderList('collection');
+}
 
 // Aktueller Sammlungswert (Mittel aus min–max) nur aus dem Cache – ohne Netz.
 function computeCachedValue() {
